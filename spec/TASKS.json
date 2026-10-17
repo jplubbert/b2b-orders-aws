@@ -16,7 +16,8 @@
         "DEC-004",
         "DEC-005",
         "DEC-006",
-        "DEC-007"
+        "DEC-007",
+        "DEC-008"
       ],
       "depends_on": [],
       "status": "in_progress",
@@ -24,7 +25,7 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). 2026-10-17 20:15: bootstrap:dev + deploy:dev (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev) + seed ok; smoke 2/2 (latencia listProducts: primera 603 ms, siguiente 564 ms). Pendiente: login manual desde teléfono (spike Expo Go / dev build) registrado en LOG; luego evidencia y revisión independiente."
+      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). 2026-10-17 20:15: bootstrap:dev + deploy:dev (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev) + seed ok; smoke 2/2 (latencia listProducts: primera 603 ms, siguiente 564 ms). Pendiente: login manual desde teléfono (spike Expo Go / dev build) registrado en LOG; luego evidencia y revisión independiente. 2026-10-17 20:50: Expo Go de la Play Store solo soporta SDK 57 → app bajada de SDK 58 a 57 (DEC-008 proposed); Expo Go 57.0.9 en emulador abre la app en Iniciar sesión."
     },
     {
       "id": "T-02",

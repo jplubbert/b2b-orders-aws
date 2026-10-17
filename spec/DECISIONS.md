@@ -124,3 +124,20 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: documentación de AppSync/Cognito; ninguna medición propia.
 - Confirmación: `npm run test:acceptance` registrado como `evidence` en TASKS.json.
 - Revisar si: aparecen regresiones de UI no detectadas o se automatiza la demo.
+
+## DEC-008 Expo SDK 57 mientras Expo Go de la Play Store no soporte SDK 58
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-17 · Aprobador: pendiente · Confianza: alta
+- Problema: el SDK fijado en T-01 (58, el `latest` de npm) no abre en el Expo Go que instala la Play Store del teléfono del usuario: "Project is incompatible with this version of Expo Go". Ese Expo Go soporta SDK 57 (confirmado por el usuario). La versión de Expo Go en las tiendas puede quedar atrás cuando sale un SDK nuevo.
+- Impulsores: DEC-003 (SDK estable fijado en T-01), T-01 (login manual desde el teléfono), REQ-001
+- Alternativas consideradas:
+  1. Bajar el proyecto a SDK 57 (`expo ~57.0.30` + `npx expo install --fix`; React 19.2.3, RN 0.86.3) — a favor: funciona con el Expo Go de la tienda sin tocar el teléfono; en contra: hay que volver a subir cuando la tienda publique Expo Go 58.
+  2. Seguir en SDK 58 e instalar a mano el APK oficial de Expo Go 58.0.4 — a favor: sin cambios en el repo; en contra: hay que instalar desde fuera de la tienda en cada teléfono de la demo.
+  3. Development build (`expo run:android`) — a favor: no depende de Expo Go; en contra: requiere toolchain nativo y `android.package`; queda reservada para el spike de `AmplifyRTNCore`.
+- Decisión: Usaremos la alternativa 1 (SDK 57) y no la 2 ni la 3, para que la demo abra con el Expo Go de la Play Store, aceptando un salto a SDK 58 posterior.
+- Consecuencias: buenas: `expo-doctor` 21/21 y bundle Android ok; malas: queda `react-native-worklets@0.13.0` fuera del rango del peer opcional de `expo-modules-core@57` (la app no la usa, viene transitiva de expo-router); neutrales: la `override` de `react` en el `package.json` raíz pasa a 19.2.3 y `package-lock.json` se regeneró.
+- Dependencias: refina DEC-003 (no la supersede: sigue siendo Expo + aws-amplify v6)
+- Evidencia: `api.expo.dev/v2/versions/latest` (SDK 57 → Expo Go 57.0.9; SDK 58 → 58.0.4); el manifiesto servido por Metro decía `sdkVersion 58.0.0` antes del cambio y `57.0.0` después; Expo Go 57.0.9 en emulador Android 35 abre la app en la pantalla "Iniciar sesión".
+- Confirmación: `cd app && npx expo-doctor && npx expo install --check`.
+- Revisar si: la Play Store publica Expo Go para SDK 58 (subir con `npx expo install expo@^58 && npx expo install --fix`).
