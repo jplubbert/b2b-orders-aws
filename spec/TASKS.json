@@ -33,7 +33,7 @@
       "reqs": [],
       "decisions": [],
       "depends_on": [],
-      "status": "ready",
+      "status": "in_progress",
       "verify": "npm run check:spec pasa en el repo y falla en fixtures negativos (done sin evidencia, blocked sin referencia, archivo extra en spec/, edición de tests/acceptance/)",
       "evidence": null,
       "review": null,
@@ -42,6 +42,7 @@
     {
       "id": "T-03",
       "title": "Pruebas de aceptación de REQ-001..004 (tarea de spec)",
+      "kind": "spec",
       "description": "Escribir tests/acceptance/req_00X_* a partir de los ejemplos de API de SPEC.md; deben fallar donde la funcionalidad no existe. Única tarea que edita tests/acceptance/; el usuario aprueba el diff.",
       "reqs": [
         "REQ-001",

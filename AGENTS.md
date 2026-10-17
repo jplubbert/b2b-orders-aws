@@ -25,7 +25,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - Preparar entorno: `npm ci` · una vez por cuenta: `npm run bootstrap:dev` · desplegar dev: `npm run deploy:dev` (escribe `.env.dev` y siembra)
 - Prueba de humo: `npm run smoke`
 - Pruebas: `npm test` | Aceptación: `npm run test:acceptance` | Lint/tipos: `npm run lint && npm run typecheck`
-- Validar protocolo: `npm run check:spec`
+- Validar protocolo: `npm run check:spec` (hook `commit-msg` en `.githooks/`, lo activa `npm ci` vía `prepare`)
 - App: `npm run app` (Expo)
 
 ## Autoridad
@@ -39,7 +39,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
   dos intentos fallidos sobre la misma falla.
 
 ## Reglas duras (verificadas por `npm run check:spec` y hook de commit, T-02)
-- No edites tests/acceptance/ en un cambio de implementación.
+- No edites tests/acceptance/ en un cambio de implementación (solo tareas con `"kind": "spec"` en TASKS.json).
 - Una tarea pasa a `done` solo con evidencia (comando + resultado + commit) en TASKS.json.
 - Cada commit lleva trailers `Task:` y `Req:` (`Req: none` si no aplica).
 - No reabras una decisión `accepted` sin evidencia nueva registrada; se supersede, no se edita.

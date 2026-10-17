@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     projects: [
       { test: { name: 'backend', root: './backend', include: ['test/**/*.test.ts'] } },
+      { test: { name: 'scripts', root: './scripts', include: ['test/**/*.test.ts'], testTimeout: 30_000 } },
       { test: { name: 'infra', root: './infra', include: ['test/**/*.test.ts'], testTimeout: 60_000 } },
     ],
   },
