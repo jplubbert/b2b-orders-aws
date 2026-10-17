@@ -63,3 +63,11 @@
 - En curso / roto: T-01 sigue `in_progress` (despliegue pendiente: AWS CLI + perfil `default`).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: retomar T-01 cuando el usuario tenga AWS CLI + perfil `default` (pasos en la entrada de 18:55). T-03..T-07 siguen esperando a T-01, así que el orquestador nocturno no tiene tareas elegibles.
+
+## 2026-10-17 20:15 · Claude (claude-opus-5-5)
+- Hecho: despliegue de T-01 en dev. Cuenta [REDACTED_AWS_ACCOUNT_MAIN] (usuario IAM `[REDACTED_IAM_USER]`), perfil `default`, `us-east-1` (R-04). `npm run bootstrap:dev` (CDKToolkit creado) → `npm run deploy:dev` (pila `PedidosB2B-dev` creada, `.env.dev` escrito, seed: Yerba 1 kg, Arroz 1 kg; almacen1/almacen2) → `npm run smoke`.
+- Verificado y cómo: `npm ci` ok; `npm run lint` ok; `npm run typecheck` ok; `npm run smoke` 2/2 (almacen1 → listProducts con los 2 productos; sin token → Unauthorized). Latencia listProducts: primera 603 ms (< 3 s), siguiente 564 ms (< 1 s) → criterio cumplido. `.env.dev` ignorado por git (`.gitignore:2`).
+- En curso / roto: **`npm test` 60/63**. Fallan 3 casos de `scripts/test/night-tasks.test.ts` (check-authority "detecta estados reservados…", set-review "approved sobre verified_auto…" y "rejected conserva…"). Causa: copian `spec/` real y dan por hecho que T-02 está `verified_auto`; desde 300e0a9 está `accepted`. No es una regresión del código de T-01 ni de T-08: es la fixture la que depende del estado vivo. Arreglo propuesto: fijar `T-02.status = 'verified_auto'` dentro de esos casos (un `editTasks` al inicio). El clasificador de permisos de la sesión bloqueó la edición de la prueba, así que queda pendiente de que el usuario lo autorice.
+- T-01 sigue `in_progress`: falta el login manual desde el teléfono (spike Expo Go / dev build).
+- Bloqueos nuevos: ninguno de spec.
+- Próxima acción autorizada: (1) el usuario autoriza o aplica el arreglo de la fixture de night-tasks.test.ts (Task: T-08, Req: N/A) → `npm test` 63/63; (2) `npm run app` + login de almacen1 desde el teléfono (Expo Go; si falla por `AmplifyRTNCore`, development build con `npx expo run:android|ios`), registrado aquí; (3) con eso, evidencia de T-01 en TASKS.json → `verified_auto` y revisión independiente con contexto limpio.

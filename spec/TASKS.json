@@ -24,7 +24,7 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). Pendiente: npm run bootstrap:dev (una vez) + deploy:dev + smoke + login manual desde teléfono; bloqueado en la práctica por falta de AWS CLI/credenciales en la máquina (ver LOG)."
+      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). 2026-10-17 20:15: bootstrap:dev + deploy:dev (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev) + seed ok; smoke 2/2 (latencia listProducts: primera 603 ms, siguiente 564 ms). Pendiente: login manual desde teléfono (spike Expo Go / dev build) registrado en LOG; luego evidencia y revisión independiente."
     },
     {
       "id": "T-02",
