@@ -1,0 +1,145 @@
+{
+  "corte": 1,
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "Esqueleto andante: login en la app → AppSync → Lambda → DynamoDB → lista de productos",
+      "description": "Monorepo (DEC-002); pila CDK dev con user pool + grupo almaceneros, tabla única, AppSync con schema.graphql mínimo (listProducts) y Lambda api (DEC-001, 004, 005, 006); script seed con almacen1 y 2 productos; app Expo con pantalla de login que muestra nombres de productos (DEC-003); prueba de humo en tests/smoke; comandos de AGENTS.md funcionando. Incluye spike Amplify v6 + Expo Go.",
+      "reqs": [
+        "REQ-001",
+        "REQ-002"
+      ],
+      "decisions": [
+        "DEC-001",
+        "DEC-002",
+        "DEC-003",
+        "DEC-004",
+        "DEC-005",
+        "DEC-006",
+        "DEC-007"
+      ],
+      "depends_on": [],
+      "status": "ready",
+      "verify": "npm ci && npm run lint && npm run typecheck && npm test && npm run deploy:dev && npm run smoke (login almacen1 → listProducts devuelve los 2 productos sembrados; sin token → Unauthorized) + login manual desde teléfono registrado en LOG",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04)."
+    },
+    {
+      "id": "T-02",
+      "title": "Guardas mecánicas del protocolo",
+      "description": "scripts/check-spec.mjs (npm run check:spec): TASKS.json válido; done exige evidence.command, evidence.result y evidence.commit; blocked exige blocked_by referenciado en reqs/decisions/depends_on o Q- existente; solo archivos permitidos en spec/; diff con Task de implementación no toca tests/acceptance/. Hook commit-msg que exige trailers Task: y Req:.",
+      "reqs": [],
+      "decisions": [],
+      "depends_on": [],
+      "status": "ready",
+      "verify": "npm run check:spec pasa en el repo y falla en fixtures negativos (done sin evidencia, blocked sin referencia, archivo extra en spec/, edición de tests/acceptance/)",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-03",
+      "title": "Pruebas de aceptación de REQ-001..004 (tarea de spec)",
+      "description": "Escribir tests/acceptance/req_00X_* a partir de los ejemplos de API de SPEC.md; deben fallar donde la funcionalidad no existe. Única tarea que edita tests/acceptance/; el usuario aprueba el diff.",
+      "reqs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "decisions": [
+        "DEC-007"
+      ],
+      "depends_on": [
+        "T-01"
+      ],
+      "status": "approved_for_impl",
+      "verify": "npm run test:acceptance ejecuta un caso por ejemplo de API (REQ-001 E4, REQ-002 E1–E3, REQ-003 E1–E7, REQ-004 E1–E5) y los no implementados fallan por la razón esperada",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-04",
+      "title": "Catálogo completo",
+      "reqs": [
+        "REQ-002"
+      ],
+      "decisions": [
+        "DEC-005",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-01",
+        "T-03"
+      ],
+      "status": "approved_for_impl",
+      "verify": "npm test && npm run test:acceptance -- req_002 + REQ-002 E3 manual registrado en LOG",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-05",
+      "title": "Armar carrito y confirmar pedido",
+      "reqs": [
+        "REQ-003"
+      ],
+      "decisions": [
+        "DEC-004",
+        "DEC-005",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-04"
+      ],
+      "status": "approved_for_impl",
+      "verify": "npm test && npm run test:acceptance -- req_003 + REQ-003 E5 y subtotal por línea manual registrado en LOG",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-06",
+      "title": "Mis pedidos y estado, más script order:set-status",
+      "reqs": [
+        "REQ-004"
+      ],
+      "decisions": [
+        "DEC-004",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-05"
+      ],
+      "status": "approved_for_impl",
+      "verify": "npm test && npm run test:acceptance -- req_004 + recorrido manual en teléfono del criterio de éxito (login → pedido ≥2 productos → RECIBIDO → order:set-status ENVIADO → refrescar → ENVIADO), y REQ-004 E4, registrado en LOG",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-07",
+      "title": "Sesión persistente, mensajes de error de login y cierre de sesión",
+      "reqs": [
+        "REQ-001",
+        "REQ-005"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-004"
+      ],
+      "depends_on": [
+        "T-01",
+        "T-03"
+      ],
+      "status": "approved_for_impl",
+      "verify": "npm test (componentes jest-expo) && npm run test:acceptance -- req_001 + recorrido manual REQ-001 E1–E3 y REQ-005 E1–E2 registrado en LOG",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    }
+  ]
+}
