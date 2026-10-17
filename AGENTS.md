@@ -26,6 +26,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - Prueba de humo: `npm run smoke`
 - Pruebas: `npm test` | Aceptación: `npm run test:acceptance` | Lint/tipos: `npm run lint && npm run typecheck`
 - Validar protocolo: `npm run check:spec` (hook `commit-msg` en `.githooks/`, lo activa `npm ci` vía `prepare`)
+- Orquestador nocturno (T-08): `scripts/night-loop.sh [--dry-run]` (nunca push, AWS ni `accepted`; tareas `"kind": "tooling"` usan `Req: N/A`)
 - App: `npm run app` (Expo)
 
 ## Autoridad

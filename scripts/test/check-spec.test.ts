@@ -154,6 +154,24 @@ describe('check:spec', () => {
       expect(r.out).toContain('Req REQ-999 no existe');
     });
 
+    it('acepta "Req: N/A" solo en commits de tareas tooling (T-08)', () => {
+      write('a.txt');
+      commit('Orquestador\n\nTask: T-08\nReq: N/A');
+      expect(check()).toMatchObject({ code: 0 });
+      write('b.txt');
+      commit('Catálogo\n\nTask: T-04\nReq: N/A');
+      write('c.txt');
+      commit('Suelto\n\nTask: none\nReq: n/a');
+      const r = check();
+      expect(r.code).toBe(1);
+      expect(r.out.match(/"Req: N\/A" solo se admite en tareas con kind "tooling"/g)).toHaveLength(2);
+    });
+
+    it('rechaza un kind desconocido', () => {
+      editTasks((ts) => Object.assign(task(ts, 'T-08'), { kind: 'ops' }));
+      expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('T-08: kind desconocido "ops"') });
+    });
+
     it('acepta Task/Req en un párrafo anterior a Co-Authored-By', () => {
       write('a.txt');
       commit('Algo\n\nTask: T-02\nReq: none\n\nCo-Authored-By: X <x@example.com>');

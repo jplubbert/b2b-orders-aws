@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Doble de `claude` para las pruebas de scripts/night-loop.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail.
+[ "$1" = "--version" ] && { echo "claude-stub 0.0"; exit 0; }
+[ "$1" = "-p" ] || exit 3
+id=$(echo "$2" | grep -o 'T-[0-9]*' | head -1)
+if [ -z "$id" ]; then # revisor por stdin
+  cat >/dev/null; printf 'Revisado.\n```json\n{"verdict":"approved","findings":[],"notes":"stub claude"}\n```\n'; exit 0
+fi
+mode=${STUB_MODE:-ok}
+[ "$mode" = fail ] && { echo '{"result":"no pude","num_turns":1,"total_cost_usd":0.01,"is_error":true}'; exit 1; }
+status=verified_auto; [ "$mode" = accepted ] && status=accepted
+node -e '
+const fs=require("fs");const d=JSON.parse(fs.readFileSync("spec/TASKS.json","utf8"));
+d.tasks.find(t=>t.id===process.argv[1]).status=process.argv[2];fs.writeFileSync("spec/TASKS.json",JSON.stringify(d,null,2)+"\n");' "$id" "$status"
+echo "stub change for $id" >"stub-$id.txt"
+[ "$mode" = dirty ] && { echo '{"result":"dejo sucio","num_turns":1,"total_cost_usd":0.01,"is_error":false}'; exit 0; }
+reqs=$(node -e 'const t=require(process.cwd()+"/spec/TASKS.json").tasks.find(t=>t.id===process.argv[1]);console.log(t.reqs.length?t.reqs.join(", "):"none")' "$id")
+git add -A && git -c user.name=S -c user.email=s@example.com commit -q -m "$id: stub" -m "Task: $id" -m "Req: $reqs"
+echo "{\"result\":\"hecho $id\",\"num_turns\":5,\"total_cost_usd\":0.42,\"is_error\":false}"

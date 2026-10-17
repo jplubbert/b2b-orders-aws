@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Doble de `codex exec` para las pruebas de scripts/night-loop.sh. Guarda el prompt recibido y emite STUB_VERDICT (o un rechazo).
+[ "$1" = "--version" ] && { echo "codex-stub 0.0"; exit 0; }
+out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out=$2; shift; done
+cat >"$(dirname "$out")/codex-received-prompt.md"
+v=${STUB_VERDICT:-'{"verdict":"rejected","findings":["REQ-001: E2 sin prueba (confirmado con npm run test:acceptance)"],"notes":"stub codex"}'}
+printf 'Análisis del diff…\n```json\n%s\n```\n' "$v" | tee "$out"

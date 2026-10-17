@@ -18,8 +18,11 @@ const TASK_STATUSES = [
   'proposed', 'analyzed', 'specified', 'approved_for_impl', 'ready', 'in_progress', 'implemented',
   'verified_auto', 'reviewed', 'accepted', 'delivered', 'done', 'blocked', 'superseded',
 ];
-/** `spec`: única clase de tarea que puede editar tests/acceptance/. Sin `kind`, la tarea es de implementación. */
-const TASK_KINDS = ['spec', 'impl'];
+/**
+ * `spec`: única clase de tarea que puede editar tests/acceptance/. `tooling`: herramienta del protocolo sin REQ de
+ * producto; sus commits pueden llevar `Req: N/A`. Sin `kind`, la tarea es de implementación.
+ */
+const TASK_KINDS = ['spec', 'impl', 'tooling'];
 const PROTECTED_DIR = 'tests/acceptance/';
 
 const nonEmpty = (v) => typeof v === 'string' && v.trim() !== '';
@@ -145,8 +148,11 @@ function checkCommit(label, message, files, tasks, ids, errors) {
   } else if (task[0] !== 'none' && tasks && !tasks.has(task[0])) {
     errors.push(`${label}: Task ${task[0]} no existe en spec/TASKS.json`);
   }
+  const taskKind = task.length === 1 ? tasks?.get(task[0])?.kind : undefined;
   if (req.length === 0) {
     errors.push(`${label}: falta el trailer "Req:" (REQ-NNN, … o none)`);
+  } else if (req.length === 1 && req[0].toUpperCase() === 'N/A') {
+    if (taskKind !== 'tooling') errors.push(`${label}: "Req: N/A" solo se admite en tareas con kind "tooling"`);
   } else if (!(req.length === 1 && req[0] === 'none')) {
     for (const r of req) if (!ids.req.has(r)) errors.push(`${label}: Req ${r} no existe en spec/SPEC.md`);
   }

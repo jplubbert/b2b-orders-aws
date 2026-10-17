@@ -146,6 +146,23 @@
       "evidence": null,
       "review": null,
       "blocked_by": null
+    },
+    {
+      "id": "T-08",
+      "title": "Orquestador nocturno",
+      "kind": "tooling",
+      "description": "scripts/night-loop.sh: elige la primera tarea ready con dependencias en done; lanza el implementador (claude -p, permisos acotados al repo, sin AWS ni push); si la tarea queda verified_auto lanza un revisor con contexto limpio (codex exec, o claude -p si no hay codex) con el prompt de sdd.md §7.5 sobre el diff y los REQ/DEC de la tarea, y registra el veredicto en TASKS.json y LOG.md; se detiene ante blocked, dos fallos, 2 h o 3 tareas por noche y deja un resumen en LOG.md. Nunca hace push, nunca despliega a AWS ni marca accepted. Sin REQ de producto: sus commits llevan Req: N/A (admitido por check:spec solo en tareas tooling).",
+      "reqs": [],
+      "decisions": [],
+      "depends_on": [
+        "T-02"
+      ],
+      "status": "in_progress",
+      "verify": "npm test (scripts/test/night-tasks.test.ts y check-spec.test.ts con tooling/N/A) && npm run check:spec && scripts/night-loop.sh --dry-run imprime el plan sin modificar el repo",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo."
     }
   ]
 }
