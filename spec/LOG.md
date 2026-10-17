@@ -34,3 +34,12 @@
 - Spike Amplify + Expo Go: sin resolver (requiere teléfono). `@aws-amplify/react-native` incluye código nativo (`AmplifyRTNCore`), así que es probable que Expo Go no sirva y haga falta un development build (`npx expo run:android|ios`). Confirmar en el teléfono.
 - Bloqueos nuevos: ninguno de spec. Falta entorno: AWS CLI y credenciales (responsable: usuario).
 - Próxima acción autorizada: (1) el usuario instala AWS CLI y configura el perfil `default` (`aws configure`, región `us-east-1`); (2) `npm run bootstrap:dev` (una sola vez) → `npm run deploy:dev` → `npm run smoke`, y anotar la latencia que imprime el humo (criterio: primera < 3 s, siguientes < 1 s); (3) `npm run app` + login de almacen1 desde el teléfono (spike Expo Go / dev build), registrado aquí; (4) con evidencia completa, revisión independiente de T-01. Mientras tanto, T-02 puede avanzar (no requiere AWS).
+
+## 2026-10-17 18:50 · Claude (claude-opus-5-5)
+- Hecho: T-02 (commit 35d7c69). `scripts/check-spec.mjs` (`npm run check:spec`) valida TASKS.json (JSON, ids, estados, referencias a REQ/DEC/T existentes), `done` con `evidence.command/result/commit`, `blocked` con `blocked_by` referenciado (reqs/decisions/depends_on o Q- de SPEC.md), lista cerrada de archivos en `spec/` y, en cada commit del historial, trailers `Task:`/`Req:` válidos y que solo tareas `"kind": "spec"` toquen `tests/acceptance/`. Hook `.githooks/commit-msg` (activado por `npm ci` vía `prepare`) aplica lo mismo al mensaje y al diff preparado.
+- Detalle interno: T-03 lleva ahora `"kind": "spec"` en TASKS.json (no cambia alcance: ya era "tarea de spec"). AGENTS.md menciona el campo y el hook.
+- Hallazgo: en los commits existentes `Task:`/`Req:` no son trailers git reales (Co-Authored-By va en otro párrafo); el validador los busca por línea, así que no hace falta reescribir historia.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 37/37 (23 de check-spec con fixtures negativos en repos git temporales); `npm run check:spec` ok; commit sin trailers en el repo real → rechazado por el hook (exit 1).
+- En curso / roto: T-01 sigue `in_progress` (despliegue pendiente: AWS CLI/credenciales). T-02 `verified_auto`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: (1) revisión independiente de T-02 con contexto limpio (diff 35d7c69; sin REQ/DEC citadas); (2) retomar T-01 cuando el usuario tenga AWS CLI + perfil `default` (pasos en la entrada de 18:55); T-03 sigue esperando a T-01.

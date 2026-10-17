@@ -33,11 +33,16 @@
       "reqs": [],
       "decisions": [],
       "depends_on": [],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "npm run check:spec pasa en el repo y falla en fixtures negativos (done sin evidencia, blocked sin referencia, archivo extra en spec/, edición de tests/acceptance/)",
-      "evidence": null,
+      "evidence": {
+        "command": "npm run lint && npm run typecheck && npm test && npm run check:spec; git commit --allow-empty -m \"prueba sin trailers\"",
+        "result": "lint ok; typecheck ok; npm test 37/37 (scripts/test/check-spec.test.ts 23/23: repo real pasa; fallan done sin evidencia, blocked sin referencia o con Q- inexistente, archivo extra en spec/, edición de tests/acceptance/ con Task de implementación o none, commits sin trailers; el hook rechaza commit sin trailers y edición protegida); check:spec ok sobre el historial; commit sin trailers en el repo real rechazado por el hook (exit 1)",
+        "commit": "35d7c69"
+      },
       "review": null,
-      "blocked_by": null
+      "blocked_by": null,
+      "notes": "2026-10-17: implementada y verificada. Pendiente revisión independiente (contexto limpio) antes de reviewed."
     },
     {
       "id": "T-03",
