@@ -22,7 +22,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - `tests/smoke/` — prueba de humo · `tests/acceptance/` — **protegida**
 
 ## Comandos (existen a partir de T-01; T-02 añade `check:spec`)
-- Preparar entorno: `npm ci` · desplegar dev: `npm run deploy:dev` (escribe `.env.dev`)
+- Preparar entorno: `npm ci` · una vez por cuenta: `npm run bootstrap:dev` · desplegar dev: `npm run deploy:dev` (escribe `.env.dev` y siembra)
 - Prueba de humo: `npm run smoke`
 - Pruebas: `npm test` | Aceptación: `npm run test:acceptance` | Lint/tipos: `npm run lint && npm run typecheck`
 - Validar protocolo: `npm run check:spec`

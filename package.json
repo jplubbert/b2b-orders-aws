@@ -1,0 +1,41 @@
+{
+  "name": "pedidos-b2b",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "app",
+    "backend",
+    "infra"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces",
+    "test": "vitest run",
+    "test:acceptance": "vitest run --config vitest.acceptance.config.ts",
+    "smoke": "vitest run --config tests/smoke/vitest.config.ts",
+    "synth": "npm run synth -w infra",
+    "bootstrap:dev": "AWS_PROFILE=default npm run bootstrap -w infra -- --context stage=dev --context region=us-east-1",
+    "deploy:dev": "AWS_PROFILE=default npm run deploy -w infra -- --context stage=dev --context region=us-east-1 && tsx scripts/write-env.ts dev && npm run seed",
+    "seed": "tsx scripts/seed.ts",
+    "app": "npm run start -w app"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1152.0",
+    "@aws-sdk/client-dynamodb": "^3.1152.0",
+    "@aws-sdk/lib-dynamodb": "^3.1152.0",
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.13.0",
+    "globals": "^16.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "react": "19.3.0"
+  }
+}

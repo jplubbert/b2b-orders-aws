@@ -1,0 +1,19 @@
+# Contrato de la API Pedidos B2B (fuente única; la infra lo carga desde aquí, DEC-005).
+# Autorización: Cognito User Pool; solo el grupo `almaceneros` (DEC-004).
+# Montos: Int en pesos CLP, sin decimales (DEC-006).
+
+type Product @aws_auth(cognito_groups: ["almaceneros"]) {
+  productId: ID!
+  name: String!
+  presentation: String!
+  unitPrice: Int!
+}
+
+type Query @aws_auth(cognito_groups: ["almaceneros"]) {
+  "Productos activos ordenados por nombre (REQ-002)."
+  listProducts: [Product!]!
+}
+
+schema {
+  query: Query
+}
