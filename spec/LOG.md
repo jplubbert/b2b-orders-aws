@@ -51,3 +51,15 @@
 - En curso / roto: T-08 `verified_auto`. T-01 sigue `in_progress` (despliegue pendiente). Mientras T-01 no cierre, el orquestador no tiene tareas que tomar.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: (1) revisión independiente de T-02 y T-08 con contexto limpio; (2) retomar T-01 cuando el usuario tenga AWS CLI + perfil `default`.
+
+## 2026-10-17 19:40 · Claude (claude-fable-5-1 → claude-opus-5-5)
+- Hecho: registro de la revisión independiente y la aceptación de T-02 y T-08 (solo spec/TASKS.json y esta bitácora; sin código).
+- Revisión independiente (Codex GPT-6.1 Sol, contexto limpio), según lo transcrito por el usuario:
+  - T-02: **approved**. 25/25 pruebas, check:spec ok, sin cambios fuera de alcance ni violaciones de DEC.
+  - T-08: **approved**. 24/24 pruebas. Salvedad no bloqueante: `--dry-run` crea `.night-loop/.gitignore` y `.night-loop/lock` (ignorados por git). Atendida: el `verify` de T-08 ahora dice "sin modificar archivos versionados".
+  - Veredictos guardados en `review` de cada tarea (reviewer: codex gpt-6.1-sol) → `reviewed`.
+- Aceptación: **José Pedro Lübbert**, 2026-10-17 — acepta T-02 y T-08 → `accepted` (campo `acceptance` en TASKS.json).
+- Verificado y cómo: `npm run check:spec` → ok.
+- En curso / roto: T-01 sigue `in_progress` (despliegue pendiente: AWS CLI + perfil `default`).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: retomar T-01 cuando el usuario tenga AWS CLI + perfil `default` (pasos en la entrada de 18:55). T-03..T-07 siguen esperando a T-01, así que el orquestador nocturno no tiene tareas elegibles.

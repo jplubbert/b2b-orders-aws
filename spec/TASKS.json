@@ -33,16 +33,26 @@
       "reqs": [],
       "decisions": [],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "accepted",
       "verify": "npm run check:spec pasa en el repo y falla en fixtures negativos (done sin evidencia, blocked sin referencia, archivo extra en spec/, edición de tests/acceptance/)",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm run check:spec; git commit --allow-empty -m \"prueba sin trailers\"",
         "result": "lint ok; typecheck ok; npm test 37/37 (scripts/test/check-spec.test.ts 23/23: repo real pasa; fallan done sin evidencia, blocked sin referencia o con Q- inexistente, archivo extra en spec/, edición de tests/acceptance/ con Task de implementación o none, commits sin trailers; el hook rechaza commit sin trailers y edición protegida); check:spec ok sobre el historial; commit sin trailers en el repo real rechazado por el hook (exit 1)",
         "commit": "35d7c69"
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex gpt-6.1-sol",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Contexto limpio. 25/25 pruebas, check:spec ok, sin cambios fuera de alcance ni violaciones de DEC.",
+        "date": "2026-10-17"
+      },
       "blocked_by": null,
-      "notes": "2026-10-17: implementada y verificada. Pendiente revisión independiente (contexto limpio) antes de reviewed."
+      "notes": "2026-10-17: implementada y verificada. Revisión independiente approved (codex gpt-6.1-sol) → reviewed. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-17"
+      }
     },
     {
       "id": "T-03",
@@ -157,16 +167,31 @@
       "depends_on": [
         "T-02"
       ],
-      "status": "verified_auto",
-      "verify": "npm test (scripts/test/night-tasks.test.ts y check-spec.test.ts con tooling/N/A) && npm run check:spec && scripts/night-loop.sh --dry-run imprime el plan sin modificar el repo",
+      "status": "accepted",
+      "verify": "npm test (scripts/test/night-tasks.test.ts y check-spec.test.ts con tooling/N/A) && npm run check:spec && scripts/night-loop.sh --dry-run imprime el plan sin modificar archivos versionados (puede crear .night-loop/, ignorado por git)",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm run check:spec && scripts/night-loop.sh --dry-run",
         "result": "lint ok; typecheck ok; npm test 63/63 (night-tasks.test.ts: pick, check-authority, context, parse-verdict, set-review y ciclo completo con dobles de claude/codex: approved → reviewed, rejected conserva verified_auto, accepted otorgado → exit 1, árbol sucio → exit 1 sin commit, 2 fallos → exit 1; check-spec.test.ts: Req: N/A solo en tooling, kind desconocido); check:spec ok; --dry-run en el repo real: sin tareas elegibles (T-03..T-07 esperan a T-01), no escribe LOG ni hace commits",
         "commit": "3ca661f"
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex gpt-6.1-sol",
+        "verdict": "approved",
+        "findings": [
+          {
+            "severity": "no bloqueante",
+            "text": "--dry-run crea .night-loop/.gitignore y .night-loop/lock (ignorados por git); el verify debe decir \"sin modificar archivos versionados\"."
+          }
+        ],
+        "notes": "Contexto limpio. 24/24 pruebas. Salvedad no bloqueante atendida ajustando verify.",
+        "date": "2026-10-17"
+      },
       "blocked_by": null,
-      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed."
+      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed. Revisión independiente approved (codex gpt-6.1-sol) → reviewed; verify ajustado según su salvedad. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-17"
+      }
     }
   ]
 }
