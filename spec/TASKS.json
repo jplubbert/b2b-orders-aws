@@ -157,12 +157,16 @@
       "depends_on": [
         "T-02"
       ],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "npm test (scripts/test/night-tasks.test.ts y check-spec.test.ts con tooling/N/A) && npm run check:spec && scripts/night-loop.sh --dry-run imprime el plan sin modificar el repo",
-      "evidence": null,
+      "evidence": {
+        "command": "npm run lint && npm run typecheck && npm test && npm run check:spec && scripts/night-loop.sh --dry-run",
+        "result": "lint ok; typecheck ok; npm test 63/63 (night-tasks.test.ts: pick, check-authority, context, parse-verdict, set-review y ciclo completo con dobles de claude/codex: approved → reviewed, rejected conserva verified_auto, accepted otorgado → exit 1, árbol sucio → exit 1 sin commit, 2 fallos → exit 1; check-spec.test.ts: Req: N/A solo en tooling, kind desconocido); check:spec ok; --dry-run en el repo real: sin tareas elegibles (T-03..T-07 esperan a T-01), no escribe LOG ni hace commits",
+        "commit": "3ca661f"
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo."
+      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed."
     }
   ]
 }

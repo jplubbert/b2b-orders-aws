@@ -43,3 +43,11 @@
 - En curso / roto: T-01 sigue `in_progress` (despliegue pendiente: AWS CLI/credenciales). T-02 `verified_auto`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: (1) revisión independiente de T-02 con contexto limpio (diff 35d7c69; sin REQ/DEC citadas); (2) retomar T-01 cuando el usuario tenga AWS CLI + perfil `default` (pasos en la entrada de 18:55); T-03 sigue esperando a T-01.
+
+## 2026-10-17 19:15 · Claude (claude-fable-5-1 → claude-opus-5-5)
+- Hecho: T-08 Orquestador nocturno (commit 3ca661f), creada a pedido del usuario como `"kind": "tooling"` sin REQ de producto. `scripts/night-loop.sh` + `scripts/lib/night-tasks.mjs`: elige la primera `ready` con dependencias cerradas, lanza `claude -p` con permisos acotados (sin push, deploy, AWS, red), exige árbol limpio + sin estados reservados + `check:spec`, lanza revisor con contexto limpio (`codex exec` read-only o `claude -p` solo lectura) con el prompt de sdd.md §7.5 sobre diff + REQ/DEC, y registra el veredicto en TASKS.json y aquí. Para ante blocked, 2 fallos, 2 h o 3 tareas. `check-spec` admite `Req: N/A` solo en tareas tooling. AGENTS.md documenta el comando.
+- Aprobación del usuario: **José Pedro Lübbert**, 2026-10-17 — aprueba el commit de T-08 y los supuestos: dependencias cerradas = `done`/`accepted`/`delivered`; una tarea que queda `done` también pasa por el revisor.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 63/63 (ciclo completo con dobles de claude/codex en git temporal); `npm run check:spec` ok; `scripts/night-loop.sh --dry-run` en el repo real → sin tareas elegibles, nada escrito.
+- En curso / roto: T-08 `verified_auto`. T-01 sigue `in_progress` (despliegue pendiente). Mientras T-01 no cierre, el orquestador no tiene tareas que tomar.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: (1) revisión independiente de T-02 y T-08 con contexto limpio; (2) retomar T-01 cuando el usuario tenga AWS CLI + perfil `default`.
