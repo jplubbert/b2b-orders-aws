@@ -118,7 +118,7 @@
         "T-01",
         "T-03"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm test && npm run test:acceptance -- req_002 + REQ-002 E3 manual registrado en LOG",
       "evidence": {
         "command": "npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_002 (perfil acotado de DEC-010, contra PedidosB2B-dev)",
@@ -126,7 +126,13 @@
         "commit": "6303d58",
         "manual_pending": "REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → \"No hay productos disponibles\"; npm run seed y deslizar → vuelven."
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "REQ-002: verificación visual E3 en teléfono pendiente; aceptación AWS no ejecutada en esta revisión. npm test 87/87, lint, typecheck y check:spec pasan. El diff incluye anotaciones de T-08 fuera del catálogo, sin impacto funcional observado. Sin violaciones detectadas de DEC-005 o DEC-006.",
+        "date": "2026-10-18"
+      },
       "blocked_by": null,
       "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto. 2026-10-17 23:35: por DEC-011 (decisión del usuario) la verificación manual de E3 se difiere a la aceptación en lote: evidencia automática registrada (npm test 87/87, req_002 4/4) + evidence.manual_pending → verified_auto. Pendiente: revisión independiente y, al aceptar, E3 en el teléfono."
     },
