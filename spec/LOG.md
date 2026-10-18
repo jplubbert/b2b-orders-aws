@@ -1111,3 +1111,14 @@
 - Hecho: revisión independiente de T-29 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-29); salida íntegra en .autopilot/2026-10-18_191105/T-29-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 19:46 · autopilot (scripts/autopilot.sh)
+- Hecho: T-26: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/; se salta en esta corrida; T-27: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida; T-29 implementada (bd0c99f..bfd6137, estado verified_auto); T-29 revisada por codex: approved → reviewed (commit 113fb85). Corrida 2026-10-18_191105 (35 min, 1 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_191105/.
+- Tokens (implementador, campo usage del evento result): T-26: entrada 48 · salida 17.624 · caché leída 1.547.432 · caché escrita 74.093; T-27: entrada 68 · salida 23.774 · caché leída 2.457.498 · caché escrita 84.353; T-29: entrada 118 · salida 37.366 · caché leída 5.965.080 · caché escrita 133.085; total de la corrida: entrada 234 · salida 78.764 · caché leída 9.970.010 · caché escrita 291.531.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-29: DEC-011, en el teléfono con Expo Go y el dev desplegado, el guion del README sin cambios visibles: (1) almacen1@demo.test inicia sesión → Catálogo; cerrar y reabrir la app entra directo (REQ-001 E3); (2) agregar productos con − / +, abrir un detalle y volver: la barra del carrito suma igual (REQ-003, REQ-008); confirmar el pedido → número y carrito vacío; (3) menú de cuenta muestra el correo; "Cerrar sesión" vuelve al inicio y al reingresar el carrito está vacío (REQ-005); (4) distribuidor@demo.test → panel "Pedidos", filtro, abrir el pedido, cambiar estado y volver: el panel muestra el estado nuevo (REQ-010, REQ-011).
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-27.
+- Verificado y cómo: npm run check:spec tras T-29 → ok.
+- En curso / roto: árbol limpio en 113fb85.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-26,T-27).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
