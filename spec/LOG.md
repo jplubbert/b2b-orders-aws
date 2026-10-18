@@ -998,3 +998,13 @@
 - En curso / roto: nada. T-24 sigue `approved_for_impl` para el autopilot de este repositorio.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el autopilot de este repositorio hace T-24; el de sdd-base, T-01 y T-02; el usuario revisa T-03, T-04 (sdd-base) y T-25.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Encargo: "Lee AGENTS.md y ejecuta T-24" (implementador del autopilot).
+- Hecho (T-24, DEC-018): comentarios, nombres de describe/it, tres identificadores locales (aceite → oil, arroz → rice, ARROZ → RICE) y el texto de tres Error de fixtures traducidos al inglés en los 7 archivos de tests/acceptance/ y support/fixtures.ts (2c607fa). Sin cambios en aserciones, consultas, cadenas de la API y de la app, ids de producto ni datos de prueba (C-ACEPT-, acept-). Interpretaciones (detalle en las notas de T-24): no se renombran los archivos (SPEC.md y DECISIONS.md los citan); "borde" → "edge"; el describe del almacenero queda "customer (almacenero)".
+- Verificado y cómo: línea base `npm run test:acceptance` 7/41; después lint ok, typecheck ok, `npm run test:acceptance` 7/41 (todas pasan), `npm run smoke` 1/2 (todas pasan), `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- Pendiente manual: ninguna.
+- En curso / roto: T-24 queda `in_progress`: es tarea de spec y falta que el usuario apruebe el diff de tests/acceptance/ (2c607fa).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario revisa y aprueba (o devuelve) el diff de tests/acceptance/ de 2c607fa y las interpretaciones; con su aprobación, T-24 → verified_auto y revisión independiente.
