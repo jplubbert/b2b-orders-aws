@@ -541,7 +541,7 @@
       "depends_on": [
         "T-15"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + criterio de éxito del corte 3 en el teléfono (manual, DEC-011)",
       "blocked_by": null,
       "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 7d3b7ca → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: la lista del panel pasa a PanelProvider (compartida con el detalle; el panel la vacía al montarse); id fuera de la lista → \"Pedido no encontrado\" + \"Volver a Pedidos\" (como REQ-008 E5); botones de estado deshabilitados mientras se guarda; elegir el estado actual llama igual a setOrderStatus (S-24, no es error). README.md nuevo (no existía) con el guion de demo del corte 3.",
@@ -550,6 +550,13 @@
         "result": "codegen: solo cambia app/src/lib/generated (SetOrderStatus). lint ok; typecheck ok; vitest 162/162 + jest 137/137 (antes 125; nuevos: dist-order.test REQ-010 E5 (título \"Pedido <número>\", almacén, líneas $4.500/$1.300, total $15.500, sin consulta nueva), id fuera del panel, 5 botones con el actual marcado, REQ-011 E1 en detalle y en el panel montado debajo sin consulta nueva, S-06 al volver, E3 mismo estado sin error, E7 \"No se pudo cambiar el estado\" conservando el anterior, reintento quita el error, un cambio a la vez; dist.test: fila → /dist/order/[id] y ruta declarada en el layout). Mutación (replaceOrder anulado) → 4 casos fallan; revertida. expo export android ok (2463 módulos). test:acceptance 41/41 y smoke 2/2 (sin regresión; T-16 no toca backend).",
         "commit": "7d3b7ca",
         "manual_pending": "Criterio de éxito del corte 3 en el teléfono (guion en README.md): npm run app; login almacen1@demo.test → confirmar 2 Yerba + 5 Arroz → Mis pedidos lo muestra \"Recibido\"; Cerrar sesión; login distribuidor@demo.test → filtro \"Recibido\" → tocar el pedido → \"Pedido <N°>\" con Almacén C-ALMACEN1, líneas $4.500 y $1.300, total $15.500 → \"Enviado\" (sin confirmación) → la etiqueta cambia; volver: con \"Recibido\" ya no aparece, con \"Todos\" figura \"Enviado\"; Cerrar sesión; login almacen1 → Mis pedidos, deslizar → \"Enviado\". Sin order:set-status. (E7 opcional: modo avión en el detalle → tocar un estado → \"No se pudo cambiar el estado\" y conserva el anterior.)"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Comprobaciones locales satisfactorias. No se verificaron la demo en teléfono, la exportación Android ni la aceptación contra AWS; la evidencia declarada por el implementador no se considera ejecución independiente.",
+        "date": "2026-10-18"
       }
     },
     {
