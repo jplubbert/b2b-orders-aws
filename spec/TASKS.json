@@ -87,16 +87,22 @@
       "depends_on": [
         "T-01"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run test:acceptance ejecuta un caso por ejemplo de API (REQ-001 E4, REQ-002 E1–E3, REQ-003 E1–E7, REQ-004 E1–E5) y los no implementados fallan por la razón esperada",
       "evidence": {
         "command": "AWS_PROFILE=night-loop npm run test:acceptance (perfil acotado de DEC-010, contra PedidosB2B-dev)",
         "result": "25 casos: 6 pasan, 19 fallan por la razón esperada. req_001_login 2/2 y req_002_catalogo 4/4 pasan (T-01 ya autentica, filtra y ordena). req_003_pedido 13/13 y req_004_mis_pedidos 6/6 fallan con ValidationError de AppSync (\"Unknown type CreateOrderInput\" / \"Field 'myOrders' in type 'Query' is undefined\"): createOrder, myOrders y order no están en el contrato (los agregan T-05/T-06). REQ-004 E2 falla antes de llegar a `order:set-status` (falla en createOrder). Ningún AccessDenied: el perfil night-loop alcanza. Limpieza verificada: 0 usuarios acept-* en Cognito y solo arroz-1kg/yerba-1kg (activos) en la tabla.",
         "commit": "b3864e7"
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Contexto limpio (sesión nueva), diff b3864e7 + REQ-001..004 + DEC-007, DEC-009. Sin hallazgos. Veredicto registrado por pedido de José Pedro Lübbert.",
+        "date": "2026-10-17"
+      },
       "blocked_by": null,
-      "notes": "2026-10-17: pruebas escritas en tests/acceptance/ (req_001..004 + support/fixtures.ts), 25 casos. Forma de la API de pedidos en DEC-009 (proposed); supuestos S-12..S-14 en SPEC.md. lint y typecheck ok. Corrida parcial: req_001 2/2 pasa; req_002..004 no corrieron porque la sesión del agente no tiene credenciales AWS (CredentialsProviderError). Pendiente: el usuario corre `npm run test:acceptance` con el perfil default, aprueba el diff de tests/acceptance/ y DEC-009. 2026-10-17 23:20: usuario José Pedro Lübbert aprueba el diff de tests/acceptance/, DEC-009 (→ accepted) y S-12..S-14. test:acceptance corrido con el perfil night-loop (DEC-010): 6 pasan, 19 fallan por la razón esperada → evidencia registrada → verified_auto. Pendiente: revisión independiente."
+      "notes": "2026-10-17: pruebas escritas en tests/acceptance/ (req_001..004 + support/fixtures.ts), 25 casos. Forma de la API de pedidos en DEC-009 (proposed); supuestos S-12..S-14 en SPEC.md. lint y typecheck ok. Corrida parcial: req_001 2/2 pasa; req_002..004 no corrieron porque la sesión del agente no tiene credenciales AWS (CredentialsProviderError). Pendiente: el usuario corre `npm run test:acceptance` con el perfil default, aprueba el diff de tests/acceptance/ y DEC-009. 2026-10-17 23:20: usuario José Pedro Lübbert aprueba el diff de tests/acceptance/, DEC-009 (→ accepted) y S-12..S-14. test:acceptance corrido con el perfil night-loop (DEC-010): 6 pasan, 19 fallan por la razón esperada → evidencia registrada → verified_auto. Pendiente: revisión independiente. 2026-10-17 23:40: revisión independiente (codex, sesión nueva, contexto limpio) approved sin hallazgos → reviewed (registrada por pedido de José Pedro Lübbert)."
     },
     {
       "id": "T-04",

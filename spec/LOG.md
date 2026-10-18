@@ -155,3 +155,10 @@
 - Bloqueos nuevos: ninguno.
 - Riesgo: la llave del perfil night-loop es de larga duración (rotar con `aws iam create-access-key`/`delete-access-key`); el agente nocturno puede leer ~/.aws/credentials con `cat` (los permisos de lista no lo impiden).
 - Próxima acción autorizada: revisión independiente de T-03 (diff b3864e7, REQ-001..004, DEC-007, DEC-009) y, si el usuario la quiere, de este cambio de T-08; luego T-04 (con T-03 reviewed ya es elegible para el orquestador).
+
+## 2026-10-17 23:40 · Claude (claude-opus-5-5)
+- Hecho (T-03): revisión independiente de Codex (sesión nueva, contexto limpio; diff b3864e7, REQ-001..004, DEC-007, DEC-009) informada por el usuario José Pedro Lübbert: **approved**, sin hallazgos. Veredicto en `review` de T-03 → `reviewed`.
+- Verificado y cómo: `npm run check:spec` ok.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de T-03; T-04 ya es elegible (T-01 accepted, T-03 reviewed).
