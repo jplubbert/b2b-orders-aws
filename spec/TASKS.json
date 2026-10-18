@@ -285,13 +285,13 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "evidence": null,
       "review": null,
       "blocked_by": null,
       "depends_on": [],
       "verify": "npm run lint && npm run typecheck && npm test (incluye app/test/theme.test.tsx) && npx expo export --platform android; git diff --stat sin backend/infra/contrato/acceptance",
-      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-10",
@@ -306,7 +306,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "evidence": null,
       "review": null,
       "blocked_by": null,
@@ -314,7 +314,7 @@
         "T-09"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-006 E6 y REQ-005 E1 en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-11",
@@ -329,7 +329,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "evidence": null,
       "review": null,
       "blocked_by": null,
@@ -338,7 +338,7 @@
         "T-10"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-008 E1–E2 en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-12",
@@ -352,7 +352,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "evidence": null,
       "review": null,
       "blocked_by": null,
@@ -360,7 +360,7 @@
         "T-09"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-007 E6: recorrido del criterio de éxito en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte. Va última: toca todas las pantallas."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     }
   ]
 }

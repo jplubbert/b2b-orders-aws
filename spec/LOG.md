@@ -324,3 +324,11 @@
 - En curso / roto: nada. T-03..T-07 siguen `reviewed` esperando la aceptación en lote del corte 1 (independiente del corte 2).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario aprueba (o corrige) el corte 2. Con su aprobación: REQ-006..008 → `approved_for_impl`, DEC-012 → `accepted`, T-09 → `ready`, T-10..T-12 → `approved_for_impl`, aprobación nominal en esta bitácora; luego T-09.
+
+## 2026-10-18 09:15 · Claude (claude-opus-5-5)
+- Aprobación (punto de control del corte 2): **José Pedro Lübbert**, 2026-10-18 — "Apruebo REQ-006..008, los supuestos y DEC-012". REQ-006..008 → `approved_for_impl`; S-15..S-21 aprobados; DEC-012 → `accepted`; T-09..T-12 → `approved_for_impl` (T-09 sin dependencias; T-10..T-12 esperan las suyas). Corte 2 → approved.
+- Instrucción del usuario: no implementar en esta sesión; la implementación la hace el orquestador nocturno (`scripts/night-loop.sh`).
+- Verificado y cómo: `npm run check:spec`.
+- En curso / roto: nada. T-03..T-07 siguen `reviewed` esperando la aceptación en lote del corte 1.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el orquestador nocturno toma T-09 (luego T-10, T-11, T-12 según dependencias). Sin backend ni deploy en el corte 2.

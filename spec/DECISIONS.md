@@ -202,9 +202,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: un defecto de UI aparece al aceptar y obliga a rehacer tareas dependientes.
 
 ## DEC-012 Tema propio de la app sin librerías de UI ni dependencias nuevas
-- Estado: proposed
+- Estado: accepted
 - Alcance: global (app)
-- Fecha: 2026-10-18 · Aprobador: pendiente (José Pedro Lübbert, con el corte 2) · Confianza: alta
+- Fecha: 2026-10-18 · Aprobador: José Pedro Lübbert (aprobación del corte 2) · Confianza: alta
 - Problema: REQ-007 pide colores, espaciado y tipografía consistentes; hoy cada pantalla define sus propios valores literales (`#1f6feb`, `#555`, `fontSize: 16`…). Hay que elegir dónde viven los valores y con qué se dibujan los componentes, sin tocar backend ni arriesgar la compatibilidad con Expo Go 57 (DEC-008).
 - Impulsores: REQ-006, REQ-007, REQ-008, DEC-003, DEC-008
 - Alternativas consideradas:

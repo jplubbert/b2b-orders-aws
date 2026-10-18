@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 2  ·  Corte 1: approved  ·  Corte 2: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy)
+Versión: 2  ·  Corte 1: approved  ·  Corte 2: approved  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -113,7 +113,7 @@ Ejemplos (aceptación):
 | E2 borde | tras cerrar sesión, reabrir la app | pide credenciales |
 Trazas: §Objetivo · decisiones: DEC-003, DEC-004 · prueba: tests/acceptance/req_005_* (manual en corte 1, DEC-007)
 
-### REQ-006 Barra superior ordenada · estado: proposed · prioridad: must · corte 2
+### REQ-006 Barra superior ordenada · estado: approved_for_impl · prioridad: must · corte 2
 Cuando el almacenero está en el catálogo, el sistema deberá mostrar en la barra superior el título "Catálogo" y, separados del título, el acceso a "Mis pedidos" y un botón de cuenta.
 Cuando el almacenero toca el botón de cuenta, el sistema deberá mostrar un menú con el correo de la sesión y la opción "Cerrar sesión" (REQ-005).
 Mientras el almacenero está en el catálogo, el sistema deberá mostrar una barra inferior fija con la cantidad de unidades y el total del carrito que abre el carrito.
@@ -128,7 +128,7 @@ Ejemplos (aceptación):
 | E6 borde | teléfono de 360 dp de ancho | título, "Mis pedidos" y botón de cuenta no se superponen ni se cortan (manual, DEC-011) |
 Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/header.test.tsx (S-20) + manual E6
 
-### REQ-007 Diseño visual consistente · estado: proposed · prioridad: must · corte 2
+### REQ-007 Diseño visual consistente · estado: approved_for_impl · prioridad: must · corte 2
 El sistema deberá dibujar todas las pantallas (Inicio de sesión, Catálogo, Detalle de producto, Carrito, Mis pedidos, Detalle de pedido) con un único tema de colores, espaciado y tipografía.
 El sistema deberá mostrar el estado del pedido como una etiqueta de color con su nombre legible (S-17).
 El sistema deberá mostrar carga, lista vacía y error con el mismo componente en todas las pantallas, conservando los textos de REQ-001..005.
@@ -143,7 +143,7 @@ Ejemplos (aceptación):
 | E6 positivo | recorrido del criterio de éxito en el teléfono | todas las pantallas se ven del mismo sistema visual (manual, DEC-011) |
 Trazas: §Alcance corte 2 · decisiones: DEC-012 · prueba: app/test/theme.test.tsx, app/test/*.test.tsx (S-20) + manual E6
 
-### REQ-008 Detalle de producto · estado: proposed · prioridad: must · corte 2
+### REQ-008 Detalle de producto · estado: approved_for_impl · prioridad: must · corte 2
 Cuando el almacenero toca un producto del catálogo, el sistema deberá abrir su detalle con nombre, presentación, precio unitario, la cantidad que ya tiene en el carrito y el subtotal de esa cantidad.
 Cuando el almacenero cambia la cantidad en el detalle, el sistema deberá actualizar el mismo carrito que usa el catálogo (REQ-003).
 Si el producto no está en el catálogo cargado, entonces el sistema deberá mostrar "Este producto ya no está disponible" y no permitir agregarlo.
@@ -242,7 +242,7 @@ Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/pr
 | La barra se ve distinta en Android e iOS | verificación manual en el teléfono del usuario (Android, Expo Go 57) |
 
 ## Criterio de cierre del corte 2
-- [ ] REQ-006..008 y S-15..S-21 aprobados por el responsable
-- [ ] DEC-012 `accepted`
-- [ ] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
-- [ ] Sin preguntas bloqueantes (ninguna abierta)
+- [x] REQ-006..008 y S-15..S-21 aprobados por el responsable (José Pedro Lübbert, 2026-10-18)
+- [x] DEC-012 `accepted`
+- [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
+- [x] Sin preguntas bloqueantes (ninguna abierta)
