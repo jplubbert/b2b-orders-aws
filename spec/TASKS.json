@@ -667,7 +667,7 @@
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm run deploy:dev && aws sts get-caller-identity --profile autopilot && AWS_PROFILE=autopilot npm run smoke && scripts/autopilot.sh --dry-run && npm run deploy:dev && aws iam get-user --user-name night-loop-tests && npm run check:spec",
         "result": "lint ok; typecheck ok; vitest 164/164 + jest 137/137; deploy fase A ok; autopilot → arn:aws:iam::[REDACTED_AWS_ACCOUNT_DEMO]:user/autopilot-tests; dynamodb list-tables/s3 ls/iam get-user-policy → AccessDenied; smoke 2/2; --dry-run ok (AWS_PROFILE=autopilot, llave [REDACTED_ACCESS_KEY_ID_3]); llave vieja borrada; deploy fase B ok; night-loop-tests → NoSuchEntity; smoke con autopilot 2/2 tras la fase B; check:spec ok.",
-        "commit": "(ver LOG)"
+        "commit": "01375d7"
       }
     }
   ]
