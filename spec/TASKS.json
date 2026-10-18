@@ -913,7 +913,7 @@
         "DEC-019"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "touches": [
         "backend/",
         "infra/"
@@ -924,7 +924,13 @@
         "result": "línea base: vitest 177/177, app 137/137. Después: lint ok; typecheck ok; vitest 186/186 (router: cada resolver en un solo dominio, cada dominio responde solo sus campos y fuera de ellos da 'No resolver for field', mismo comportamiento que el router compartido; infra/test: cada campo del contrato → data source de su dominio (catalog, orders, distributor), 3 Lambdas, acciones IAM exactas por función sobre la tabla sin '*' ni índices, catalog limitada a la partición CATALOG); app 137/137. Contra el dev desplegado (todavía con la Lambda única; esta tarea no está desplegada): aceptación 49 pruebas, 41 pasan, 5 fallan y 3 se omiten, igual que la evidencia de T-26 (todas de REQ-012 por `orderHistory` inexistente, llega en T-28); humo 2/2; check:spec ok. Deploy (usuario, 2026-10-18): PedidosB2B-dev UPDATE_COMPLETE a las 22:48 UTC con CatalogFunction, OrdersFunction y DistributorFunction (CREATE_COMPLETE) y sin la Lambda api. Con la pila nueva: aceptación 8 archivos / 49 pruebas: 41 pasan (req_001..011 sin cambios), 5 fallan y 3 se omiten, todas de REQ-012 por FieldUndefined de `orderHistory` (llega en T-28), igual que antes del deploy; humo 2/2.",
         "commit": "c598b01"
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Revisión limitada al alcance de T-27. Comprobaciones propias: lint, typecheck y check:spec pasan; npm test pasa con 186 pruebas Vitest y 152 de app. No se detectaron cambios fuera de alcance ni violaciones de DEC-019 aplicables a esta tarea. No se ejecutaron despliegue, aceptación ni humo por las restricciones de esta revisión; su evidencia declarada no se considera verificación independiente. El historial completo de REQ-012 queda fuera de T-27. Se excluyeron estilo y preferencias.",
+        "date": "2026-10-18"
+      },
       "blocked_by": null,
       "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios). 2026-10-18: implementada (commit c598b01): backend/src/domains.ts (campo → dominio, S-30, sin imports para que la infra lo lea), backend/src/lambda.ts (`domainHandler`) y backend/src/handlers/{catalog,orders,distributor}.ts; se borra backend/src/handler.ts. La pila crea CatalogFunction, OrdersFunction y DistributorFunction con data sources `catalog`, `orders`, `distributor` (la `api` desaparece) y falla al sintetizar si un campo del contrato no tiene dominio. Detalles internos: catalog con GetItem y Query como dice DEC-019 aunque el código solo usa Query, limitada por `dynamodb:LeadingKeys` = CATALOG; orders PutItem/Query/GetItem sin condición de partición (lee CUSTOMER#… y CATALOG; en T-28 suma HISTORY#…); distributor Scan/UpdateItem (UpdateItem con ReturnValues ALL_NEW, sin GetItem). Las tres funciones construyen los dos repositorios (no hacen llamadas): el rol IAM es el que limita. Queda in_progress: falta deploy (Pendiente deploy en LOG.md). 2026-10-18: el usuario desplegó dev; aceptación (41/41 de REQ-001..011) y humo (2/2) verificados contra la pila nueva → verified_auto."
     },
