@@ -38,10 +38,26 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe('night-tasks pick', () => {
-  it('no elige nada si ninguna ready tiene sus dependencias cerradas', () => {
-    // En la fixture T-03..T-07 esperan a T-01 (in_progress); T-08 está in_progress.
-    editTasks((ts) => ts.forEach((t) => { if (t.status === 'ready') t.status = 'approved_for_impl'; }));
+  it('no elige nada si ninguna elegible tiene sus dependencias cerradas', () => {
+    // En la fixture T-03..T-07 (approved_for_impl) esperan a T-01 (in_progress); T-08 está in_progress.
     expect(run('pick')).toMatchObject({ code: 0, out: 'null\n' });
+  });
+
+  it('elige una approved_for_impl cuyas dependencias están cerradas, igual que una ready', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; }); // T-03 approved_for_impl, depende de T-01
+    expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'approved_for_impl', kind: 'spec' });
+    editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; }); // T-04 y T-07 (approved_for_impl) quedan elegibles: la primera
+    expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', status: 'approved_for_impl' });
+  });
+
+  it('no elige tareas en otros estados aunque sus dependencias estén cerradas', () => {
+    editTasks((ts) => {
+      task(ts, 'T-01').status = 'accepted';
+      for (const id of ['T-03', 'T-04', 'T-05', 'T-06', 'T-07']) task(ts, id).status = 'verified_auto';
+      task(ts, 'T-08').status = 'blocked'; // depende de T-02 (verified_auto: abierta)
+      task(ts, 'T-02').status = 'accepted';
+    });
+    expect(run('pick').out).toBe('null\n');
   });
 
   it('elige la primera ready cuyas dependencias están done/accepted/delivered', () => {
@@ -249,7 +265,7 @@ describe('night-loop.sh', () => {
       const r = loop({});
       expect(r.status).toBe(0);
       expect(t03()).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected', findings: [expect.stringContaining('REQ-001')] } });
-      expect(r.stdout).toContain('parada: no hay tareas ready con dependencias cerradas');
+      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
     });
 
     it('se detiene con exit 1 si el implementador otorga accepted', () => {

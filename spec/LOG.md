@@ -119,3 +119,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas ready con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-17 22:45 · Claude (claude-opus-5-5)
+- Hecho: el orquestador nocturno no tomaba T-03 porque `pick` solo elegía tareas `ready`, y T-03 está `approved_for_impl`. Pedido del usuario como cambio de T-08 (Task: T-08, Req: N/A): `pick` (`scripts/lib/night-tasks.mjs`) ahora elige la primera tarea en `ELIGIBLE_STATES = ['ready', 'approved_for_impl']` cuyas dependencias estén cerradas. Se actualizaron la cabecera y el motivo de parada de `scripts/night-loop.sh`. `check-authority` no cambia: el ejecutor sigue sin poder *otorgar* `approved_for_impl`, solo partir de ese estado.
+- Pruebas (`scripts/test/night-tasks.test.ts`): caso nuevo "elige una approved_for_impl cuyas dependencias están cerradas, igual que una ready" (falla con el `pick` anterior y pasa con el nuevo); caso nuevo "no elige tareas en otros estados aunque sus dependencias estén cerradas"; el caso "no elige nada…" ya no convierte `ready` en `approved_for_impl` (eso ahora sería elegible) y usa la fixture tal cual.
+- Ningún estado de tarea cambió (spec/TASKS.json intacto).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 66/66; `npm run check:spec` ok; `scripts/night-loop.sh --dry-run` en el repo real → "Tarea elegida: T-03 (estado approved_for_impl, kind spec)", sin cambios en el árbol.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: correr `scripts/night-loop.sh` (o una sesión interactiva) para T-03; revisión independiente de este cambio de T-08 si el usuario la quiere antes.

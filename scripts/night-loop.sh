@@ -4,7 +4,7 @@
 #   scripts/night-loop.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
 # Ciclo:
-#   1. Elige la primera tarea "ready" de spec/TASKS.json con todas sus dependencias cerradas (done/accepted/delivered).
+#   1. Elige la primera tarea "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas (done/accepted/delivered).
 #      Si no hay, anota en spec/LOG.md y termina.
 #   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad."`
 #      con permisos acotados al repositorio (sin red, sin AWS, sin push, sin instalar nada fuera de npm).
@@ -349,7 +349,7 @@ while :; do
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
   else pick=$(tasks pick); fi
-  if [ "$pick" = null ]; then STOP_REASON="no hay tareas ready con dependencias cerradas"; break; fi
+  if [ "$pick" = null ]; then STOP_REASON="no hay tareas ready/approved_for_impl con dependencias cerradas"; break; fi
   ID=$(node -e 'console.log(JSON.parse(process.argv[1]).id)' "$pick")
   TITLE=$(node -e 'console.log(JSON.parse(process.argv[1]).title)' "$pick")
 
