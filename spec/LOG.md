@@ -764,3 +764,14 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-21).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Agrega notificaciones ntfy al autopilot. Tema en variable NTFY_TOPIC (en autopilot.config.sh, fuera del repo si es secreto). Al detenerse, enviar a https://ntfy.sh/$NTFY_TOPIC: motivo de parada, tareas hechas/fallidas y próxima acción. Prioridad alta y tag de alerta si requiere mi intervención (bloqueo, fallo, límite); normal si terminó bien. Si ntfy falla, el autopilot no debe caerse. Prueba enviando un aviso real. Regístralo como tarea, commit y push, y pórtalo a sdd-base." Luego eligió el nombre del tema.
+- Hecho (T-21, DEC-016 proposed; implementación 0f00920): `notify_stop` tras el resumen y `on_exit` (trap EXIT) si la corrida se cae antes; `curl --max-time 15` a `$NTFY_URL/$NTFY_TOPIC`; high + `warning,rotating_light` si requiere intervención (código 1, bloqueo, abandono, límite de presupuesto, despliegue o aprobación pendiente), default + `white_check_mark` si terminó bien; si curl falla solo se anota. `NTFY_TOPIC` se lee de `~/.config/autopilot/autopilot.config.sh` (AUTOPILOT_CONFIG; 600, fuera de git) y no se exporta a los hijos; el nombre del tema no está en el repo ni en este LOG. Doble de curl y 9 pruebas; las pruebas nunca leen la configuración real.
+- Error de la sesión: dejé T-21 `in_progress` antes de la corrida real, así que el autopilot la tomó: el implementador solo repitió la verificación y anotó escalados (d6f8602, ea03343, sin código) y la corrida la abandonó tras dos "fallos". Ese fue el aviso real: llegó con prioridad alta y el contenido esperado.
+- sdd-base: mismo cambio en 8445475 (configuración local aparte, `AUTOPILOT_LOCAL_CONFIG`, porque allí `scripts/autopilot.config.sh` va en git; README, AGENTS.md); `npm test` 89/89; push a origin/master.
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 173/173 + jest 137/137; mutación de la guarda de curl detectada; `npm run check:spec` ok; `scripts/autopilot.sh --dry-run` muestra el aviso sin enviarlo; aviso real comprobado con `curl …/json?poll=1` en el tema (prioridad 4, tags warning,rotating_light). T-21 → `verified_auto`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de DEC-016; revisión independiente de T-21 (la hace el autopilot; esa corrida debería avisar con prioridad normal).
