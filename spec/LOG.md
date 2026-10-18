@@ -442,3 +442,13 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` en lote del corte 2 (T-09..T-12) y si se corrige la alineación de "Recibido"; revisión independiente de T-07 (diff 775954c) en la próxima corrida del orquestador.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Hecho (T-12, REQ-007, commit 7809710): la etiqueta "Recibido" de la confirmación del pedido en Carrito queda centrada (observación del usuario en el teléfono). `StatusBadge` tenía fijo `alignSelf: 'flex-start'`, que ganaba al `alignItems: 'center'` de la tarjeta. Ahora acepta `style` y el Carrito la centra; Mis pedidos y Detalle de pedido siguen igual. `theme.test.tsx` comprueba `alignSelf: 'center'` en la confirmación (falla sin el cambio).
+- Aceptación (corte 2): **José Pedro Lübbert**, 2026-10-18: "Acepto en lote T-09, T-10, T-11 y T-12". T-09..T-12 → `accepted` (`acceptance` en TASKS.json).
+- Interpretación: la aceptación de T-12 llegó en el mismo mensaje que el encargo de centrar la etiqueta, así que se toma como aceptación de T-12 con 7809710 incluido. Ese commit no tuvo revisión independiente ni verificación en el teléfono; queda anotado en `notes` de T-12.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 + jest 105/105; `npm exec -w app -- expo export --platform android` ok; `npm run check:spec` ok.
+- Pendiente manual: corte 2: ninguno (opcional: ver "Recibido" centrado en la confirmación). Corte 1: T-04, T-05, T-06 E4, T-07 (REQ-001 E1–E3, REQ-005 E1–E2).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: corte 2 cerrado. Revisión independiente de T-07 (diff 775954c) en la próxima corrida del orquestador; el usuario completa la checklist manual del corte 1 y decide `accepted` en lote (T-03..T-07).

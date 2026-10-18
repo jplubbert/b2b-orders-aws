@@ -286,7 +286,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t09-export && npm run test:acceptance && npm run smoke && git show --stat 94eb5cf",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 60/60 (app/test/theme.test.tsx: REQ-007 E1 sin literales en components/ y catalog.tsx, E2 contraste ≥ 4,5:1 de 14 pares del tema, E3 los 5 estados con nombre y color, E4 área táctil ≥ 44 dp, E5 carga/vacío/error del catálogo con StateMessage); expo export android ok (2456 módulos); test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
@@ -302,7 +302,11 @@
       "blocked_by": null,
       "depends_on": [],
       "verify": "npm run lint && npm run typecheck && npm test (incluye app/test/theme.test.tsx) && npx expo export --platform android; git diff --stat sin backend/infra/contrato/acceptance",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 01:52: implementada y verificada → verified_auto. Sin pendiente manual propio (REQ-007 E6 en el teléfono lo cubre T-12). La disposición de la barra del catálogo no cambia (T-10). E1 cubre por ahora components/ y catalog.tsx; T-12 amplía la lista a todas las pantallas."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 01:52: implementada y verificada → verified_auto. Sin pendiente manual propio (REQ-007 E6 en el teléfono lo cubre T-12). La disposición de la barra del catálogo no cambia (T-10). E1 cubre por ahora components/ y catalog.tsx; T-12 amplía la lista a todas las pantallas. 2026-10-18: aceptada en lote por José Pedro Lübbert (T-09..T-12) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-10",
@@ -317,7 +321,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t10-export && npm run test:acceptance && npm run smoke && git show --stat 28ab7b2",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 77/77 (app/test/header.test.tsx: REQ-006 E1 título \"Catálogo\" a la izquierda, \"Mis pedidos\" y botón de cuenta a la derecha, sin \"Cerrar sesión\" en la barra; E2 menú → \"Cerrar sesión\" → inicio y carrito vacío; E3 \"Cancelar\" / tocar fuera / atrás de Android dejan sesión y carrito intactos; E4 \"Ver carrito · 3 u. · $7.100\" abre Carrito; E5 \"Carrito vacío\" abre Carrito con \"Confirmar pedido\" deshabilitado; session.test.tsx REQ-005 E1 desde el menú; theme.test.tsx E1 con AccountMenu, CartBar y _layout.tsx, E4 de los controles nuevos); expo export android ok (2458 módulos); test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
@@ -336,7 +340,11 @@
         "T-09"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-006 E6 y REQ-005 E1 en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 02:00: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: colors.backdrop en theme.ts; SignOutButton con variant; CartBar con SafeAreaView (react-native-safe-area-context ya estaba en app/package.json); barra y menú visibles también mientras carga; sin correo el botón muestra \"?\"."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 02:00: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: colors.backdrop en theme.ts; SignOutButton con variant; CartBar con SafeAreaView (react-native-safe-area-context ya estaba en app/package.json); barra y menú visibles también mientras carga; sin correo el botón muestra \"?\". 2026-10-18: aceptada en lote por José Pedro Lübbert (T-09..T-12) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-11",
@@ -351,7 +359,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t11-export && npm run test:acceptance && npm run smoke && git show --stat 9e64dbd",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 88/88 (app/test/product.test.tsx: REQ-008 E1 tocar \"Arroz 1 kg\" → detalle con nombre, presentación, $1.300, cantidad 0 y recuadro con la inicial (S-18), − / + del catálogo no abre el detalle; E2 + dos veces → cantidad 2, subtotal $2.600 y al volver catálogo y barra con 2 u.; E3 Yerba con 3 → cantidad 3, subtotal $13.500; E4 bajar de 1 a 0 → sale del carrito (\"Carrito vacío\"); E5 id fuera del catálogo o catálogo sin cargar → \"Este producto ya no está disponible\" en StateMessage, sin − / +, \"Volver al catálogo\" (back, o replace a /catalog sin historial); theme.test.tsx E1 con product/[id].tsx y E4 de la fila del catálogo); expo export android ok (2459 módulos); test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
@@ -371,7 +379,11 @@
         "T-10"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-008 E1–E2 en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 02:10: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: catalog/setCatalog en CartProvider; \"Volver al catálogo\" con back o replace a /catalog; título \"Producto\"; href tipado { pathname: '/product/[id]', params }; los tipos de rutas (.expo/types, fuera de git) se regeneran con expo start."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 02:10: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: catalog/setCatalog en CartProvider; \"Volver al catálogo\" con back o replace a /catalog; título \"Producto\"; href tipado { pathname: '/product/[id]', params }; los tipos de rutas (.expo/types, fuera de git) se regeneran con expo start. 2026-10-18: aceptada en lote por José Pedro Lübbert (T-09..T-12) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-12",
@@ -385,7 +397,7 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t12-export && npm run test:acceptance && npm run smoke && git show --stat 8ff828c",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 103/103 (app/test/theme.test.tsx: REQ-007 E1 sin colores literales ni fontSize numérico en todo app/src/app (_layout, index, catalog, product/[id], cart, orders, order/[id]) y app/src/components; E2 contraste ≥ 4,5:1 de los pares del tema; E3 Mis pedidos con los 5 estados como etiqueta \"Recibido\"…\"Cancelado\" sin el código, Detalle de pedido \"En preparación\" y pedido confirmado en Carrito con \"Recibido\"; E4 \"Ingresar\", campos de Inicio y \"Confirmar pedido\" ≥ 44 dp; E5 StateMessage en Inicio (comprobando sesión, \"Correo o contraseña incorrectos\"), Carrito (\"El carrito está vacío\", rechazo), Mis pedidos (carga, \"Todavía no hiciste pedidos\", error de red) y Detalle de pedido (carga, \"Pedido no encontrado\", error de red); orders.test.tsx solo con las etiquetas de estado de S-17); expo export android ok; test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
@@ -404,7 +416,11 @@
         "T-09"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-007 E6: recorrido del criterio de éxito en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: Button con `loading` y accessibilityLabel = título por defecto; StateMessage de carga con `label` accesible; Inicio en ScrollView (keyboardShouldPersistTaps) con lema \"Catálogo y pedidos para tu almacén\"; pie del Carrito con SafeAreaView; el total se mantiene como un solo texto \"Total $X\" (S-21). 2026-10-18: verificación manual de REQ-007 E6 en el teléfono OK (evidence.manual_result). Observación menor del usuario, sin corregir: en la confirmación del pedido (Carrito) la etiqueta \"Recibido\" queda a la izquierda y el resto del bloque centrado."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: Button con `loading` y accessibilityLabel = título por defecto; StateMessage de carga con `label` accesible; Inicio en ScrollView (keyboardShouldPersistTaps) con lema \"Catálogo y pedidos para tu almacén\"; pie del Carrito con SafeAreaView; el total se mantiene como un solo texto \"Total $X\" (S-21). 2026-10-18: verificación manual de REQ-007 E6 en el teléfono OK (evidence.manual_result). Observación menor del usuario, sin corregir: en la confirmación del pedido (Carrito) la etiqueta \"Recibido\" queda a la izquierda y el resto del bloque centrado. 2026-10-18: aceptada en lote por José Pedro Lübbert (T-09..T-12) → accepted. La aceptación llegó junto con el encargo de centrar \"Recibido\" en la confirmación; corrección en 7809710 (StatusBadge con `style`, Carrito alignSelf center; theme.test lo comprueba). Ese commit no pasó por revisión independiente ni por verificación en el teléfono.",
+      "acceptance": {
+        "by": "José Pedro Lübbert",
+        "date": "2026-10-18"
+      }
     }
   ]
 }
