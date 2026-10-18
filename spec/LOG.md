@@ -979,3 +979,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto T-23 (aprobador: Pepe). Push de los dos repos. Apruebo T-24 para el autopilot. Detalle: cambia \"Nightly orchestrator\" por \"Autopilot\" en los mensajes."
+- Hecho: "Nightly orchestrator" → "Autopilot" en el commit de resumen del autopilot (`Autopilot: summary of run <id>`), en sus pruebas y en dos comentarios (32c8b1d; sdd-base b1d3882). Los dos últimos commits de la corrida 2026-10-18_164324 (8da9441, 964f3bd) quedaron en español porque el proceso del autopilot ya tenía cargado el script anterior; no se reescriben.
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-23 → `accepted` (el ajuste de mensajes, pedido al aceptar, no pasó por revisión independiente) y aprueba T-24 → `approved_for_impl`.
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 177/177 + jest 137/137; `scripts/autopilot.sh --dry-run` ok (elegiría T-24); sdd-base `npm test` 93/93; `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el autopilot implementa T-24 (tarea de spec: queda esperando que el usuario apruebe el diff de tests/acceptance/); luego revisión y aceptación.
