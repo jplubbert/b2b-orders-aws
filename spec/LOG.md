@@ -1122,3 +1122,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-26,T-27).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Desplegué dev. Marca el deploy de T-27 como hecho y verifica smoke y aceptación. Luego muéstrame el diff de T-26 en tests/acceptance/ (qué agrega y qué modifica de fixtures.ts) para aprobarlo."
+- Hecho: deploy de T-27 registrado como hecho; evidencia completada y T-27 → `verified_auto` (sin verificación manual pendiente).
+- Verificado y cómo (la sesión): `aws cloudformation describe-stacks` / `list-stack-resources` (perfil `pedidos-demo`, us-east-1): PedidosB2B-dev `UPDATE_COMPLETE` 22:48 UTC, CatalogFunction, OrdersFunction y DistributorFunction `CREATE_COMPLETE`, sin la Lambda `api`. `npm run test:acceptance`: 49 pruebas, 41 pasan (REQ-001..011 sin cambios), 5 fallan y 3 se omiten, todas de REQ-012 por `FieldUndefined: orderHistory` (esperado hasta T-28). `npm run smoke` 2/2. `npm run check:spec` ok.
+- Pendiente deploy: T-28 cuando se implemente (T-27 ya desplegada).
+- En curso / roto: T-26 `in_progress` esperando la aprobación del usuario del diff de tests/acceptance/ (8ab4a0f), mostrado en esta sesión.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario aprueba (o devuelve) el diff de 8ab4a0f → T-26 `verified_auto`; revisión independiente de T-27; después el autopilot sigue con T-28.
