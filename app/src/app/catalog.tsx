@@ -1,11 +1,16 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { QuantityStepper } from '@/components/QuantityStepper';
+import { Screen } from '@/components/Screen';
 import { SignOutButton } from '@/components/SignOutButton';
+import { StateMessage } from '@/components/StateMessage';
 import { formatCLP, listProducts, type Product } from '@/lib/api';
 import { cartUnits, quantityOf } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
+import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
 // REQ-002: productos activos ordenados por nombre (el servidor filtra y ordena) con presentación y precio.
 // REQ-003: cada producto se agrega al carrito con − / +.
@@ -35,64 +40,74 @@ export default function CatalogScreen() {
     setRefreshing(false);
   }
 
+  // La disposición de la barra se rehace en T-10 (REQ-006); aquí solo pasa al tema.
   const header = (
     <Stack.Screen
       options={{
         headerLeft: () => <SignOutButton />,
         headerRight: () => (
           <View style={styles.headerLinks}>
-            <Pressable onPress={() => router.push('/orders')} accessibilityLabel="Ver mis pedidos">
-              <Text style={styles.cartLink}>Mis pedidos</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/cart')} accessibilityLabel="Ver carrito">
-              <Text style={styles.cartLink}>Carrito ({cartUnits(cart)})</Text>
-            </Pressable>
+            <Button
+              title="Mis pedidos"
+              variant="link"
+              onPress={() => router.push('/orders')}
+              accessibilityLabel="Ver mis pedidos"
+            />
+            <Button
+              title={`Carrito (${cartUnits(cart)})`}
+              variant="link"
+              onPress={() => router.push('/cart')}
+              accessibilityLabel="Ver carrito"
+            />
           </View>
         ),
       }}
     />
   );
 
-  if (!products && !error) return <ActivityIndicator style={styles.loading} />;
+  if (!products && !error) {
+    return (
+      <Screen>
+        <StateMessage kind="loading" />
+      </Screen>
+    );
+  }
 
   return (
-    <>
+    <Screen>
       {header}
       <FlatList
+        testID="catalog-list"
         data={products ?? []}
         keyExtractor={(p) => p.productId}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListHeaderComponent={error ? <Text style={[styles.row, styles.error]}>{error}</Text> : null}
+        ListHeaderComponent={error ? <StateMessage kind="error" message={error} /> : null}
         // REQ-002 E3
-        ListEmptyComponent={products ? <Text style={styles.empty}>No hay productos disponibles</Text> : null}
-        contentContainerStyle={products?.length === 0 && styles.emptyContainer}
+        ListEmptyComponent={products ? <StateMessage kind="empty" message="No hay productos disponibles" /> : null}
+        contentContainerStyle={[styles.list, products?.length === 0 && styles.emptyContainer]}
         renderItem={({ item }) => (
-          <View style={[styles.row, styles.product]}>
+          <Card style={styles.product}>
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.detail}>
-                {item.presentation} · {formatCLP(item.unitPrice)}
-              </Text>
+              <Text style={styles.detail}>{item.presentation}</Text>
+              <Text style={styles.price}>{formatCLP(item.unitPrice)}</Text>
             </View>
             <QuantityStepper quantity={quantityOf(cart, item.productId)} onChange={(q) => setQuantity(item, q)} />
-          </View>
+          </Card>
         )}
       />
-    </>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: { marginTop: 32 },
-  row: { padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ccc' },
-  product: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600' },
-  detail: { color: '#555', marginTop: 4 },
-  error: { color: '#b00020' },
+  list: { padding: spacing.lg, gap: spacing.md },
+  product: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  info: { flex: 1, gap: spacing.xs },
+  name: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  detail: { fontSize: fontSize.sm, color: colors.textMuted },
+  price: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text },
   emptyContainer: { flexGrow: 1, justifyContent: 'center' },
-  empty: { textAlign: 'center', fontSize: 16, color: '#555', padding: 24 },
-  headerLinks: { flexDirection: 'row', gap: 16 },
-  cartLink: { color: '#1f6feb', fontSize: 16, fontWeight: '600' },
+  headerLinks: { flexDirection: 'row', alignItems: 'center' },
 });

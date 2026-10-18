@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_QUANTITY } from '@/lib/cart';
+import { colors, disabledOpacity, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// − cantidad +; con 0 el producto sale del carrito.
+// − cantidad +; con 0 el producto sale del carrito. Botones de 44 dp (REQ-007 E4).
 export function QuantityStepper({ quantity, onChange }: { quantity: number; onChange: (q: number) => void }) {
   return (
     <View style={styles.row}>
@@ -27,16 +28,22 @@ export function QuantityStepper({ quantity, onChange }: { quantity: number; onCh
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   button: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1f6feb',
+    width: touchTarget,
+    height: touchTarget,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  disabled: { opacity: 0.3 },
-  sign: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  quantity: { minWidth: 32, textAlign: 'center', fontSize: 16 },
+  disabled: { opacity: disabledOpacity },
+  sign: { color: colors.onPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  quantity: {
+    minWidth: spacing.xxl,
+    textAlign: 'center',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
 });
