@@ -141,3 +141,28 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: `api.expo.dev/v2/versions/latest` (SDK 57 → Expo Go 57.0.9; SDK 58 → 58.0.4); el manifiesto servido por Metro decía `sdkVersion 58.0.0` antes del cambio y `57.0.0` después; Expo Go 57.0.9 en emulador Android 35 abre la app en la pantalla "Iniciar sesión".
 - Confirmación: `cd app && npx expo-doctor && npx expo install --check`.
 - Revisar si: la Play Store publica Expo Go para SDK 58 (subir con `npx expo install expo@^58 && npx expo install --fix`).
+
+## DEC-009 Forma de la API de pedidos en el contrato
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-17 · Aprobador: — (propuesta por el agente, R-03) · Confianza: media
+- Problema: las pruebas de aceptación de REQ-003 y REQ-004 (T-03) se escriben antes de que el contrato tenga pedidos; app, backend y pruebas deben coincidir en nombres de campos, en cómo llega el `productId` de `PRODUCT_UNAVAILABLE` y en cómo se invoca el script del distribuidor.
+- Impulsores: REQ-003, REQ-004, S-02, S-04, S-11, DEC-005, DEC-006, T-03
+- Alternativas consideradas:
+  1. Fijar ahora la forma (abajo) y que T-04..T-06 la agreguen a `spec/contracts/schema.graphql` al implementar cada operación — a favor: el contrato desplegado no declara campos sin resolver; en contra: hasta entonces la forma vive aquí y en las pruebas.
+  2. Agregar ya todo al contrato en T-03 — a favor: una sola fuente desde hoy; en contra: T-03 (spec) pasaría a cambiar infra y tipos generados, y la API desplegada tendría campos que fallan con "Campo sin resolver".
+  3. `productId` de `PRODUCT_UNAVAILABLE` en `errorInfo` — a favor: estructurado; en contra: con resolvers Lambda directos AppSync solo expone `errorType` y `message` sin plantilla de respuesta extra.
+- Decisión: Usaremos la alternativa 1 con esta forma:
+  - `enum OrderStatus { RECIBIDO EN_PREPARACION ENVIADO ENTREGADO CANCELADO }` (S-04)
+  - `type Order { id: ID! number: String! createdAt: AWSDateTime! total: Int! status: OrderStatus! lines: [OrderLine!]! }` — `id` = ULID (DEC-006), `number` = últimos 8 caracteres del ULID en mayúsculas (S-11)
+  - `type OrderLine { productId: ID! name: String! presentation: String! quantity: Int! unitPrice: Int! subtotal: Int! }` — nombre, presentación y precio congelados al confirmar; montos en CLP (S-02)
+  - `input OrderLineInput { productId: ID! quantity: Int! }` dentro de `input CreateOrderInput { lines: [OrderLineInput!]! }` — sin campo de precio (S-12)
+  - `Query.myOrders: [Order!]!` (más reciente primero), `Query.order(id: ID!): Order` (`null` si no existe o es de otro cliente), `Mutation.createOrder(input: CreateOrderInput!): Order!`
+  - Errores de negocio como `errorType` (DEC-005); en `PRODUCT_UNAVAILABLE` el `message` contiene el `productId`.
+  - Script del distribuidor: `npm run order:set-status -- <id> <estado>` con el `id` del pedido; sale con código ≠ 0 si el estado no es de S-04 o el pedido no existe.
+  No usaremos la alternativa 2 ni la 3, para que el contrato desplegado solo declare lo implementado, aceptando que la forma viva aquí hasta T-06.
+- Consecuencias: buenas: T-03 escribe pruebas ejecutables sin tocar infra; malas: dos lugares hasta que T-04..T-06 la pasen al contrato; neutrales: el script busca el pedido solo por `id` (sin `customerId`), lo que en la tabla de DEC-006 implica un Scan o un índice; para la demo basta el Scan.
+- Dependencias: depende de DEC-004, DEC-005, DEC-006 · afecta a T-05, T-06, contrato spec/contracts/schema.graphql
+- Evidencia: documentación de AppSync (resolvers Lambda directos: `errorType` y `message`).
+- Confirmación: tests/acceptance/req_003_* y req_004_* pasan contra `dev`; el contrato al cierre de T-06 coincide con esta forma.
+- Revisar si: la app necesita más campos del pedido o el distribuidor necesita otra forma de identificar pedidos.

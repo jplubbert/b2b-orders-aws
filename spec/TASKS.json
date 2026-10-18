@@ -81,16 +81,18 @@
         "REQ-004"
       ],
       "decisions": [
-        "DEC-007"
+        "DEC-007",
+        "DEC-009"
       ],
       "depends_on": [
         "T-01"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "verify": "npm run test:acceptance ejecuta un caso por ejemplo de API (REQ-001 E4, REQ-002 E1–E3, REQ-003 E1–E7, REQ-004 E1–E5) y los no implementados fallan por la razón esperada",
       "evidence": null,
       "review": null,
-      "blocked_by": null
+      "blocked_by": null,
+      "notes": "2026-10-17: pruebas escritas en tests/acceptance/ (req_001..004 + support/fixtures.ts), 25 casos. Forma de la API de pedidos en DEC-009 (proposed); supuestos S-12..S-14 en SPEC.md. lint y typecheck ok. Corrida parcial: req_001 2/2 pasa; req_002..004 no corrieron porque la sesión del agente no tiene credenciales AWS (CredentialsProviderError). Pendiente: el usuario corre `npm run test:acceptance` con el perfil default, aprueba el diff de tests/acceptance/ y DEC-009."
     },
     {
       "id": "T-04",
@@ -121,7 +123,8 @@
       "decisions": [
         "DEC-004",
         "DEC-005",
-        "DEC-006"
+        "DEC-006",
+        "DEC-009"
       ],
       "depends_on": [
         "T-04"
@@ -140,7 +143,8 @@
       ],
       "decisions": [
         "DEC-004",
-        "DEC-006"
+        "DEC-006",
+        "DEC-009"
       ],
       "depends_on": [
         "T-05"

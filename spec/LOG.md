@@ -128,3 +128,13 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: correr `scripts/night-loop.sh` (o una sesión interactiva) para T-03; revisión independiente de este cambio de T-08 si el usuario la quiere antes.
+
+## 2026-10-17 22:55 · Claude (claude-opus-5-5)
+- Hecho: T-03 (tarea de spec) → `in_progress`. Pruebas de aceptación en `tests/acceptance/`: `req_001_login` (E4 sin token y con token inválido), `req_002_catalogo` (E1 orden y campos, orden de toda la lista, E2 inactivo, E3 catálogo vacío desactivando todo y restaurando), `req_003_pedido` (E1–E7 más bordes: 1 y 999 se aceptan, una línea mala anula todo el pedido, fusión 500+500 → `INVALID_QUANTITY`, 50 líneas se aceptan), `req_004_mis_pedidos` (E1–E5 más estado fuera de S-04 en el script); 25 casos. `support/fixtures.ts` siembra productos `acept-*` directo en la tabla (claves de DEC-006) y crea clientes desechables en Cognito; todo se borra al terminar y se barre al empezar.
+- Decisión registrada (R-03): DEC-009 `proposed`, forma de la API de pedidos (`createOrder`, `myOrders`, `order(id)`, `OrderLine.subtotal`, `productId` en el `message` de `PRODUCT_UNAVAILABLE`, `npm run order:set-status -- <id> <estado>`). El contrato no se tocó: lo extienden T-04..T-06. DEC-009 citada también en T-05 y T-06.
+- Supuestos nuevos en SPEC.md: S-12 (REQ-003 E2: la entrada no tiene campo de precio; si se manda, AppSync rechaza sin crear pedido), S-13 (REQ-004 E1: orden por momento de confirmación, sin fechas pasadas), S-14 (clientes desechables en vez de almacen1 para no ensuciar la demo).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 66/66; `npm run check:spec` ok. `npm run test:acceptance`: req_001 2/2 pasa; req_002..004 no llegaron a correr: la sesión del agente no tiene credenciales AWS (`CredentialsProviderError` en el `beforeAll`).
+- Fallas esperadas cuando corra con credenciales: req_001 y req_002 deberían pasar (T-01 ya filtra y ordena); req_003 y req_004 deben fallar con `ValidationError` de AppSync (`createOrder`/`myOrders`/`order` no están en el contrato) y REQ-004 E2 además por `Missing script: "order:set-status"`.
+- Riesgo: REQ-002 E3 desactiva todo el catálogo de `dev` unos segundos; si la corrida se corta justo ahí, `npm run seed` lo restaura.
+- Bloqueos nuevos: ninguno de spec. Falta acceso AWS en la sesión del agente.
+- Próxima acción autorizada: (1) el usuario corre `npm run test:acceptance` con el perfil `default` y confirma que fallan por la razón esperada (arriba); con eso, evidencia de T-03 → `verified_auto`; (2) el usuario revisa y aprueba el diff de `tests/acceptance/` (lo exige T-03), DEC-009 y S-12..S-14; (3) revisión independiente de T-03; luego T-04.

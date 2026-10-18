@@ -124,6 +124,9 @@ Trazas: §Objetivo · decisiones: DEC-003, DEC-004 · prueba: tests/acceptance/r
 | S-09 | persistencia del carrito | solo en memoria; se pierde al cerrar la app o la sesión | reversible | se pide conservar el carrito |
 | S-10 | alternativa actual | pedidos por teléfono/mensajería al preventista | no bloqueante | el usuario lo corrige |
 | S-11 | número de pedido | 8 caracteres finales del ULID en mayúsculas | reversible | se pide numeración correlativa |
+| S-12 | REQ-003 E2 ("precio $1 se ignora") busca que el servidor nunca use un precio del cliente | la entrada de `createOrder` no tiene campo de precio (DEC-009): si se envía, AppSync rechaza la solicitud sin crear pedido; sin precio, el pedido usa el de catálogo ($4.500) | reversible (se puede aceptar e ignorar un campo opcional) | se pide que la app pueda mandar precios |
+| S-13 | REQ-004 E1 ("pedidos del 15/10 y del 16/10") se refiere al orden por fecha de confirmación | la aceptación crea dos pedidos seguidos y espera el más nuevo primero; no se fijan fechas pasadas | reversible | se pide importar pedidos con fecha |
+| S-14 | los ejemplos de REQ-003/004 no exigen usar `almacen1` | la aceptación usa clientes desechables del grupo `almaceneros` (`acept-*@demo.test`, borrados al terminar) para no ensuciar el historial de la demo; `almacen2` solo lee en REQ-004 E3 | reversible | — |
 
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
