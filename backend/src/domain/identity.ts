@@ -1,15 +1,15 @@
 export const CUSTOMER_GROUP = 'almaceneros';
 export const DISTRIBUTOR_GROUP = 'distribuidores'; // DEC-013
 
-export type Role = 'almacenero' | 'distribuidor';
+export type Role = 'customer' | 'distributor';
 
-/** Roles del token; `customerId` solo si es almacenero. Un usuario en ambos grupos tiene los dos (S-25). */
+/** Roles in the token; `customerId` only for a customer (almacenero). A user in both groups has both (S-25). */
 export interface Identity {
   roles: ReadonlySet<Role>;
   customerId: string | null;
 }
 
-// Con resolvers Lambda directos, AppSync expone `error.name` como `errorType` (DEC-005).
+// With direct Lambda resolvers, AppSync exposes `error.name` as `errorType` (DEC-005).
 export class UnauthorizedError extends Error {
   constructor() {
     super('Unauthorized');
@@ -18,9 +18,9 @@ export class UnauthorizedError extends Error {
 }
 
 /**
- * Rol desde `cognito:groups`. El cliente sale siempre del claim `custom:customerId`, nunca de la entrada
- * (DEC-004): sin él, el grupo `almaceneros` no da rol. El distribuidor no tiene `customerId` (S-22).
- * Sin ningún rol, `Unauthorized`.
+ * Role from `cognito:groups`. The customer always comes from the `custom:customerId` claim, never from the input
+ * (DEC-004): without it, the `almaceneros` group grants no role. The distributor has no `customerId` (S-22).
+ * With no role at all, `Unauthorized`.
  */
 export function identityFromClaims(claims: Record<string, unknown> | undefined): Identity {
   const raw = claims?.['cognito:groups'];
@@ -28,19 +28,19 @@ export function identityFromClaims(claims: Record<string, unknown> | undefined):
   const claimed = claims?.['custom:customerId'];
   const customerId = typeof claimed === 'string' && claimed !== '' && groups.includes(CUSTOMER_GROUP) ? claimed : null;
   const roles = new Set<Role>();
-  if (customerId) roles.add('almacenero');
-  if (groups.includes(DISTRIBUTOR_GROUP)) roles.add('distribuidor');
+  if (customerId) roles.add('customer');
+  if (groups.includes(DISTRIBUTOR_GROUP)) roles.add('distributor');
   if (roles.size === 0) throw new UnauthorizedError();
   return { roles, customerId };
 }
 
-/** `customerId` del almacenero del token; `Unauthorized` si no lo es (doble control con `@aws_auth`, DEC-013). */
+/** `customerId` of the token's customer; `Unauthorized` if it isn't one (double check with `@aws_auth`, DEC-013). */
 export function requireCustomer(identity: Identity): string {
-  if (!identity.roles.has('almacenero') || !identity.customerId) throw new UnauthorizedError();
+  if (!identity.roles.has('customer') || !identity.customerId) throw new UnauthorizedError();
   return identity.customerId;
 }
 
-/** `Unauthorized` si el token no es de un distribuidor (DEC-013). */
+/** `Unauthorized` unless the token belongs to a distributor (DEC-013). */
 export function requireDistributor(identity: Identity): void {
-  if (!identity.roles.has('distribuidor')) throw new UnauthorizedError();
+  if (!identity.roles.has('distributor')) throw new UnauthorizedError();
 }

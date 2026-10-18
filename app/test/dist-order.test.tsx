@@ -1,6 +1,6 @@
-// Detalle del pedido del distribuidor y cambio de estado (REQ-010 E5, REQ-011 E1, E3, E7, S-24, S-28) con
-// jest-expo. El panel y el detalle comparten PanelProvider como en la app; la API y el router van simulados.
-// El recorrido real contra `dev` (criterio de éxito del corte 3) se verifica a mano en el teléfono (DEC-011).
+// Distributor order detail and status change (REQ-010 E5, REQ-011 E1, E3, E7, S-24, S-28) with
+// jest-expo. The panel and the detail share PanelProvider as in the app; the API and the router are mocked.
+// The real flow against `dev` (cut 3 success criterion) is checked by hand on the phone (DEC-011).
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { useState, type ReactNode } from 'react';
@@ -41,7 +41,7 @@ const mockAllOrders = jest.mocked(allOrders);
 const mockSetOrderStatus = jest.mocked(setOrderStatus);
 const mockParams = jest.mocked(useLocalSearchParams);
 
-// REQ-010 E5: pedido de almacen1 de 2 Yerba + 5 Arroz.
+// REQ-010 E5: almacen1's order of 2 Yerba + 5 Arroz.
 const order: PanelOrder = {
   id: '01JA0000000000000000ALM1N1',
   customerId: 'C-ALMACEN1',
@@ -56,18 +56,18 @@ const order: PanelOrder = {
 };
 const other: PanelOrder = { ...order, id: '01JB0000000000000000ALM2N1', customerId: 'C-ALMACEN2', number: 'ALM2N1' };
 
-// Intl en Node y en Hermes puede separar con espacios distintos; se compara sin ellos.
+// Intl in Node and in Hermes may separate with different spaces; compare without them.
 const money = (text: string) => new RegExp(text.replace(/[$.]/g, '\\$&').replace(/\s/g, '\\s*'));
 
-// Panel y detalle montados a la vez sobre el mismo PanelProvider; el panel carga la lista y luego
-// se muestra el detalle (como al tocar una fila).
+// Panel and detail mounted at once on the same PanelProvider; the panel loads the list and then
+// the detail is shown (like tapping a row).
 function App() {
   const [detail, setDetail] = useState(false);
   return (
     <PanelProvider>
       {detail ? <DistOrderScreen /> : <PanelScreen />}
-      <Pressable onPress={() => setDetail(!detail)} accessibilityLabel="alternar">
-        <Text>alternar</Text>
+      <Pressable onPress={() => setDetail(!detail)} accessibilityLabel="toggle">
+        <Text>toggle</Text>
       </Pressable>
     </PanelProvider>
   );
@@ -77,17 +77,17 @@ async function openDetail(list: PanelOrder[]) {
   mockAllOrders.mockResolvedValue(list);
   await render(<App />);
   await screen.findByText(`N° ${list[0].number}`);
-  await fireEvent.press(screen.getByLabelText('alternar'));
+  await fireEvent.press(screen.getByLabelText('toggle'));
 }
 
 beforeEach(() => {
-  jest.resetAllMocks(); // también descarta respuestas `Once` que un caso no consumió
+  jest.resetAllMocks(); // also discards `Once` responses a case didn't consume
   mockScreens.length = 0;
   mockParams.mockReturnValue({ id: order.id });
 });
 
-describe('REQ-010 E5 detalle del pedido (distribuidor)', () => {
-  it('E5: título "Pedido <número>", almacén, 2 líneas con precio congelado, total y estado', async () => {
+describe('REQ-010 E5 order detail (distributor)', () => {
+  it('E5: title "Pedido <number>", store, 2 lines with frozen price, total and status', async () => {
     await openDetail([other, order]);
     expect(mockScreens.at(-1)?.options?.title).toBe('Pedido ALM1N1');
     expect(screen.getByText('Almacén C-ALMACEN1')).toBeOnTheScreen();
@@ -97,10 +97,10 @@ describe('REQ-010 E5 detalle del pedido (distribuidor)', () => {
     expect(screen.getByText(money('Paquete 1 kg · 5 × $1.300'))).toBeOnTheScreen();
     expect(screen.getByText(money('Total $15.500'))).toBeOnTheScreen();
     expect(screen.getByTestId('status-RECIBIDO')).toBeOnTheScreen();
-    expect(mockAllOrders).toHaveBeenCalledTimes(1); // sin consulta nueva (como S-19)
+    expect(mockAllOrders).toHaveBeenCalledTimes(1); // no new query (like S-19)
   });
 
-  it('id fuera del panel cargado → "Pedido no encontrado" y "Volver a Pedidos"', async () => {
+  it('id outside the loaded panel → "Pedido no encontrado" and "Volver a Pedidos"', async () => {
     mockParams.mockReturnValue({ id: 'NO-EXISTE' });
     jest.mocked(router.canGoBack).mockReturnValue(false);
     await openDetail([order]);
@@ -111,8 +111,8 @@ describe('REQ-010 E5 detalle del pedido (distribuidor)', () => {
   });
 });
 
-describe('REQ-011 cambiar estado desde el detalle', () => {
-  it('"Cambiar estado" con los 5 estados (S-17) y el actual marcado', async () => {
+describe('REQ-011 change status from the detail', () => {
+  it('"Cambiar estado" with the 5 statuses (S-17) and the current one selected', async () => {
     await openDetail([order]);
     expect(screen.getByText('Cambiar estado')).toBeOnTheScreen();
     for (const label of ['Recibido', 'En preparación', 'Enviado', 'Entregado', 'Cancelado']) {
@@ -122,7 +122,7 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(screen.getByLabelText('Estado Enviado')).not.toBeSelected();
   });
 
-  it('E1: RECIBIDO → "En preparación" llama setOrderStatus y actualiza el detalle (sin confirmación, S-24)', async () => {
+  it('E1: RECIBIDO → "En preparación" calls setOrderStatus and updates the detail (no confirmation, S-24)', async () => {
     mockSetOrderStatus.mockResolvedValue({ ...order, status: 'EN_PREPARACION' });
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado En preparación'));
@@ -132,10 +132,10 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(screen.queryByTestId('status-RECIBIDO')).toBeNull();
   });
 
-  it('E1 (panel): el panel montado debajo del detalle muestra el estado nuevo sin consulta nueva', async () => {
+  it('E1 (panel): the panel mounted under the detail shows the new status without a new query', async () => {
     mockAllOrders.mockResolvedValue([other, order]);
     mockSetOrderStatus.mockResolvedValue({ ...order, status: 'ENVIADO' });
-    // Como en la pila: el panel sigue montado mientras el detalle está encima.
+    // As in the stack: the panel stays mounted while the detail is on top.
     await render(
       <PanelProvider>
         <PanelScreen />
@@ -149,19 +149,19 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(mockAllOrders).toHaveBeenCalledTimes(1);
   });
 
-  it('S-06: al volver al panel se pide de nuevo el estado vigente', async () => {
+  it('S-06: going back to the panel requests the current status again', async () => {
     mockSetOrderStatus.mockResolvedValue({ ...order, status: 'ENVIADO' });
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado Enviado'));
     await screen.findByTestId('status-ENVIADO');
     mockAllOrders.mockResolvedValue([{ ...order, status: 'ENVIADO' }]);
-    await fireEvent.press(screen.getByLabelText('alternar'));
+    await fireEvent.press(screen.getByLabelText('toggle'));
     expect(await screen.findByText('N° ALM1N1')).toBeOnTheScreen();
     expect(screen.getByTestId('status-ENVIADO')).toBeOnTheScreen();
     expect(mockAllOrders).toHaveBeenCalledTimes(2);
   });
 
-  it('E3: elegir el estado actual no es error', async () => {
+  it('E3: choosing the current status is not an error', async () => {
     mockSetOrderStatus.mockResolvedValue(order);
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado Recibido'));
@@ -170,7 +170,7 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(screen.queryByText('No se pudo cambiar el estado')).toBeNull();
   });
 
-  it('E7: falla de red → "No se pudo cambiar el estado" y conserva el estado anterior', async () => {
+  it('E7: network failure → "No se pudo cambiar el estado" and the previous status is kept', async () => {
     mockSetOrderStatus.mockRejectedValue(new Error('Network error'));
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado Enviado'));
@@ -181,7 +181,7 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(screen.getByLabelText('Estado Enviado')).not.toBeSelected();
   });
 
-  it('tras un error, un intento que funciona quita el mensaje', async () => {
+  it('after an error, an attempt that works clears the message', async () => {
     mockSetOrderStatus.mockRejectedValueOnce(new Error('Network error')).mockResolvedValueOnce({ ...order, status: 'ENVIADO' });
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado Enviado'));
@@ -191,7 +191,7 @@ describe('REQ-011 cambiar estado desde el detalle', () => {
     expect(screen.queryByText('No se pudo cambiar el estado')).toBeNull();
   });
 
-  it('mientras se guarda, los botones de estado quedan deshabilitados (un cambio a la vez)', async () => {
+  it('while saving, the status buttons are disabled (one change at a time)', async () => {
     mockSetOrderStatus.mockReturnValue(new Promise(() => {}));
     await openDetail([order]);
     await fireEvent.press(screen.getByLabelText('Estado Enviado'));

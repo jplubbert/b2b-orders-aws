@@ -13,15 +13,15 @@ import { quantityOf } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
 import { colors, fontSize, fontWeight, spacing, touchTarget } from '@/theme';
 
-// REQ-002: productos activos ordenados por nombre (el servidor filtra y ordena) con presentación y precio.
-// REQ-003: cada producto se agrega al carrito con − / +.
+// REQ-002: active products sorted by name (the server filters and sorts) with presentation and price.
+// REQ-003: each product is added to the cart with − / +.
 export default function CatalogScreen() {
   const [products, setProducts] = useState<Product[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { cart, setQuantity, setCatalog } = useCart();
 
-  // S-19: el catálogo cargado queda en el contexto para el detalle de producto (REQ-008).
+  // S-19: the loaded catalog stays in the context for the product detail (REQ-008).
   const load = useCallback(async () => {
     try {
       const loaded = await listProducts();
@@ -37,15 +37,15 @@ export default function CatalogScreen() {
     void load();
   }, [load]);
 
-  // Deslizar hacia abajo vuelve a pedir el catálogo (p. ej. tras activar o desactivar productos).
+  // Pulling down requests the catalog again (e.g. after activating or deactivating products).
   async function onRefresh() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
   }
 
-  // REQ-006: el título "Catálogo" (a la izquierda, desde _layout.tsx); a la derecha "Mis pedidos" y el
-  // botón de cuenta, que lleva "Cerrar sesión" (S-15). El carrito pasa a la barra inferior.
+  // REQ-006: the "Catálogo" title (on the left, from _layout.tsx); on the right "Mis pedidos" and the
+  // account button, which holds "Cerrar sesión" (S-15). The cart moves to the bottom bar.
   const header = (
     <Stack.Screen
       options={{
@@ -91,7 +91,7 @@ export default function CatalogScreen() {
         contentContainerStyle={[styles.list, products?.length === 0 && styles.emptyContainer]}
         renderItem={({ item }) => (
           <Card style={styles.product}>
-            {/* REQ-008: tocar la fila (fuera de − / +) abre el detalle del producto. */}
+            {/* REQ-008: tapping the row (outside − / +) opens the product detail. */}
             <Pressable
               style={({ pressed }) => [styles.info, pressed && styles.pressed]}
               onPress={() => router.push({ pathname: '/product/[id]', params: { id: item.productId } })}

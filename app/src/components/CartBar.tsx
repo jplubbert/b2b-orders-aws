@@ -6,8 +6,8 @@ import { cartTotal, cartUnits } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// REQ-006 E4–E5: barra inferior fija con unidades y total del carrito; siempre abre Carrito (vacío
-// incluido, donde "Confirmar pedido" queda deshabilitado por REQ-003 E5).
+// REQ-006 E4–E5: fixed bottom bar with the cart's units and total; it always opens the Cart (empty one
+// included, where "Confirmar pedido" stays disabled per REQ-003 E5).
 export function CartBar() {
   const { cart } = useCart();
   const units = cartUnits(cart);

@@ -1,71 +1,75 @@
 #!/usr/bin/env bash
-# Orquestador nocturno (T-08). Ejecuta tareas del protocolo PCR sin supervisión, dentro de un presupuesto.
+# Nightly orchestrator (T-08). Runs tasks of the PCR protocol unattended, within a budget.
 #
 #   scripts/autopilot.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
-# Ciclo:
-#   0. Antes de elegir tarea nueva, revisa cada tarea en verified_auto (p. ej. implementada en una sesión interactiva)
-#      con el mismo revisor y mecanismo del paso 3; cada una se revisa una sola vez por corrida (un rechazo la deja
-#      en verified_auto y no se repite hasta la próxima corrida).
-#   1. Elige la primera tarea "in_progress" (la retoma), "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas
-#      (done/accepted/delivered, o reviewed: así encadena tareas sin esperar la aceptación del usuario).
-#      Si no hay, anota en spec/LOG.md y termina.
-#   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad. …"`
-#      (el prompt pide además `npm run test:acceptance` sin prefijos de entorno, comandos simples sin && ni cd, y
-#      "Pendiente deploy" en vez de desplegar; ver IMPL_PROMPT)
-#      con permisos acotados al repositorio (sin red, sin push, sin instalar nada fuera de npm; AWS solo con el perfil
-#      `autopilot` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
-#      en la terminal y en .autopilot/<corrida>/live.log (`tail -f` desde otra terminal). Tokens de cada invocación
-#      (entrada, salida, caché leída y escrita, del campo `usage` del evento `result`) por tarea y total de la corrida
-#      en la terminal, live.log y el resumen de LOG.md; el revisor no se cuenta (codex/claude en texto no los informan).
-#   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
-#      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
-#      TASKS.json (`review`; approved → reviewed) y a LOG.md.
-#      Si el implementador termina bien (código 0) sin cambios (mismo HEAD y mismo estado), o deja la tarea
-#      in_progress con una línea "- Pendiente deploy:" nueva en LOG.md (que no diga "ninguno", "nada", "N/A"…), no es
-#      un fallo ni se reintenta: la tarea se salta en esta corrida y se elige la siguiente independiente. Lo mismo si
-#      una tarea de spec queda in_progress con commits nuevos: espera que el usuario apruebe el diff de tests/acceptance/.
-#      Si lo único pendiente es una verificación manual en el teléfono, el implementador deja la tarea verified_auto
-#      con `evidence.manual_pending` (DEC-011); el resumen de LOG.md lista esas verificaciones en "Pendiente manual".
-#      Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (AUTOPILOT_MAX_FAILURES) se
-#      abandona en esta corrida y se sigue con la siguiente independiente (la corrida termina con código 1).
-#   4. Se detiene si la tarea queda blocked, si vence el presupuesto (6 h), si completa 10 tareas o si no quedan
-#      tareas elegibles.
-#      Siempre deja un resumen en LOG.md (y lo confirma con Task: T-08 / Req: N/A, salvo que el árbol quede sucio).
-#      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
-#   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
-#   6. Al detenerse (también si se cae), si hay NTFY_TOPIC envía un aviso a $NTFY_URL/$NTFY_TOPIC (T-21): motivo de
-#      parada, tareas hechas/fallidas y próxima acción. Prioridad alta y tag de alerta si requiere intervención
-#      (bloqueo, fallo, rechazo del revisor, límite de presupuesto, despliegue o aprobación pendiente); normal si
-#      terminó bien. Si ntfy falla
-#      solo se anota en el registro: la corrida no cambia su resultado. En --dry-run muestra el aviso sin enviarlo.
+# Cycle:
+#   0. Before picking a new task, reviews every task in verified_auto (e.g. implemented in an interactive session)
+#      with the same reviewer and mechanism as step 3; each one is reviewed only once per run (a rejection leaves it
+#      in verified_auto and is not repeated until the next run).
+#   1. Picks the first "in_progress" (resumes it), "ready" or "approved_for_impl" task of spec/TASKS.json with all its
+#      dependencies closed (done/accepted/delivered, or reviewed: that way it chains tasks without waiting for the
+#      user's acceptance). If there is none, writes to spec/LOG.md and ends.
+#   2. Launches the implementer: `claude -p "Read AGENTS.md and execute <ID>. Stop according to the authority rules. …"`
+#      (the prompt also asks for `npm run test:acceptance` without environment prefixes, simple commands without && or
+#      cd, and "Pendiente deploy" instead of deploying; see IMPL_PROMPT)
+#      with permissions scoped to the repository (no network, no push, no installs outside npm; AWS only with the
+#      `autopilot` profile for `npm run test:acceptance` and `npm run smoke`). Live progress (stream-json → readable
+#      lines) in the terminal and in .autopilot/<run>/live.log (`tail -f` from another terminal). Tokens of each
+#      invocation (input, output, cache read and write, from the `usage` field of the `result` event) per task and
+#      run total in the terminal, live.log and the LOG.md summary; the reviewer isn't counted (codex/claude in text
+#      mode don't report them).
+#   3. If the task ends verified_auto (or done), launches a reviewer with clean context (`codex exec`, or `claude -p`
+#      if there is no codex) with the prompt of sdd.md §7.5, only over the task's diff and its REQ/DEC. The verdict
+#      goes to TASKS.json (`review`; approved → reviewed) and to LOG.md.
+#      If the implementer finishes fine (code 0) without changes (same HEAD and same status), or leaves the task
+#      in_progress with a new "- Pendiente deploy:" line in LOG.md (one that doesn't say "ninguno", "nada", "N/A"…),
+#      it is not a failure and is not retried: the task is skipped in this run and the next independent one is
+#      picked. Same if a spec task stays in_progress with new commits: it waits for the user to approve the
+#      tests/acceptance/ diff.
+#      If the only thing pending is a manual check on the phone, the implementer leaves the task verified_auto
+#      with `evidence.manual_pending` (DEC-011); the LOG.md summary lists those checks under "Pendiente manual".
+#      Failures are counted per task: after the first one the same task is retried; with two
+#      (AUTOPILOT_MAX_FAILURES) it is abandoned in this run and the next independent one follows (the run ends with
+#      code 1).
+#   4. Stops if the task ends blocked, if the budget (6 h) runs out, if it completes 10 tasks or if no eligible tasks
+#      remain.
+#      Always leaves a summary in LOG.md (and commits it with Task: T-08 / Req: N/A, unless the tree is left dirty).
+#      Exit code 1 if the stop needs intervention (blocked, failures, authority violation, no verdict).
+#   5. Never pushes, never deploys to AWS and never marks accepted/reviewed on its own (reviewed only with a verdict).
+#   6. When stopping (also if it crashes), if there is an NTFY_TOPIC it sends a notice to $NTFY_URL/$NTFY_TOPIC
+#      (T-21): stop reason, done/failed tasks and next action. High priority and alert tag if it needs intervention
+#      (block, failure, reviewer rejection, budget limit, pending deploy or approval); normal if it finished fine.
+#      If ntfy fails it is only logged: the run keeps its result. In --dry-run it shows the notice without sending it.
+#   spec/LOG.md entries and the values written to spec/TASKS.json stay in Spanish; terminal output, logs, ntfy
+#   notices and commits are in English (DEC-018).
 #
-# Guardas mecánicas sobre los procesos hijos: solo el perfil AWS `autopilot` (usuario IAM autopilot-tests, DEC-010/DEC-015:
-# datos de la tabla y admin del user pool de PedidosB2B-dev) copiado a un AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE
-# temporales, así que `default` no existe para ellos (deploy/bootstrap/cdk fallan además por permisos); pushurl de
-# todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
-# y comprobación tras cada tarea de que el ejecutor no otorgó estados reservados (reviewed/accepted/…).
+# Mechanical guards on the child processes: only the `autopilot` AWS profile (IAM user autopilot-tests,
+# DEC-010/DEC-015: table data and user pool admin of PedidosB2B-dev) copied to temporary
+# AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE, so `default` doesn't exist for them (deploy/bootstrap/cdk also fail for
+# lack of permissions); pushurl of every remote pointed at a nonexistent path, network and deploy tools denied to the
+# implementer, and a check after each task that the executor didn't grant reserved statuses (reviewed/accepted/…).
 #
-# Variables: AUTOPILOT_MAX_TASKS (10), AUTOPILOT_BUDGET_SECONDS (21600), AUTOPILOT_MAX_FAILURES (2, por tarea), AUTOPILOT_REVIEWER (auto|codex|claude),
-#            AUTOPILOT_IMPL_MODEL, AUTOPILOT_REVIEW_MODEL, AUTOPILOT_MAX_USD (tope por invocación de claude, opcional),
-#            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials),
-#            NTFY_TOPIC (sin valor: no se avisa), NTFY_URL (https://ntfy.sh), AUTOPILOT_NTFY_MAX (3000, largo del aviso; mínimo 1000).
-# Configuración local: AUTOPILOT_CONFIG (por defecto ~/.config/autopilot/autopilot.config.sh, fuera del repo porque el
-# tema de ntfy es secreto: quien lo conoce lee los avisos). Es un script de bash que puede fijar cualquiera de las
-# variables anteriores, p. ej. `NTFY_TOPIC=autopilot-xxxxxxxx`. Las variables no se pasan a los procesos hijos.
-# Registros de cada corrida: .autopilot/<fecha>/ (fuera de git).
+# Variables: AUTOPILOT_MAX_TASKS (10), AUTOPILOT_BUDGET_SECONDS (21600), AUTOPILOT_MAX_FAILURES (2, per task), AUTOPILOT_REVIEWER (auto|codex|claude),
+#            AUTOPILOT_IMPL_MODEL, AUTOPILOT_REVIEW_MODEL, AUTOPILOT_MAX_USD (cap per claude invocation, optional),
+#            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (source of the keys; ~/.aws/credentials),
+#            NTFY_TOPIC (empty: no notice), NTFY_URL (https://ntfy.sh), AUTOPILOT_NTFY_MAX (3000, notice length; minimum 1000).
+# Local configuration: AUTOPILOT_CONFIG (default ~/.config/autopilot/autopilot.config.sh, outside the repo because the
+# ntfy topic is a secret: whoever knows it reads the notices). It's a bash script that may set any of the variables
+# above, e.g. `NTFY_TOPIC=autopilot-xxxxxxxx`. The variables are not passed to the child processes.
+# Logs of each run: .autopilot/<date>/ (outside git).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
-# ---------- Configuración local (fuera de git) ----------
+# ---------- Local configuration (outside git) ----------
 AUTOPILOT_CONFIG=${AUTOPILOT_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/autopilot/autopilot.config.sh}
 NTFY_TOPIC=${NTFY_TOPIC:-}
 # shellcheck disable=SC1090
 if [ -r "$AUTOPILOT_CONFIG" ]; then . "$AUTOPILOT_CONFIG"; fi
 NTFY_URL=${NTFY_URL:-https://ntfy.sh}
-export -n NTFY_TOPIC NTFY_URL 2>/dev/null || true   # el tema no llega al implementador ni al revisor
+export -n NTFY_TOPIC NTFY_URL 2>/dev/null || true   # the topic never reaches the implementer or the reviewer
 
 MAX_TASKS=${AUTOPILOT_MAX_TASKS:-10}
 BUDGET=${AUTOPILOT_BUDGET_SECONDS:-21600}
@@ -84,7 +88,7 @@ while [ $# -gt 0 ]; do
     --budget-seconds) BUDGET=$2; shift ;;
     --max-failures) MAX_FAILURES=$2; shift ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "autopilot: argumento desconocido: $1" >&2; usage >&2; exit 2 ;;
+    *) echo "autopilot: unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
   shift
 done
@@ -93,118 +97,123 @@ tasks() { node "$ROOT/scripts/lib/autopilot-tasks.mjs" --root "$ROOT" "$@"; }
 RUN_ID=$(date '+%Y-%m-%d_%H%M%S')
 RUN_DIR="$ROOT/.autopilot/$RUN_ID"
 LIVE="$RUN_DIR/live.log"
-TOKENS="$RUN_DIR/tokens.jsonl"   # una línea por invocación del implementador (autopilot-stream.mjs --tokens)
+TOKENS="$RUN_DIR/tokens.jsonl"   # one line per implementer invocation (autopilot-stream.mjs --tokens)
 START=$(date +%s)
 DEADLINE=$((START + BUDGET))
-SUMMARY=()        # líneas "Hecho" del resumen
-VERIFIED=()       # líneas "Verificado y cómo"
-STOP_REASON=""
-ABNORMAL=0       # 1 = parada que requiere intervención (blocked, fallos, violación, árbol sucio, sin veredicto)
+SUMMARY=()        # "Hecho" lines of the LOG.md summary (Spanish)
+SUMMARY_EN=()     # the same lines in English, for the ntfy notice
+VERIFIED=()       # "Verificado y cómo" lines (LOG.md only, Spanish)
+STOP_REASON=""    # Spanish, for LOG.md
+STOP_REASON_EN="" # English, for the terminal, live.log and ntfy
+ABNORMAL=0       # 1 = stop that needs intervention (blocked, failures, violation, dirty tree, no verdict)
 TASKS_DONE=0
-FAILURES=0        # total de la corrida (para el resumen); el tope se aplica por tarea (FAILS)
+FAILURES=0        # run total (for the summary); the cap applies per task (FAILS)
 declare -A FAILS=()
-DEPLOY_PENDING=() # tareas que esperan un despliegue del usuario
-REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces)
-SKIPPED=""        # tareas que el implementador dejó sin cambios (separadas por comas; no se vuelven a elegir)
-ABANDONED=()      # tareas abandonadas por el tope de fallos
-USER_WAIT=()      # tareas de spec que esperan la aprobación del usuario
-REJECTED=()       # tareas que el revisor rechazó en esta corrida
-NOTIFIED=0        # 1 = el aviso ntfy de la parada ya se intentó
+DEPLOY_PENDING=() # tasks waiting for a deploy by the user
+REVIEWED_IDS=" "  # tasks already reviewed in this run (never reviewed twice)
+SKIPPED=""        # tasks the implementer left unchanged (comma-separated; not picked again)
+ABANDONED=()      # tasks abandoned because of the failure cap
+USER_WAIT=()      # spec tasks waiting for the user's approval
+REJECTED=()       # tasks the reviewer rejected in this run
+NOTIFIED=0        # 1 = the ntfy notice of the stop was already attempted
 
-log() { # a la terminal y, en una corrida real, a live.log
+summary() { SUMMARY+=("$1"); SUMMARY_EN+=("$2"); }   # $1 = Spanish (LOG.md), $2 = English (ntfy)
+stop_reason() { STOP_REASON=$1; STOP_REASON_EN=$2; }  # $1 = Spanish (LOG.md), $2 = English (terminal, ntfy)
+log() { # to the terminal and, in a real run, to live.log
   local line; line=$(printf '%s autopilot: %s' "$(date '+%H:%M:%S')" "$*")
   printf '%s\n' "$line"
   if [ "$DRY_RUN" = 0 ] && [ -d "$RUN_DIR" ]; then printf '%s\n' "$line" >>"$LIVE"; fi
   return 0
 }
 die() { echo "autopilot: $*" >&2; exit 1; }
-tokens_summary() { node "$ROOT/scripts/lib/autopilot-stream.mjs" tokens-summary "$TOKENS"; }
+tokens_summary() { node "$ROOT/scripts/lib/autopilot-stream.mjs" tokens-summary "$TOKENS" "$@"; }
 remaining() { echo $((DEADLINE - $(date +%s))); }
 now_stamp() { date '+%Y-%m-%d %H:%M'; }
 git_head() { git rev-parse --short HEAD; }
-# ¿Hay una línea "- Pendiente deploy:" nueva en LOG.md desde $1 que pida algo? "ninguno", "nada", "N/A"… no cuentan.
+# Is there a new "- Pendiente deploy:" line in LOG.md since $1 that asks for something? "ninguno", "nada", "N/A"… don't count.
+# LOG.md stays in Spanish (DEC-018), so the patterns do too.
 deploy_pending_since() {
   git diff "$1" HEAD -- spec/LOG.md | grep -E '^\+- Pendiente deploy:' \
     | grep -qviE '^\+- Pendiente deploy:[[:space:]]*(ningun[oa]?|nada|no aplica|n/?a|—|-)([[:space:].,;:()]|$)'
 }
 
-# ---------- Aviso ntfy al detenerse (T-21) ----------
-ntfy_send() { # $1 = prioridad (high|default), $2 = tags, $3 = título, $4 = mensaje. Nunca falla.
+# ---------- ntfy notice on stop (T-21) ----------
+ntfy_send() { # $1 = priority (high|default), $2 = tags, $3 = title, $4 = message. Never fails.
   NOTIFIED=1
   [ -n "$NTFY_TOPIC" ] || return 0
   if [ "$DRY_RUN" = 1 ]; then
-    printf '\n== Aviso ntfy que se enviaría (no enviado: --dry-run; prioridad %s, tags %s) ==\n%s\n%s\n' "$1" "$2" "$3" "$4"
+    printf '\n== ntfy notice that would be sent (not sent: --dry-run; priority %s, tags %s) ==\n%s\n%s\n' "$1" "$2" "$3" "$4"
     return 0
   fi
   local err=/dev/null rc=0
   [ -d "$RUN_DIR" ] && err="$RUN_DIR/ntfy.err"
   curl -fsS --max-time 15 -o /dev/null -H "Title: $3" -H "Priority: $1" -H "Tags: $2" \
     --data-binary "$4" "$NTFY_URL/$NTFY_TOPIC" 2>>"$err" || rc=$?
-  if [ "$rc" = 0 ]; then log "aviso ntfy enviado (prioridad $1)"
-  else log "aviso: ntfy falló (código $rc); la corrida no cambia su resultado"; fi
+  if [ "$rc" = 0 ]; then log "ntfy notice sent (priority $1)"
+  else log "warning: ntfy failed (code $rc); the run keeps its result"; fi
   return 0
 }
-short_list() { # lista de tareas acotada para el aviso: las 5 primeras y "… (+N más)"
+short_list() { # task list bounded for the notice: the first 5 and "… (+N more)"
   local n=$#
-  if [ "$n" -le 5 ]; then printf '%s' "$*"; else printf '%s … (+%s más)' "${*:1:5}" "$((n - 5))"; fi
+  if [ "$n" -le 5 ]; then printf '%s' "$*"; else printf '%s … (+%s more)' "${*:1:5}" "$((n - 5))"; fi
 }
-ntfy_body() { # $1 = motivo, $2 = próxima acción. Campos fijos completos y primero; solo el detalle se recorta (DEC-016).
-  # Los campos fijos están acotados de origen (listas con short_list, motivo y próxima acción sin texto libre largo:
-  # ver STOP_REASON), así que siempre caben en el mínimo de 1000 caracteres; ntfy admite 4096 bytes por mensaje.
+ntfy_body() { # $1 = reason, $2 = next action. Fixed fields complete and first; only the detail is trimmed (DEC-016).
+  # The fixed fields are bounded at the source (lists via short_list, reason and next action without long free text:
+  # see STOP_REASON), so they always fit in the 1000-character minimum; ntfy accepts 4096 bytes per message.
   local max=${AUTOPILOT_NTFY_MAX:-3000}
   [ "$max" -ge 1000 ] 2>/dev/null || max=1000
-  local fallidas="${FAILURES} fallo(s)"
-  [ "${#ABANDONED[@]}" -gt 0 ] && fallidas+="; abandonadas: $(short_list "${ABANDONED[@]}")"
-  [ "${#REJECTED[@]}" -gt 0 ] && fallidas+="; rechazadas por el revisor: $(short_list "${REJECTED[@]}")"
+  local failed="${FAILURES} failure(s)"
+  [ "${#ABANDONED[@]}" -gt 0 ] && failed+="; abandoned: $(short_list "${ABANDONED[@]}")"
+  [ "${#REJECTED[@]}" -gt 0 ] && failed+="; rejected by the reviewer: $(short_list "${REJECTED[@]}")"
   local fixed detail room
-  fixed=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s) · Fallidas: %s\nPróxima acción: %s\nCorrida %s (registros en .autopilot/%s/)' \
-    "$1" "$TASKS_DONE" "$fallidas" "$2" "$RUN_ID" "$RUN_ID")
-  detail=$(printf '%s; ' "${SUMMARY[@]:-nada}"); detail=${detail%; }
-  room=$((max - ${#fixed} - 10))   # 10 = "\nDetalle: "
+  fixed=$(printf 'Stop reason: %s\nDone: %s task(s) · Failed: %s\nNext action: %s\nRun %s (logs in .autopilot/%s/)' \
+    "$1" "$TASKS_DONE" "$failed" "$2" "$RUN_ID" "$RUN_ID")
+  detail=$(printf '%s; ' "${SUMMARY_EN[@]:-nothing}"); detail=${detail%; }
+  room=$((max - ${#fixed} - 9))   # 9 = "\nDetail: "
   if [ "$room" -le 1 ]; then printf '%s' "$fixed"; return 0; fi
   [ "${#detail}" -gt "$room" ] && detail="${detail:0:$((room - 1))}…"
-  printf '%s\nDetalle: %s' "$fixed" "$detail"
+  printf '%s\nDetail: %s' "$fixed" "$detail"
 }
-notify_stop() { # aviso de la parada normal (tras write_summary)
+notify_stop() { # notice of the normal stop (after write_summary)
   local repo intervention=0 next
   repo=$(basename "$ROOT")
   [ "$ABNORMAL" = 1 ] && intervention=1
-  case "$STOP_REASON" in presupuesto*) intervention=1 ;; esac
+  case "$STOP_REASON_EN" in "time budget"*|"task budget"*) intervention=1 ;; esac
   [ "${#DEPLOY_PENDING[@]}" -gt 0 ] && intervention=1
   [ "${#USER_WAIT[@]}" -gt 0 ] && intervention=1
   [ "${#REJECTED[@]}" -gt 0 ] && intervention=1
   if [ "$(node -e 'console.log(require(process.argv[1]).tasks.some(t=>t.status==="blocked"))' "$ROOT/spec/TASKS.json")" = true ]; then
-    intervention=1; next="resolver el bloqueo (${STOP_REASON}) y relanzar el autopilot"
-  elif [ "${#ABANDONED[@]}" -gt 0 ]; then next="revisar los fallos de $(short_list "${ABANDONED[@]}") en .autopilot/${RUN_ID}/ y relanzar"
-  elif [ "${#REJECTED[@]}" -gt 0 ]; then next="atender los hallazgos del revisor (review de $(short_list "${REJECTED[@]}") en spec/TASKS.json)"
-  elif [ "$ABNORMAL" = 1 ]; then next="revisar a mano: ${STOP_REASON}"
-  elif [ "${#DEPLOY_PENDING[@]}" -gt 0 ]; then next="correr npm run deploy:dev ($(short_list "${DEPLOY_PENDING[@]}")) y relanzar el autopilot"
-  elif [ "${#USER_WAIT[@]}" -gt 0 ]; then next="aprobar el diff de tests/acceptance/ de $(short_list "${USER_WAIT[@]}")"
-  elif [ "$intervention" = 1 ]; then next="relanzar el autopilot para seguir (límite alcanzado)"
-  else next="revisar el resumen en spec/LOG.md y los veredictos en TASKS.json; decidir accepted"; fi
-  local msg; msg=$(ntfy_body "$STOP_REASON" "$next")
-  if [ "$intervention" = 1 ]; then ntfy_send high warning,rotating_light "autopilot $repo: requiere tu intervención" "$msg"
-  else ntfy_send default white_check_mark "autopilot $repo: terminó bien" "$msg"; fi
+    intervention=1; next="resolve the block (${STOP_REASON_EN}) and relaunch the autopilot"
+  elif [ "${#ABANDONED[@]}" -gt 0 ]; then next="review the failures of $(short_list "${ABANDONED[@]}") in .autopilot/${RUN_ID}/ and relaunch"
+  elif [ "${#REJECTED[@]}" -gt 0 ]; then next="address the reviewer's findings (review of $(short_list "${REJECTED[@]}") in spec/TASKS.json)"
+  elif [ "$ABNORMAL" = 1 ]; then next="check by hand: ${STOP_REASON_EN}"
+  elif [ "${#DEPLOY_PENDING[@]}" -gt 0 ]; then next="run npm run deploy:dev ($(short_list "${DEPLOY_PENDING[@]}")) and relaunch the autopilot"
+  elif [ "${#USER_WAIT[@]}" -gt 0 ]; then next="approve the tests/acceptance/ diff of $(short_list "${USER_WAIT[@]}")"
+  elif [ "$intervention" = 1 ]; then next="relaunch the autopilot to continue (limit reached)"
+  else next="review the summary in spec/LOG.md and the verdicts in TASKS.json; decide accepted"; fi
+  local msg; msg=$(ntfy_body "$STOP_REASON_EN" "$next")
+  if [ "$intervention" = 1 ]; then ntfy_send high warning,rotating_light "autopilot $repo: needs your intervention" "$msg"
+  else ntfy_send default white_check_mark "autopilot $repo: finished fine" "$msg"; fi
 }
-on_exit() { # $1 = código de salida; si la corrida se cae antes del aviso normal, avisa igual
+on_exit() { # $1 = exit code; if the run crashes before the normal notice, notify anyway
   rm -rf "${AWS_SANDBOX:-}"
   if [ "$NOTIFIED" = 0 ] && [ "$1" != 0 ]; then
-    ntfy_send high warning,rotating_light "autopilot $(basename "$ROOT"): se detuvo inesperadamente" \
-      "$(ntfy_body "el autopilot terminó con código $1 antes de anotar su resumen${STOP_REASON:+ ($STOP_REASON)}" \
-        "revisar la terminal, .autopilot/${RUN_ID}/ (live.log, ntfy.err) y git status; relanzar el autopilot")"
+    ntfy_send high warning,rotating_light "autopilot $(basename "$ROOT"): stopped unexpectedly" \
+      "$(ntfy_body "the autopilot exited with code $1 before writing its summary${STOP_REASON_EN:+ ($STOP_REASON_EN)}" \
+        "check the terminal, .autopilot/${RUN_ID}/ (live.log, ntfy.err) and git status; relaunch the autopilot")"
   fi
 }
 
-# ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
+# ---------- Environment guards (inherited by claude/codex and everything they launch) ----------
 export AUTOPILOT=1
 export CI=1
-# AWS: solo el perfil autopilot (DEC-010, DEC-015), copiado a archivos temporales; default y el resto no existen para los hijos.
+# AWS: only the autopilot profile (DEC-010, DEC-015), copied to temporary files; default and the rest don't exist for the children.
 AUTOPILOT_AWS_PROFILE=${AUTOPILOT_AWS_PROFILE:-autopilot}
 AWS_SOURCE=${AUTOPILOT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
 unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE AWS_DEFAULT_REGION
 AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/autopilot-aws.XXXXXX")
 trap 'on_exit $?' EXIT
-aws_profile_key() { # $1 = clave; lee la sección [$AUTOPILOT_AWS_PROFILE] del archivo de credenciales de origen
+aws_profile_key() { # $1 = key; reads the [$AUTOPILOT_AWS_PROFILE] section of the source credentials file
   [ -r "$AWS_SOURCE" ] || return 0
   awk -v sec="[$AUTOPILOT_AWS_PROFILE]" -v key="$1" '
     /^[[:space:]]*\[/ { gsub(/[[:space:]]/, ""); inside = ($0 == sec); next }
@@ -224,13 +233,13 @@ export AWS_CONFIG_FILE=$AWS_SANDBOX/config AWS_SHARED_CREDENTIALS_FILE=$AWS_SAND
 export AWS_PROFILE=$AUTOPILOT_AWS_PROFILE AWS_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true
 n=0
 for remote in $(git remote); do
-  export "GIT_CONFIG_KEY_${n}=remote.${remote}.pushurl" "GIT_CONFIG_VALUE_${n}=/nonexistent/autopilot-sin-push"
+  export "GIT_CONFIG_KEY_${n}=remote.${remote}.pushurl" "GIT_CONFIG_VALUE_${n}=/nonexistent/autopilot-no-push"
   n=$((n + 1))
 done
 [ "$n" -gt 0 ] && export GIT_CONFIG_COUNT=$n
 unset n remote
 
-# ---------- Permisos del implementador (claude -p) ----------
+# ---------- Implementer permissions (claude -p) ----------
 IMPL_ALLOWED=(
   Read Edit Write MultiEdit Glob Grep TodoWrite
   "Bash(npm *)" "Bash(npx *)" "Bash(node *)" "Bash(tsx *)" "Bash(git *)"
@@ -255,7 +264,8 @@ REVIEW_ALLOWED=(
 )
 REVIEW_DENIED=(Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent "Bash(git push*)" "Bash(git commit*)" "Bash(git add*)")
 
-IMPL_PROMPT='Lee AGENTS.md y ejecuta %s. Detente según las reglas de autoridad. Corre `npm run test:acceptance` y `npm run smoke` sin prefijos de entorno: el orquestador ya fija el perfil AWS. Usa comandos simples, uno por llamada: sin `&&` ni `cd`. Si la tarea necesita desplegar, no lo intentes: déjala in_progress, anota en tu entrada de spec/LOG.md una línea `- Pendiente deploy:` con qué desplegar y qué correr después, y confirma.'
+# "- Pendiente deploy:" stays in Spanish: it's a spec/LOG.md line (DEC-018) that deploy_pending_since looks for.
+IMPL_PROMPT='Read AGENTS.md and execute %s. Stop according to the authority rules. Run `npm run test:acceptance` and `npm run smoke` without environment prefixes: the orchestrator already sets the AWS profile. Use simple commands, one per call: no `&&` and no `cd`. If the task needs a deploy, do not attempt it: leave it in_progress, add to your spec/LOG.md entry a `- Pendiente deploy:` line saying what to deploy and what to run afterwards, and commit.'
 impl_cmd() { # $1 = ID
   # shellcheck disable=SC2059
   local cmd=(claude -p "$(printf "$IMPL_PROMPT" "$1")"
@@ -267,13 +277,13 @@ impl_cmd() { # $1 = ID
 }
 
 case "$REVIEWER" in
-  codex) command -v codex >/dev/null || die "AUTOPILOT_REVIEWER=codex pero codex no está en PATH"; REVIEWER_KIND=codex ;;
+  codex) command -v codex >/dev/null || die "AUTOPILOT_REVIEWER=codex but codex is not in PATH"; REVIEWER_KIND=codex ;;
   claude) REVIEWER_KIND=claude ;;
   auto) if command -v codex >/dev/null; then REVIEWER_KIND=codex; else REVIEWER_KIND=claude; fi ;;
-  *) die "AUTOPILOT_REVIEWER inválido: $REVIEWER (auto|codex|claude)" ;;
+  *) die "invalid AUTOPILOT_REVIEWER: $REVIEWER (auto|codex|claude)" ;;
 esac
 
-review_cmd() { # imprime la orden del revisor; lee el prompt por stdin
+review_cmd() { # prints the reviewer command; it reads the prompt from stdin
   local cmd
   if [ "$REVIEWER_KIND" = codex ]; then
     cmd=(codex exec --sandbox read-only -C "$ROOT" --ephemeral --color never -o "$RUN_DIR/REVIEW-last.txt" -)
@@ -287,8 +297,8 @@ review_cmd() { # imprime la orden del revisor; lee el prompt por stdin
   printf '%q ' "${cmd[@]}"
 }
 
-# ---------- Prompt del revisor (sdd.md §7.5) ----------
-review_prompt() { # $1 = ID; escribe el prompt completo en stdout
+# ---------- Reviewer prompt (sdd.md §7.5) ----------
+review_prompt() { # $1 = ID; writes the full prompt to stdout
   local id=$1 commits diff_file
   diff_file=$RUN_DIR/$id-diff.patch
   commits=$(git log --reverse --format=%H -E --grep="^Task:[[:space:]]*$id([[:space:],]|$)")
@@ -299,46 +309,47 @@ review_prompt() { # $1 = ID; escribe el prompt completo en stdout
     printf '\n' >>"$diff_file"
   done
   cat <<EOF
-Eres un revisor independiente con contexto limpio. No participaste en la implementación y no debes confiar en lo que
-afirme el implementador: solo cuenta lo que ves en el diff y lo que puedas ejecutar.
+You are an independent reviewer with clean context. You did not take part in the implementation and must not trust
+what the implementer claims: only what you see in the diff and what you can run counts.
 
-Recibes únicamente: (a) la tarea $id con los requisitos (REQ) que cita, (b) las decisiones aceptadas (DEC) que cita y
-(c) el diff de los commits de la tarea. Responde tres preguntas:
-  1. ¿Cada requisito está implementado y probado, incluidos los bordes?
-  2. ¿Cambió algo fuera del alcance de la tarea?
-  3. ¿Se violó una decisión aceptada?
+You receive only: (a) task $id with the requirements (REQ) it cites, (b) the accepted decisions (DEC) it cites and
+(c) the diff of the task's commits. Answer three questions:
+  1. Is every requirement implemented and tested, edges included?
+  2. Did anything change outside the task's scope?
+  3. Was an accepted decision violated?
 
-Reglas:
-- Excluye explícitamente estilo y preferencias. No propongas refactors ni mejoras.
-- Cada hallazgo debe citar un REQ-NNN o una DEC-NNN. Un hallazgo sin cita no bloquea (puedes mencionarlo en "notes").
-- Confirma cada hallazgo bloqueante ejecutando algo (una prueba, un comando) antes de emitirlo. Si no pudiste
-  ejecutarlo, dilo en el hallazgo. El repositorio está en $ROOT en modo solo lectura: puedes correr
-  \`npm test\`, \`npm run lint\`, \`npm run typecheck\`, \`npm run check:spec\` y \`git show <sha>\`.
-- No modifiques ningún archivo. No hagas commits.
-- El veredicto es "rejected" solo si existe al menos un hallazgo bloqueante con cita; si no, "approved".
+Rules:
+- Explicitly exclude style and preferences. Do not propose refactors or improvements.
+- Every finding must cite a REQ-NNN or a DEC-NNN. A finding without a citation does not block (you may mention it in "notes").
+- Confirm every blocking finding by running something (a test, a command) before reporting it. If you could not
+  run it, say so in the finding. The repository is at $ROOT in read-only mode: you may run
+  \`npm test\`, \`npm run lint\`, \`npm run typecheck\`, \`npm run check:spec\` and \`git show <sha>\`.
+- Do not modify any file. Do not commit.
+- The verdict is "rejected" only if there is at least one blocking finding with a citation; otherwise "approved".
+- Write "findings" and "notes" in Spanish: they are stored in spec/TASKS.json and spec/LOG.md, which stay in Spanish.
 
-Termina tu respuesta con exactamente un bloque de código JSON con esta forma (sin texto después del bloque):
+End your answer with exactly one JSON code block of this shape (no text after the block):
 \`\`\`json
 {"verdict": "approved" | "rejected", "findings": ["REQ-00X: …", "DEC-00X: …"], "notes": "observaciones no bloqueantes"}
 \`\`\`
 
 $(tasks context "$id")
 
-# Commits de la tarea
+# Task commits
 $(for sha in $commits; do git show -s --format='%h %s' "$sha"; done)
 
 # Diff
 $(head -c 400000 "$diff_file")
-$( [ "$(wc -c <"$diff_file")" -gt 400000 ] && echo "… (diff truncado a 400 KB; usa git show <sha> para ver el resto)" )
+$( [ "$(wc -c <"$diff_file")" -gt 400000 ] && echo "… (diff truncated to 400 KB; use git show <sha> to see the rest)" )
 EOF
 }
 
-# ---------- Bitácora ----------
-append_log() { # $1 = encabezado-agente, resto en stdin
+# ---------- Log (spec/LOG.md, in Spanish) ----------
+append_log() { # $1 = agent heading, rest on stdin
   { printf '\n## %s · %s\n' "$(now_stamp)" "$1"; cat; } >>"$ROOT/spec/LOG.md"
 }
 
-commit_spec() { # $1 = asunto, $2 = Task, $3 = Req
+commit_spec() { # $1 = subject, $2 = Task, $3 = Req
   git add spec/TASKS.json spec/LOG.md
   git commit -q -m "$1" -m "Task: $2
 Req: $3
@@ -356,8 +367,8 @@ write_summary() {
   local manual
   manual=$(tasks manual-pending | node -e 'const l=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(l.length?l.join("; "):"ninguna")')
   local tokens
-  tokens=$(tokens_summary | paste -sd ';' | sed 's/;/; /g')
-  log "tokens (implementador): $tokens"
+  tokens=$(tokens_summary --lang es | paste -sd ';' | sed 's/;/; /g')
+  log "tokens (implementer): $(tokens_summary | paste -sd ';' | sed 's/;/; /g')"
   local body
   body=$(cat <<EOF
 - Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .autopilot/${RUN_ID}/.
@@ -372,7 +383,7 @@ write_summary() {
 EOF
 )
   if [ "$DRY_RUN" = 1 ]; then
-    echo; echo "== Entrada que se anotaría en spec/LOG.md (no escrita: --dry-run) =="
+    echo; echo "== Entry that would be added to spec/LOG.md (not written: --dry-run) =="
     printf '## %s · autopilot (scripts/autopilot.sh)\n%s\n' "$(now_stamp)" "$body"
     return
   fi
@@ -380,37 +391,40 @@ EOF
   git status --porcelain | grep -q . && dirty=1
   printf '%s\n' "$body" | append_log "autopilot (scripts/autopilot.sh)"
   if [ "$dirty" = 1 ]; then
-    log "resumen anotado en spec/LOG.md SIN commit: el árbol ya estaba sucio y nada se confirma a ciegas (git status)"
+    log "summary added to spec/LOG.md WITHOUT commit: the tree was already dirty and nothing is committed blindly (git status)"
     return
   fi
   local sha
-  sha=$(commit_spec "Orquestador nocturno: resumen de la corrida $RUN_ID" "T-08" "N/A") || die "no se pudo confirmar el resumen en LOG.md; revisa git status"
-  log "resumen anotado en spec/LOG.md (commit $sha)"
+  sha=$(commit_spec "Nightly orchestrator: summary of run $RUN_ID" "T-08" "N/A") || die "could not commit the summary in LOG.md; check git status"
+  log "summary added to spec/LOG.md (commit $sha)"
 }
 
-# ---------- Revisión independiente ----------
-review_task() { # $1 = ID; devuelve 0 si hubo veredicto
+# ---------- Independent review ----------
+review_task() { # $1 = ID; returns 0 if there was a verdict
   local id=$1 kind out prompt_file verdict_file
   prompt_file=$RUN_DIR/$id-review-prompt.md verdict_file=$RUN_DIR/$id-verdict.json
   kind=$REVIEWER_KIND
   review_prompt "$id" >"$prompt_file"
-  log "revisor ($kind) sobre $id: $(wc -c <"$prompt_file") bytes de contexto"
+  log "reviewer ($kind) on $id: $(wc -c <"$prompt_file") bytes of context"
   out=$RUN_DIR/$id-review-output.txt
   local rc=0 t
-  t=$(remaining); [ "$t" -lt 600 ] && t=600   # una tarea terminada siempre se revisa (mín. 10 min)
+  t=$(remaining); [ "$t" -lt 600 ] && t=600   # a finished task is always reviewed (min. 10 min)
   # shellcheck disable=SC2046
   eval timeout -k 30 "$t" "$(review_cmd)" <"$prompt_file" >"$out" 2>"$RUN_DIR/$id-review.err" || rc=$?
   [ "$kind" = codex ] && [ -s "$RUN_DIR/REVIEW-last.txt" ] && cp "$RUN_DIR/REVIEW-last.txt" "$out"
   if [ "$rc" -ne 0 ] && [ ! -s "$out" ]; then
-    STOP_REASON="el revisor ($kind) terminó con código $rc sin salida (ver $RUN_DIR/$id-review.err)"; ABNORMAL=1
+    stop_reason "el revisor ($kind) terminó con código $rc sin salida (ver $RUN_DIR/$id-review.err)" \
+      "the reviewer ($kind) exited with code $rc without output (see $RUN_DIR/$id-review.err)"; ABNORMAL=1
     return 1
   fi
   if ! tasks parse-verdict "$out" >"$verdict_file"; then
-    STOP_REASON="el revisor ($kind) no entregó un veredicto JSON válido (ver $out)"; ABNORMAL=1
+    stop_reason "el revisor ($kind) no entregó un veredicto JSON válido (ver $out)" \
+      "the reviewer ($kind) gave no valid JSON verdict (see $out)"; ABNORMAL=1
     return 1
   fi
   local label
   if [ "$kind" = codex ]; then label="codex exec $(codex --version 2>/dev/null | head -1)"; else label="claude -p $(claude --version 2>/dev/null | head -1)"; fi
+  # The reviewer label is stored in spec/TASKS.json, so its wording stays in Spanish (DEC-018).
   node -e '
     const fs=require("fs");const [f,label]=process.argv.slice(1);
     const v=JSON.parse(fs.readFileSync(f,"utf8"));v.reviewer=label+" (contexto limpio, autopilot)";
@@ -419,7 +433,7 @@ review_task() { # $1 = ID; devuelve 0 si hubo veredicto
   verdict=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).verdict)' "$verdict_file")
   findings=$(node -e 'const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(v.findings.length?v.findings.join(" | "):"sin hallazgos bloqueantes")' "$verdict_file")
   new_status=$(tasks set-review "$id" "$verdict_file")
-  log "veredicto sobre $id: $verdict → estado $new_status"
+  log "verdict on $id: $verdict → status $new_status"
   local reqs
   reqs=$(node -e 'const t=require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]);console.log(t.reqs.length?t.reqs.join(", "):(t.kind==="tooling"?"N/A":"none"))' "$ROOT/spec/TASKS.json" "$id")
   append_log "revisor independiente ($label) vía autopilot" <<EOF
@@ -428,22 +442,23 @@ review_task() { # $1 = ID; devuelve 0 si hubo veredicto
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
 EOF
   local sha
-  sha=$(commit_spec "$id: revisión independiente ($verdict)" "$id" "$reqs") || { STOP_REASON="no se pudo confirmar el veredicto de $id"; ABNORMAL=1; return 1; }
-  SUMMARY+=("$id revisada por $kind: $verdict → $new_status (commit $sha)")
+  sha=$(commit_spec "$id: independent review ($verdict)" "$id" "$reqs") || {
+    stop_reason "no se pudo confirmar el veredicto de $id" "could not commit the verdict on $id"; ABNORMAL=1; return 1; }
+  summary "$id revisada por $kind: $verdict → $new_status (commit $sha)" "$id reviewed by $kind: $verdict → $new_status (commit $sha)"
   if [ "$verdict" = rejected ]; then REJECTED+=("$id"); fi
   return 0
 }
 
-# ---------- Implementación ----------
-run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si falló, 2 si hay que detenerse,
-             # 3 si quedó sin cambios, 4 si espera un despliegue
+# ---------- Implementation ----------
+run_task() { # $1 = ID, $2 = attempt; returns 0 if the task moved forward, 1 if it failed, 2 if it must stop,
+             # 3 if it ended unchanged, 4 if it waits for a deploy, 5 if it waits for the user's approval
   local id=$1 attempt=$2 head_before rc=0 status before status_before
   before=$RUN_DIR/$id-before-$attempt.json
   tasks snapshot >"$before"
   head_before=$(git_head)
   status_before=$(tasks status "$id")
-  log "implementador sobre $id (intento $attempt, $(remaining) s restantes)"
-  # Flujo stream-json → líneas legibles en la terminal y live.log; copia íntegra en .jsonl, evento final en .json.
+  log "implementer on $id (attempt $attempt, $(remaining) s left)"
+  # stream-json → readable lines in the terminal and live.log; full copy in .jsonl, final event in .json.
   set +e
   # shellcheck disable=SC2046
   eval timeout -k 30 "$(remaining)" "$(impl_cmd "$id")" 2>"$RUN_DIR/$id-impl-$attempt.err" \
@@ -456,99 +471,118 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
     import fs from "fs";const {usageOf,formatUsage}=await import(process.argv[3]);
     try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
     fs.writeFileSync(process.argv[2],(r.result??"")+"\n");const u=usageOf(r);
-    console.log(`turnos=${r.num_turns} tokens: ${u?formatUsage(u):"sin usage"} error=${r.is_error}`)}catch{console.log("(salida no JSON)")}' \
+    console.log(`turns=${r.num_turns} tokens: ${u?formatUsage(u):"no usage"} error=${r.is_error}`)}catch{console.log("(non-JSON output)")}' \
     "$RUN_DIR/$id-impl-$attempt.json" "$RUN_DIR/$id-impl-$attempt.txt" "$ROOT/scripts/lib/autopilot-stream.mjs" </dev/null)"
-  log "tokens de $id en la corrida: $(tokens_summary | grep "^$id: " | sed "s/^$id: //" || echo "sin usage")"
+  log "tokens for $id in the run: $(tokens_summary | grep "^$id: " | sed "s/^$id: //" || echo "no usage")"
   status=$(tasks status "$id" 2>/dev/null || echo "?")
-  log "implementador terminó (código $rc); $id → $status; HEAD $head_before → $(git_head)"
+  log "implementer finished (code $rc); $id → $status; HEAD $head_before → $(git_head)"
 
   if git status --porcelain | grep -q .; then
-    STOP_REASON="árbol de trabajo sucio tras el implementador en $id (nada se descarta; revisar a mano)"; ABNORMAL=1
+    stop_reason "árbol de trabajo sucio tras el implementador en $id (nada se descarta; revisar a mano)" \
+      "dirty working tree after the implementer on $id (nothing is discarded; check by hand)"; ABNORMAL=1
     return 2
   fi
   if ! tasks check-authority "$before"; then
-    STOP_REASON="el implementador otorgó un estado reservado en $id (violación de autoridad; revisar a mano)"; ABNORMAL=1
+    stop_reason "el implementador otorgó un estado reservado en $id (violación de autoridad; revisar a mano)" \
+      "the implementer granted a reserved status on $id (authority violation; check by hand)"; ABNORMAL=1
     return 2
   fi
   if [ "$status" = in_progress ] && deploy_pending_since "$head_before"; then
-    SUMMARY+=("$id: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida")
+    summary "$id: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida" \
+      "$id: the implementer left it in_progress with Pendiente deploy; skipped in this run"
     return 4
   fi
   if [ "$status" = in_progress ] && [ "$(tasks kind "$id")" = spec ] && [ "$(git_head)" != "$head_before" ]; then
-    SUMMARY+=("$id: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/; se salta en esta corrida")
+    summary "$id: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/; se salta en esta corrida" \
+      "$id: spec task in_progress; waits for the user to approve the tests/acceptance/ diff; skipped in this run"
     return 5
   fi
   if [ "$rc" -eq 0 ] && [ "$(git_head)" = "$head_before" ] && [ "$status" = "$status_before" ]; then
-    SUMMARY+=("$id: el implementador la dejó sin cambios (estado $status); se salta en esta corrida")
+    summary "$id: el implementador la dejó sin cambios (estado $status); se salta en esta corrida" \
+      "$id: the implementer left it unchanged (status $status); skipped in this run"
     return 3
   fi
   case "$status" in
     blocked)
-      # blocked_by debería ser un id (check:spec), pero este camino no corre check:spec y el hook se puede saltar:
-      # el motivo lleva un extracto de 200 caracteres como máximo (completo en TASKS.json)
-      STOP_REASON="$id quedó blocked ($(node -e 'const b=String(require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]).blocked_by);console.log(b.length>200?b.slice(0,199)+"…":b)' "$ROOT/spec/TASKS.json" "$id"))"
-      SUMMARY+=("$id bloqueada por el implementador"); ABNORMAL=1
+      # blocked_by should be an id (check:spec), but this path doesn't run check:spec and the hook can be skipped:
+      # the reason carries an excerpt of at most 200 characters (full text in TASKS.json)
+      local excerpt
+      excerpt=$(node -e 'const b=String(require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]).blocked_by);console.log(b.length>200?b.slice(0,199)+"…":b)' "$ROOT/spec/TASKS.json" "$id")
+      stop_reason "$id quedó blocked ($excerpt)" "$id ended blocked ($excerpt)"
+      summary "$id bloqueada por el implementador" "$id blocked by the implementer"; ABNORMAL=1
       return 2 ;;
     verified_auto|done)
       if ! npm run -s check:spec >"$RUN_DIR/$id-check-spec.txt" 2>&1; then
-        SUMMARY+=("$id quedó $status pero check:spec falla")
+        summary "$id quedó $status pero check:spec falla" "$id ended $status but check:spec fails"
         VERIFIED+=("npm run check:spec tras $id → falla (ver .autopilot/$RUN_ID/$id-check-spec.txt)")
         return 1
       fi
       VERIFIED+=("npm run check:spec tras $id → ok")
-      SUMMARY+=("$id implementada ($head_before..$(git_head), estado $status)")
+      summary "$id implementada ($head_before..$(git_head), estado $status)" "$id implemented ($head_before..$(git_head), status $status)"
       return 0 ;;
     *)
-      [ "$rc" -eq 124 ] && SUMMARY+=("$id: el implementador agotó el tiempo (estado $status)") || SUMMARY+=("$id: el implementador terminó en $status (código $rc)")
+      if [ "$rc" -eq 124 ]; then
+        summary "$id: el implementador agotó el tiempo (estado $status)" "$id: the implementer ran out of time (status $status)"
+      else
+        summary "$id: el implementador terminó en $status (código $rc)" "$id: the implementer ended in $status (code $rc)"
+      fi
       return 1 ;;
   esac
 }
 
-review_pending() { # revisa las tareas en verified_auto aún no revisadas en esta corrida; 1 = detenerse
+review_pending() { # reviews the verified_auto tasks not yet reviewed in this run; 1 = stop
   local id
   for id in $(tasks pending-reviews | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).join(" "))'); do
     case "$REVIEWED_IDS" in *" $id "*) continue ;; esac
-    if [ "$(remaining)" -lt 600 ]; then STOP_REASON="presupuesto de tiempo agotado antes de revisar $id (quedan $(remaining)s)"; return 1; fi
+    if [ "$(remaining)" -lt 600 ]; then
+      stop_reason "presupuesto de tiempo agotado antes de revisar $id (quedan $(remaining)s)" \
+        "time budget exhausted before reviewing $id ($(remaining)s left)"
+      return 1
+    fi
     REVIEWED_IDS="$REVIEWED_IDS$id "
-    log "$id espera revisión independiente (verified_auto): se revisa antes de elegir tarea nueva"
+    log "$id awaits independent review (verified_auto): reviewed before picking a new task"
     review_task "$id" || return 1
   done
   return 0
 }
 
-# ---------- Precondiciones ----------
-command -v claude >/dev/null || die "claude no está en PATH"
-command -v timeout >/dev/null || die "falta coreutils timeout"
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "no es un repositorio git"
+# ---------- Preconditions ----------
+command -v claude >/dev/null || die "claude is not in PATH"
+command -v timeout >/dev/null || die "coreutils timeout is missing"
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not a git repository"
 if git status --porcelain | grep -q .; then
-  [ "$DRY_RUN" = 1 ] || die "árbol de trabajo sucio; confirma o guarda los cambios antes de la corrida nocturna"
-  echo "autopilot: aviso: árbol de trabajo sucio (una corrida real se detendría aquí)" >&2
+  [ "$DRY_RUN" = 1 ] || die "dirty working tree; commit or stash the changes before the nightly run"
+  echo "autopilot: warning: dirty working tree (a real run would stop here)" >&2
 fi
-mkdir -p "$ROOT/.autopilot" && printf '*\n' >"$ROOT/.autopilot/.gitignore"   # registros fuera de git
+mkdir -p "$ROOT/.autopilot" && printf '*\n' >"$ROOT/.autopilot/.gitignore"   # logs outside git
 exec 9>"$ROOT/.autopilot/lock"
-flock -n 9 || die "otra corrida nocturna está en marcha (.autopilot/lock)"
+flock -n 9 || die "another nightly run is in progress (.autopilot/lock)"
 mkdir -p "$RUN_DIR"
 
-[ -n "$AWS_KEY_ID" ] || echo "autopilot: aviso: sin perfil [$AUTOPILOT_AWS_PROFILE] en $AWS_SOURCE; aceptación y humo fallarán por credenciales" >&2
-log "inicio en $(git_head) (rama $(git rev-parse --abbrev-ref HEAD)); presupuesto ${BUDGET}s, máx. ${MAX_TASKS} tareas, máx. ${MAX_FAILURES} fallos por tarea; revisor: $REVIEWER_KIND"
+[ -n "$AWS_KEY_ID" ] || echo "autopilot: warning: no [$AUTOPILOT_AWS_PROFILE] profile in $AWS_SOURCE; acceptance and smoke will fail for lack of credentials" >&2
+log "start at $(git_head) (branch $(git rev-parse --abbrev-ref HEAD)); budget ${BUDGET}s, max ${MAX_TASKS} tasks, max ${MAX_FAILURES} failures per task; reviewer: $REVIEWER_KIND"
 if [ "$DRY_RUN" = 1 ]; then
   echo
-  echo "== Ensayo (--dry-run): no se lanza claude/codex, no se escribe LOG.md ni se hacen commits =="
-  echo "Guardas de entorno: AWS_PROFILE=$AWS_PROFILE ($( [ -n "$AWS_KEY_ID" ] && echo "llave $AWS_KEY_ID" || echo "SIN llaves en $AWS_SOURCE"); único perfil en AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE temporales) AWS_EC2_METADATA_DISABLED=$AWS_EC2_METADATA_DISABLED"
-  echo "Remotos con push anulado: $(git remote | tr '\n' ' ')${GIT_CONFIG_COUNT:+(GIT_CONFIG_COUNT=$GIT_CONFIG_COUNT)}$( [ -z "$(git remote)" ] && echo '(ninguno configurado)')"
+  echo "== Dry run (--dry-run): claude/codex are not launched, LOG.md is not written and no commits are made =="
+  echo "Environment guards: AWS_PROFILE=$AWS_PROFILE ($( [ -n "$AWS_KEY_ID" ] && echo "key $AWS_KEY_ID" || echo "NO keys in $AWS_SOURCE"); the only profile in the temporary AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE) AWS_EC2_METADATA_DISABLED=$AWS_EC2_METADATA_DISABLED"
+  echo "Remotes with push disabled: $(git remote | tr '\n' ' ')${GIT_CONFIG_COUNT:+(GIT_CONFIG_COUNT=$GIT_CONFIG_COUNT)}$( [ -z "$(git remote)" ] && echo '(none configured)')"
   echo
 fi
 
-# ---------- Ciclo ----------
+# ---------- Cycle ----------
 RETRY=""
 while :; do
-  if [ "$(remaining)" -lt 600 ]; then STOP_REASON="presupuesto de tiempo agotado (${BUDGET}s; quedan $(remaining)s, menos de 10 min)"; break; fi
-  if [ "$TASKS_DONE" -ge "$MAX_TASKS" ]; then STOP_REASON="presupuesto de tareas alcanzado ($MAX_TASKS)"; break; fi
+  if [ "$(remaining)" -lt 600 ]; then
+    stop_reason "presupuesto de tiempo agotado (${BUDGET}s; quedan $(remaining)s, menos de 10 min)" \
+      "time budget exhausted (${BUDGET}s; $(remaining)s left, under 10 min)"
+    break
+  fi
+  if [ "$TASKS_DONE" -ge "$MAX_TASKS" ]; then stop_reason "presupuesto de tareas alcanzado ($MAX_TASKS)" "task budget reached ($MAX_TASKS)"; break; fi
 
   if [ "$DRY_RUN" = 1 ]; then
     pending=$(tasks pending-reviews | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).join(" "))')
-    echo "Revisiones pendientes antes de elegir tarea (verified_auto, revisor $REVIEWER_KIND): ${pending:-ninguna}"
-    for id in $pending; do SUMMARY+=("(ensayo) $id se habría revisado"); done
+    echo "Pending reviews before picking a task (verified_auto, reviewer $REVIEWER_KIND): ${pending:-none}"
+    for id in $pending; do summary "(ensayo) $id se habría revisado" "(dry run) $id would have been reviewed"; done
   else
     review_pending || break
   fi
@@ -556,21 +590,25 @@ while :; do
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
   else pick=$(tasks pick --exclude "$SKIPPED"); fi
-  if [ "$pick" = null ]; then STOP_REASON="no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas${SKIPPED:+ (saltadas en esta corrida: $(IFS=,; short_list ${SKIPPED%,}))}"; break; fi
+  if [ "$pick" = null ]; then
+    stop_reason "no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas${SKIPPED:+ (saltadas en esta corrida: $(IFS=,; short_list ${SKIPPED%,}))}" \
+      "no in_progress/ready/approved_for_impl tasks with closed dependencies${SKIPPED:+ (skipped in this run: $(IFS=,; short_list ${SKIPPED%,}))}"
+    break
+  fi
   ID=$(node -e 'console.log(JSON.parse(process.argv[1]).id)' "$pick")
   TITLE=$(node -e 'console.log(JSON.parse(process.argv[1]).title)' "$pick")
 
   if [ "$DRY_RUN" = 1 ]; then
-    echo "Tarea elegida: $ID — $TITLE"
-    echo "  $(node -e 'const p=JSON.parse(process.argv[1]);console.log(`estado ${p.status}, kind ${p.kind}, reqs [${p.reqs}], decisions [${p.decisions}]`)' "$pick")"
-    echo "Implementador (desde $ROOT, timeout $(remaining)s):"
+    echo "Chosen task: $ID — $TITLE"
+    echo "  $(node -e 'const p=JSON.parse(process.argv[1]);console.log(`status ${p.status}, kind ${p.kind}, reqs [${p.reqs}], decisions [${p.decisions}]`)' "$pick")"
+    echo "Implementer (from $ROOT, timeout $(remaining)s):"
     echo "  $(impl_cmd "$ID")"
-    echo "Tras el implementador: exige árbol limpio, check-authority (sin reviewed/accepted/approved_for_impl/delivered otorgados), npm run check:spec."
-    echo "Revisor si queda verified_auto/done ($REVIEWER_KIND), con prompt §7.5 + REQ/DEC + diff de commits 'Task: $ID' por stdin:"
+    echo "After the implementer: requires a clean tree, check-authority (no reviewed/accepted/approved_for_impl/delivered granted), npm run check:spec."
+    echo "Reviewer if it ends verified_auto/done ($REVIEWER_KIND), with prompt §7.5 + REQ/DEC + diff of the 'Task: $ID' commits on stdin:"
     echo "  $(review_cmd)"
-    echo "  contexto REQ/DEC que recibiría: $(tasks context "$ID" | wc -c) bytes; commits previos de la tarea: $(git log --format=%h -E --grep="^Task:[[:space:]]*$ID([[:space:],]|$)" | tr '\n' ' ')"
-    SUMMARY+=("(ensayo) $ID se habría ejecutado")
-    STOP_REASON="ensayo: se detiene tras planificar la primera tarea"
+    echo "  REQ/DEC context it would receive: $(tasks context "$ID" | wc -c) bytes; previous commits of the task: $(git log --format=%h -E --grep="^Task:[[:space:]]*$ID([[:space:],]|$)" | tr '\n' ' ')"
+    summary "(ensayo) $ID se habría ejecutado" "(dry run) $ID would have been run"
+    stop_reason "ensayo: se detiene tras planificar la primera tarea" "dry run: stops after planning the first task"
     break
   fi
 
@@ -583,24 +621,25 @@ while :; do
     [ "$rc" -eq 2 ] && break
     if [ "$rc" -eq 3 ] || [ "$rc" -eq 4 ] || [ "$rc" -eq 5 ]; then
       SKIPPED="$SKIPPED$ID,"
-      if [ "$rc" -eq 4 ]; then DEPLOY_PENDING+=("$ID"); log "$ID espera un despliegue (Pendiente deploy): no cuenta como fallo; se pasa a la siguiente tarea independiente"
-      elif [ "$rc" -eq 5 ]; then USER_WAIT+=("$ID"); log "$ID espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo; se pasa a la siguiente tarea independiente"
-      else log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"; fi
+      if [ "$rc" -eq 4 ]; then DEPLOY_PENDING+=("$ID"); log "$ID waits for a deploy (Pendiente deploy): not counted as a failure; moving on to the next independent task"
+      elif [ "$rc" -eq 5 ]; then USER_WAIT+=("$ID"); log "$ID waits for the user to approve the tests/acceptance/ diff (spec task): not counted as a failure; moving on to the next independent task"
+      else log "$ID ended unchanged: not counted as a failure; moving on to the next independent task"; fi
       continue
     fi
     FAILS[$ID]=$((${FAILS[$ID]:-0} + 1)); FAILURES=$((FAILURES + 1))
-    log "fallo ${FAILS[$ID]}/$MAX_FAILURES en $ID"
+    log "failure ${FAILS[$ID]}/$MAX_FAILURES on $ID"
     if [ "${FAILS[$ID]}" -lt "$MAX_FAILURES" ]; then RETRY=$ID
     else
       SKIPPED="$SKIPPED$ID,"; ABNORMAL=1; ABANDONED+=("$ID")
-      SUMMARY+=("$ID abandonada en esta corrida tras ${FAILS[$ID]} fallos (tope por tarea $MAX_FAILURES)")
-      log "$ID llegó al tope de $MAX_FAILURES fallos: se abandona en esta corrida; se pasa a la siguiente tarea independiente"
+      summary "$ID abandonada en esta corrida tras ${FAILS[$ID]} fallos (tope por tarea $MAX_FAILURES)" \
+        "$ID abandoned in this run after ${FAILS[$ID]} failures (per-task cap $MAX_FAILURES)"
+      log "$ID reached the cap of $MAX_FAILURES failures: abandoned in this run; moving on to the next independent task"
     fi
   fi
 done
 
-log "parada: $STOP_REASON"
+log "stop: $STOP_REASON_EN"
 write_summary
 notify_stop
 [ "$DRY_RUN" = 1 ] && rmdir "$RUN_DIR" 2>/dev/null
-exit "$ABNORMAL"   # 1 si la parada requiere intervención
+exit "$ABNORMAL"   # 1 if the stop needs intervention

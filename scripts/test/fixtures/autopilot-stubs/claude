@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
-# Doble de `claude` para las pruebas de scripts/autopilot.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail | blocked (blocked_by = $STUB_BLOCKED_BY);
-# STUB_NOOP / STUB_FAIL / STUB_DEPLOY / STUB_WAIT: listas de tareas que terminan sin cambios / fallan / esperan un despliegue /
-# quedan in_progress con commit y "Pendiente deploy: ninguno".
-# El implementador emite stream-json (como `--output-format stream-json --verbose`) y deja en stub-env.txt lo que ve de AWS.
+# `claude` double for the scripts/autopilot.sh tests. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail | blocked (blocked_by = $STUB_BLOCKED_BY);
+# STUB_NOOP / STUB_FAIL / STUB_DEPLOY / STUB_WAIT: lists of tasks that end without changes / fail / wait for a deploy /
+# stay in_progress with a commit and "Pendiente deploy: ninguno".
+# The implementer emits stream-json (like `--output-format stream-json --verbose`) and leaves in stub-env.txt what it sees of AWS.
+# The spec/LOG.md lines it writes stay in Spanish, like the real ones (DEC-018).
 [ "$1" = "--version" ] && { echo "claude-stub 0.0"; exit 0; }
 [ "$1" = "-p" ] || exit 3
 id=$(echo "$2" | grep -o 'T-[0-9]*' | head -1)
-if [ -z "$id" ]; then # revisor por stdin
-  cat >/dev/null; printf 'Revisado.\n```json\n{"verdict":"approved","findings":[],"notes":"stub claude"}\n```\n'; exit 0
+if [ -z "$id" ]; then # reviewer on stdin
+  cat >/dev/null; printf 'Reviewed.\n```json\n{"verdict":"approved","findings":[],"notes":"stub claude"}\n```\n'; exit 0
 fi
 mode=${STUB_MODE:-ok}
-case ",${STUB_NOOP:-}," in *",$id,"*) mode=noop ;; esac   # STUB_NOOP=T-03,…: termina bien sin tocar nada
-case ",${STUB_FAIL:-}," in *",$id,"*) mode=fail ;; esac   # STUB_FAIL=T-03,…: falla solo en esas tareas
+case ",${STUB_NOOP:-}," in *",$id,"*) mode=noop ;; esac   # STUB_NOOP=T-03,…: ends fine without touching anything
+case ",${STUB_FAIL:-}," in *",$id,"*) mode=fail ;; esac   # STUB_FAIL=T-03,…: fails only on those tasks
 case ",${STUB_DEPLOY:-}," in *",$id,"*) mode=deploy ;; esac   # STUB_DEPLOY=T-03,…: in_progress + Pendiente deploy
 case ",${STUB_WAIT:-}," in *",$id,"*) mode=wait ;; esac   # STUB_WAIT=T-03,…: in_progress + "Pendiente deploy: ninguno"
 { echo "AWS_PROFILE=$AWS_PROFILE"; echo "NTFY_TOPIC=${NTFY_TOPIC:-}"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".autopilot/stub-env-$id.txt"
 echo '{"type":"system","subtype":"init","model":"stub","session_id":"s1"}'
-echo '{"type":"assistant","message":{"content":[{"type":"text","text":"Empiezo la tarea"},{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"npm run test:acceptance"}}]}}'
+echo '{"type":"assistant","message":{"content":[{"type":"text","text":"Starting the task"},{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"npm run test:acceptance"}}]}}'
 echo '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"u1","content":"Tests 25 passed"}]}}'
-[ "$mode" = noop ] && { echo '{"type":"result","subtype":"success","result":"ya estaba hecho","num_turns":2,"is_error":false}'; exit 0; }
-[ "$mode" = fail ] && { echo '{"type":"result","subtype":"error_during_execution","result":"no pude","num_turns":1,"total_cost_usd":0.01,"usage":{"input_tokens":3,"output_tokens":100,"cache_read_input_tokens":2000,"cache_creation_input_tokens":500},"is_error":true}'; exit 1; }
+[ "$mode" = noop ] && { echo '{"type":"result","subtype":"success","result":"already done","num_turns":2,"is_error":false}'; exit 0; }
+[ "$mode" = fail ] && { echo '{"type":"result","subtype":"error_during_execution","result":"could not do it","num_turns":1,"total_cost_usd":0.01,"usage":{"input_tokens":3,"output_tokens":100,"cache_read_input_tokens":2000,"cache_creation_input_tokens":500},"is_error":true}'; exit 1; }
 status=verified_auto; [ "$mode" = accepted ] && status=accepted; [ "$mode" = deploy ] && status=in_progress; [ "$mode" = wait ] && status=in_progress; [ "$mode" = blocked ] && status=blocked
 node -e '
 const fs=require("fs");const d=JSON.parse(fs.readFileSync("spec/TASKS.json","utf8"));
@@ -27,8 +28,8 @@ d.tasks.find(t=>t.id===process.argv[1]).status=process.argv[2];if(process.argv[2
 echo "stub change for $id" >"stub-$id.txt"
 [ "$mode" = deploy ] && printf '\n## stub · implementador\n- Pendiente deploy: npm run deploy:dev y luego npm run test:acceptance\n' >>spec/LOG.md
 [ "$mode" = wait ] && printf '\n## stub · implementador\n- Pendiente deploy: ninguno para %s (no despliega).\n' "$id" >>spec/LOG.md
-[ "$mode" = dirty ] && { echo '{"type":"result","result":"dejo sucio","num_turns":1,"total_cost_usd":0.01,"is_error":false}'; exit 0; }
+[ "$mode" = dirty ] && { echo '{"type":"result","result":"leaving it dirty","num_turns":1,"total_cost_usd":0.01,"is_error":false}'; exit 0; }
 reqs=$(node -e 'const t=require(process.cwd()+"/spec/TASKS.json").tasks.find(t=>t.id===process.argv[1]);console.log(t.reqs.length?t.reqs.join(", "):"none")' "$id")
-nv=""; [ "$mode" = blocked ] && nv=--no-verify   # blocked con texto libre: check:spec lo rechazaría
+nv=""; [ "$mode" = blocked ] && nv=--no-verify   # blocked with free text: check:spec would reject it
 git add -A && git -c user.name=S -c user.email=s@example.com commit -q $nv -m "$id: stub" -m "Task: $id" -m "Req: $reqs"
-echo "{\"type\":\"result\",\"subtype\":\"success\",\"result\":\"hecho $id\",\"num_turns\":5,\"total_cost_usd\":0.42,\"usage\":{\"input_tokens\":44,\"output_tokens\":11440,\"cache_read_input_tokens\":1266786,\"cache_creation_input_tokens\":64481},\"is_error\":false}"
+echo "{\"type\":\"result\",\"subtype\":\"success\",\"result\":\"done $id\",\"num_turns\":5,\"total_cost_usd\":0.42,\"usage\":{\"input_tokens\":44,\"output_tokens\":11440,\"cache_read_input_tokens\":1266786,\"cache_creation_input_tokens\":64481},\"is_error\":false}"

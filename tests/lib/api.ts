@@ -1,4 +1,4 @@
-// Cliente mínimo contra la API desplegada: login Cognito (USER_PASSWORD_AUTH) + POST GraphQL.
+// Minimal client for the deployed API: Cognito login (USER_PASSWORD_AUTH) + GraphQL POST.
 import { CognitoIdentityProviderClient, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { loadStageEnv, type StageEnv } from '../../scripts/lib/env.ts';
 
@@ -11,7 +11,7 @@ export function stageEnv(): StageEnv {
   return loadStageEnv(process.env.STAGE ?? 'dev');
 }
 
-/** Devuelve el ID token: es el que trae `custom:customerId` (DEC-004). */
+/** Returns the ID token: it's the one that carries `custom:customerId` (DEC-004). */
 export async function login(env: StageEnv, email: string, password = env.DEMO_PASSWORD): Promise<string> {
   const idp = new CognitoIdentityProviderClient({ region: env.AWS_REGION });
   const out = await idp.send(
@@ -22,7 +22,7 @@ export async function login(env: StageEnv, email: string, password = env.DEMO_PA
     }),
   );
   const token = out.AuthenticationResult?.IdToken;
-  if (!token) throw new Error(`Login sin IdToken para ${email}`);
+  if (!token) throw new Error(`Login returned no IdToken for ${email}`);
   return token;
 }
 

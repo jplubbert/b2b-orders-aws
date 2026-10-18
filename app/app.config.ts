@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Lee `.env.<stage>` de la raíz (lo escribe `npm run deploy:dev`) y lo pasa a la app vía `extra`.
+// Reads `.env.<stage>` from the root (written by `npm run deploy:dev`) and passes it to the app via `extra`.
 function readStageEnv(stage: string): Record<string, string> {
   const path = join(__dirname, '..', `.env.${stage}`);
   if (!existsSync(path)) return {};

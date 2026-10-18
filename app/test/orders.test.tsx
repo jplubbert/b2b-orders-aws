@@ -1,5 +1,5 @@
-// Pantallas de REQ-004 con jest-expo. La API y el router van simulados; el recorrido real contra `dev`
-// (pedido → RECIBIDO → order:set-status ENVIADO → refrescar) se verifica a mano en el teléfono (DEC-011).
+// REQ-004 screens with jest-expo. The API and the router are mocked; the real flow against `dev`
+// (order → RECIBIDO → order:set-status ENVIADO → refresh) is checked by hand on the phone (DEC-011).
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,7 +13,7 @@ jest.mock('@/lib/api', () => ({
   myOrders: jest.fn(),
   getOrder: jest.fn(),
 }));
-// useFocusEffect corre el efecto al montar, como cuando la pantalla gana el foco.
+// useFocusEffect runs the effect on mount, like when the screen gains focus.
 jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
   useLocalSearchParams: jest.fn(),
@@ -36,15 +36,15 @@ const detail: OrderDetail = {
   ],
 };
 
-// Intl en Node y en Hermes puede separar con espacios distintos; se compara sin ellos.
+// Intl in Node and in Hermes may separate with different spaces; compare without them.
 const money = (text: string) => new RegExp(text.replace(/\$/g, '\\$').replace(/\s/g, '\\s*'));
 
 beforeEach(() => {
-  jest.resetAllMocks(); // también descarta respuestas `Once` que un caso no consumió
+  jest.resetAllMocks(); // also discards `Once` responses a case didn't consume
 });
 
-describe('REQ-004 Mis pedidos', () => {
-  it('E1: lista en el orden del servidor (más reciente primero) con número, fecha, total y estado', async () => {
+describe('REQ-004 My orders', () => {
+  it('E1: list in server order (newest first) with number, date, total and status', async () => {
     mockMyOrders.mockResolvedValue([newer, older]);
     await render(<OrdersScreen />);
     const numbers = await screen.findAllByText(/^N° /);
@@ -56,14 +56,14 @@ describe('REQ-004 Mis pedidos', () => {
     expect(screen.getAllByText(/\d{2}-\d{2}-\d{2,4}/)).toHaveLength(2);
   });
 
-  it('abrir un pedido navega a su detalle', async () => {
+  it('opening an order navigates to its detail', async () => {
     mockMyOrders.mockResolvedValue([newer]);
     await render(<OrdersScreen />);
     await fireEvent.press(await screen.findByText('N° NEWER1'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/order/[id]', params: { id: newer.id } });
   });
 
-  it('E2: al refrescar muestra el estado vigente', async () => {
+  it('E2: refreshing shows the current status', async () => {
     mockMyOrders.mockResolvedValueOnce([newer]).mockResolvedValueOnce([{ ...newer, status: 'ENVIADO' }]);
     await render(<OrdersScreen />);
     expect(await screen.findByText('Recibido')).toBeOnTheScreen();
@@ -73,13 +73,13 @@ describe('REQ-004 Mis pedidos', () => {
     expect(mockMyOrders).toHaveBeenCalledTimes(2);
   });
 
-  it('E4: cliente sin pedidos → "Todavía no hiciste pedidos"', async () => {
+  it('E4: customer without orders → "Todavía no hiciste pedidos"', async () => {
     mockMyOrders.mockResolvedValue([]);
     await render(<OrdersScreen />);
     expect(await screen.findByText('Todavía no hiciste pedidos')).toBeOnTheScreen();
   });
 
-  it('un error de la API se muestra con su causa (no como lista vacía)', async () => {
+  it('an API error is shown with its cause (not as an empty list)', async () => {
     mockMyOrders.mockRejectedValue(new Error('Network error'));
     await render(<OrdersScreen />);
     expect(await screen.findByText('Network error')).toBeOnTheScreen();
@@ -87,12 +87,12 @@ describe('REQ-004 Mis pedidos', () => {
   });
 });
 
-describe('REQ-004 Detalle de pedido', () => {
+describe('REQ-004 Order detail', () => {
   beforeEach(() => {
     mockParams.mockReturnValue({ id: newer.id });
   });
 
-  it('E5: muestra las líneas con los precios congelados, el total y el estado actual', async () => {
+  it('E5: shows the lines with frozen prices, the total and the current status', async () => {
     mockGetOrder.mockResolvedValue(detail);
     await render(<OrderDetailScreen />);
     expect(await screen.findByText('N° NEWER1')).toBeOnTheScreen();
@@ -106,7 +106,7 @@ describe('REQ-004 Detalle de pedido', () => {
     expect(screen.getByText(money('Total $15.500'))).toBeOnTheScreen();
   });
 
-  it('E2: al refrescar el detalle muestra el estado vigente', async () => {
+  it('E2: refreshing the detail shows the current status', async () => {
     mockGetOrder.mockResolvedValueOnce(detail).mockResolvedValueOnce({ ...detail, status: 'ENVIADO' });
     await render(<OrderDetailScreen />);
     expect(await screen.findByText('Recibido')).toBeOnTheScreen();
@@ -114,7 +114,7 @@ describe('REQ-004 Detalle de pedido', () => {
     await waitFor(() => expect(screen.getByText('Enviado')).toBeOnTheScreen());
   });
 
-  it('E3: un pedido ajeno o inexistente (null) → "Pedido no encontrado", sin datos', async () => {
+  it('E3: another customer\'s or a missing order (null) → "Pedido no encontrado", no data', async () => {
     mockGetOrder.mockResolvedValue(null);
     await render(<OrderDetailScreen />);
     expect(await screen.findByText('Pedido no encontrado')).toBeOnTheScreen();

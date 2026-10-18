@@ -2,8 +2,8 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 import type { OrderStatus } from '@/lib/generated/graphql';
 import { fontSize, fontWeight, orderStatus, radius, spacing } from '@/theme';
 
-// REQ-007: estado del pedido como etiqueta de color con su nombre legible (S-17). Por defecto se alinea a
-// la izquierda; `style` permite centrarla donde el bloque va centrado (confirmación del Carrito).
+// REQ-007: order status as a colored label with its readable name (S-17). Left-aligned by default;
+// `style` lets it be centered where the block is centered (the Cart's confirmation).
 export function StatusBadge({ status, style }: { status: OrderStatus; style?: StyleProp<ViewStyle> }) {
   const s = orderStatus[status];
   return (

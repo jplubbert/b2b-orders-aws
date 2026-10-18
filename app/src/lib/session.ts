@@ -1,16 +1,16 @@
 import { fetchAuthSession, signOut } from 'aws-amplify/auth';
 
-// REQ-001: mismo mensaje para contraseña errónea y usuario inexistente (no revela qué correos existen).
+// REQ-001: same message for a wrong password and a missing user (doesn't reveal which emails exist).
 export const INVALID_CREDENTIALS = 'Correo o contraseña incorrectos';
 const INVALID_CREDENTIALS_ERRORS = new Set(['NotAuthorizedException', 'UserNotFoundException']);
 
-// REQ-009 E3: usuario válido que no está en `almaceneros` ni en `distribuidores`.
+// REQ-009 E3: valid user that is in neither `almaceneros` nor `distribuidores`.
 export const NO_ACCESS = 'Tu usuario no tiene acceso a la app';
 
-/** Pantalla de inicio de cada rol (REQ-009): catálogo del almacenero o panel del distribuidor. */
+/** Home screen of each role (REQ-009): the customer's catalog or the distributor's panel. */
 export type Home = '/catalog' | '/dist';
 
-/** Rol según el claim `cognito:groups` del token de id; S-25: en ambos grupos gana el distribuidor. */
+/** Role from the ID token's `cognito:groups` claim; S-25: in both groups the distributor wins. */
 export function homeForGroups(groups: unknown): Home | null {
   const list = Array.isArray(groups) ? groups : [];
   if (list.includes('distribuidores')) return '/dist';
@@ -19,8 +19,8 @@ export function homeForGroups(groups: unknown): Home | null {
 }
 
 /**
- * REQ-001 E3 / REQ-009 E4: Amplify guarda los tokens en AsyncStorage y los renueva con el refresh token.
- * Sin sesión → `null`; con sesión → la pantalla de su rol (`home: null` si no tiene acceso, REQ-009 E3).
+ * REQ-001 E3 / REQ-009 E4: Amplify stores the tokens in AsyncStorage and renews them with the refresh token.
+ * No session → `null`; with a session → the screen of its role (`home: null` if it has no access, REQ-009 E3).
  */
 export async function currentSession(): Promise<{ home: Home | null } | null> {
   try {
@@ -31,12 +31,12 @@ export async function currentSession(): Promise<{ home: Home | null } | null> {
   }
 }
 
-/** REQ-009 E3: cierra la sesión local de un usuario sin acceso; como en REQ-005, un error no impide salir. */
+/** REQ-009 E3: closes the local session of a user without access; as in REQ-005, an error doesn't prevent leaving. */
 export async function rejectSession(): Promise<void> {
   try {
     await signOut();
   } catch {
-    // signOut sin `global` ya borró los tokens locales
+    // signOut without `global` already cleared the local tokens
   }
 }
 
@@ -45,8 +45,8 @@ export function loginErrorMessage(e: unknown): string {
   return describeError(e);
 }
 
-// Amplify envuelve fallos de red o de módulos nativos en "An unknown error has occurred";
-// la causa real va en `underlyingError`, así que se muestra completa.
+// Amplify wraps network or native-module failures in "An unknown error has occurred";
+// the real cause is in `underlyingError`, so it's shown in full (on screen, hence in Spanish).
 function describeError(e: unknown): string {
   if (!(e instanceof Error)) return String(e);
   const { recoverySuggestion, underlyingError } = e as Error & {

@@ -2,12 +2,12 @@ import type { Product as CatalogItem } from '../generated/graphql.js';
 
 export type { CatalogItem };
 
-/** Producto guardado: el `Product` del contrato (DEC-002) más `active`; `unitPrice` en pesos CLP enteros (DEC-006). */
+/** Stored product: the contract's `Product` (DEC-002) plus `active`; `unitPrice` in whole CLP pesos (DEC-006). */
 export type Product = CatalogItem & { active: boolean };
 
 const byName = new Intl.Collator('es-CL', { sensitivity: 'base', numeric: true });
 
-/** Productos activos ordenados por nombre (REQ-002). */
+/** Active products sorted by name (REQ-002). */
 export function activeCatalog(products: readonly Product[]): CatalogItem[] {
   return products
     .filter((p) => p.active)

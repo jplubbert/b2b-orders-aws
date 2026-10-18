@@ -14,7 +14,7 @@ export const CUSTOMER_GROUP = 'almaceneros';
 export const DISTRIBUTOR_GROUP = 'distribuidores'; // DEC-013
 export const TEST_RUNNER_USER = 'autopilot-tests';
 
-/** DEC-010: lo mínimo que usan las fixtures de aceptación (y el script order:set-status de DEC-009). */
+/** DEC-010: the minimum the acceptance fixtures use (and the order:set-status script of DEC-009). */
 export const TEST_RUNNER_TABLE_ACTIONS = [
   'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:PutItem',
   'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:BatchWriteItem',
@@ -28,13 +28,13 @@ export interface PedidosStackProps extends StackProps {
   stage: string;
 }
 
-/** Pila `PedidosB2B-<stage>` (DEC-001): Cognito + AppSync + Lambda `api` + tabla única. */
+/** `PedidosB2B-<stage>` stack (DEC-001): Cognito + AppSync + `api` Lambda + single table. */
 export class PedidosStack extends Stack {
   constructor(scope: Construct, id: string, props: PedidosStackProps) {
     super(scope, id, props);
-    const removalPolicy = RemovalPolicy.DESTROY; // R-02: solo `dev`
+    const removalPolicy = RemovalPolicy.DESTROY; // R-02: `dev` only
 
-    // DEC-004: correo + contraseña, sin auto-registro; customerId inmutable fijado por el seed.
+    // DEC-004: email + password, no self sign-up; immutable customerId set by the seed.
     const userPool = new cognito.UserPool(this, 'UserPool', {
       userPoolName: `pedidos-b2b-${props.stage}`,
       selfSignUpEnabled: false,
@@ -45,25 +45,25 @@ export class PedidosStack extends Stack {
       removalPolicy,
     });
     const userPoolClient = userPool.addClient('AppClient', {
-      authFlows: { userSrp: true, userPassword: true }, // usuario/contraseña para app (Expo Go), humo y aceptación
+      authFlows: { userSrp: true, userPassword: true }, // username/password for the app (Expo Go), smoke and acceptance
       generateSecret: false,
       preventUserExistenceErrors: true,
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
         .withCustomAttributes('customerId'),
-      writeAttributes: new cognito.ClientAttributes(), // el cliente no puede escribir customerId
+      writeAttributes: new cognito.ClientAttributes(), // the client cannot write customerId
     });
     new cognito.CfnUserPoolGroup(this, 'AlmacenerosGroup', {
       userPoolId: userPool.userPoolId,
       groupName: CUSTOMER_GROUP,
     });
-    // DEC-013: el distribuidor ve y cambia el estado de todos los pedidos; sin `custom:customerId` (S-22).
+    // DEC-013: the distributor sees and changes the status of every order; no `custom:customerId` (S-22).
     new cognito.CfnUserPoolGroup(this, 'DistribuidoresGroup', {
       userPoolId: userPool.userPoolId,
       groupName: DISTRIBUTOR_GROUP,
     });
 
-    // DEC-006: tabla única on-demand.
+    // DEC-006: single on-demand table.
     const table = new dynamodb.TableV2(this, 'Table', {
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
@@ -71,7 +71,7 @@ export class PedidosStack extends Stack {
       removalPolicy,
     });
 
-    // DEC-005: una Lambda `api` para todos los campos.
+    // DEC-005: one `api` Lambda for every field.
     const apiFn = new NodejsFunction(this, 'ApiFunction', {
       entry: fileURLToPath(new URL('../../backend/src/handler.ts', import.meta.url)),
       handler: 'handler',
@@ -86,7 +86,7 @@ export class PedidosStack extends Stack {
         removalPolicy,
       }),
     });
-    table.grantReadWriteData(apiFn); // incluye Scan (allOrders) y UpdateItem (setOrderStatus), DEC-013
+    table.grantReadWriteData(apiFn); // includes Scan (allOrders) and UpdateItem (setOrderStatus), DEC-013
 
     const api = new appsync.GraphqlApi(this, 'Api', {
       name: `pedidos-b2b-${props.stage}`,
@@ -103,8 +103,8 @@ export class PedidosStack extends Stack {
       source.createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
     }
 
-    // DEC-010/DEC-015: identidad del orquestador nocturno para aceptación y humo, solo sobre esta tabla y este user pool.
-    // Sin llaves en la plantilla: se crean aparte (`aws iam create-access-key`) y viven en el perfil `autopilot`.
+    // DEC-010/DEC-015: the nightly orchestrator's identity for acceptance and smoke, only on this table and user pool.
+    // No keys in the template: they're created separately (`aws iam create-access-key`) and live in the `autopilot` profile.
     if (props.stage === 'dev') {
       const testRunner = new iam.User(this, 'AutopilotTestsUser', { userName: TEST_RUNNER_USER });
       table.grant(testRunner, ...TEST_RUNNER_TABLE_ACTIONS);

@@ -1,7 +1,7 @@
-// Arranque de la app con el router real de expo-router (no simulado): el layout raíz monta la pila y
-// la pantalla de inicio redirige al catálogo si hay sesión (REQ-001 E3). Cubre el hallazgo de T-12 en
-// el teléfono: "Can't perform a React state update on a component that hasn't mounted yet"
-// (ExpoRoot, ContextNavigator) por navegar antes de que el navegador raíz esté montado.
+// App startup with expo-router's real router (not mocked): the root layout mounts the stack and
+// the login screen redirects to the catalog if there is a session (REQ-001 E3). Covers the T-12 finding on
+// the phone: "Can't perform a React state update on a component that hasn't mounted yet"
+// (ExpoRoot, ContextNavigator) from navigating before the root navigator is mounted.
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
@@ -20,21 +20,21 @@ const sessionOf = (groups: string[]) =>
 const withSession = sessionOf(['almaceneros']);
 const withoutSession = {} as AuthSession;
 
-// Las demás pantallas no importan aquí: basta con que existan las rutas que declara el layout.
+// The other screens don't matter here: it's enough that the routes the layout declares exist.
 const stub = (name: string) => () => <Text>{name}</Text>;
 const routes = {
   _layout: RootLayout,
   index: LoginScreen,
-  catalog: stub('Pantalla catálogo'),
-  'product/[id]': stub('Pantalla producto'),
-  cart: stub('Pantalla carrito'),
-  orders: stub('Pantalla mis pedidos'),
-  'order/[id]': stub('Pantalla pedido'),
-  'dist/index': stub('Pantalla panel'),
-  'dist/order/[id]': stub('Pantalla pedido del distribuidor'),
+  catalog: stub('Catalog screen'),
+  'product/[id]': stub('Product screen'),
+  cart: stub('Cart screen'),
+  orders: stub('My orders screen'),
+  'order/[id]': stub('Order screen'),
+  'dist/index': stub('Panel screen'),
+  'dist/order/[id]': stub('Distributor order screen'),
 };
 
-// En el teléfono la URL inicial llega de forma asíncrona (Linking.getInitialURL).
+// On the phone the initial URL arrives asynchronously (Linking.getInitialURL).
 const nativeStart = { initialUrl: '/', linking: { getInitialURL: () => Promise.resolve('pedidosb2b:///') } } as never;
 
 let consoleError: jest.SpiedFunction<typeof console.error>;
@@ -44,30 +44,30 @@ beforeEach(() => {
 });
 afterEach(() => consoleError.mockRestore());
 
-describe('arranque de la app (REQ-001 E3)', () => {
-  it('con sesión vigente abre el catálogo sin errores de React', async () => {
+describe('app startup (REQ-001 E3)', () => {
+  it('with a live session it opens the catalog without React errors', async () => {
     mockFetchAuthSession.mockResolvedValue(withSession);
     const app = renderRouter(routes, nativeStart);
-    await app; // con RNTL 14 `render` es asíncrono; `renderRouter` devuelve esa promesa con los getters del router
-    expect(await screen.findByText('Pantalla catálogo')).toBeOnTheScreen();
+    await app; // with RNTL 14 `render` is async; `renderRouter` returns that promise with the router getters
+    expect(await screen.findByText('Catalog screen')).toBeOnTheScreen();
     expect(app.getPathname()).toBe('/catalog');
     expect(screen.queryByPlaceholderText('Correo')).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('REQ-009 E4: distribuidor con sesión vigente abre el panel "Pedidos" sin errores de React', async () => {
+  it('REQ-009 E4: a distributor with a live session opens the "Pedidos" panel without React errors', async () => {
     mockFetchAuthSession.mockResolvedValue(sessionOf(['distribuidores']));
     const app = renderRouter(routes, nativeStart);
     await app;
-    expect(await screen.findByText('Pantalla panel')).toBeOnTheScreen();
+    expect(await screen.findByText('Panel screen')).toBeOnTheScreen();
     expect(app.getPathname()).toBe('/dist');
     expect(consoleError).not.toHaveBeenCalled();
   });
 
-  it('sin sesión se queda en inicio pidiendo credenciales, sin errores de React', async () => {
+  it('without a session it stays on the login screen asking for credentials, without React errors', async () => {
     mockFetchAuthSession.mockResolvedValue(withoutSession);
     const app = renderRouter(routes, nativeStart);
-    await app; // con RNTL 14 `render` es asíncrono; `renderRouter` devuelve esa promesa con los getters del router
+    await app; // with RNTL 14 `render` is async; `renderRouter` returns that promise with the router getters
     expect(await screen.findByPlaceholderText('Correo')).toBeOnTheScreen();
     expect(app.getPathname()).toBe('/');
     expect(consoleError).not.toHaveBeenCalled();

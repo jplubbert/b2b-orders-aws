@@ -5,10 +5,10 @@ import { dynamoOrderRepo } from './data/orderRepo.js';
 import { route, type Deps, type ResolverEvent } from './router.js';
 
 const tableName = process.env.TABLE_NAME;
-if (!tableName) throw new Error('TABLE_NAME no definido');
+if (!tableName) throw new Error('TABLE_NAME is not set');
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const deps: Deps = { catalog: dynamoCatalogRepo(doc, tableName), orders: dynamoOrderRepo(doc, tableName) };
 
-/** Lambda `api`: fuente de datos directa de AppSync para todos los campos (DEC-005). */
+/** `api` Lambda: direct AppSync data source for every field (DEC-005). */
 export const handler = (event: ResolverEvent) => route(deps, event);

@@ -11,13 +11,13 @@ import type { OrderStatus } from '@/lib/generated/graphql';
 import { usePanel } from '@/lib/PanelProvider';
 import { colors, disabledOpacity, fontSize, fontWeight, orderStatus, radius, spacing, touchTarget } from '@/theme';
 
-// Los 5 estados de S-04 en su orden, con el nombre legible de S-17.
+// The 5 statuses of S-04 in order, with the readable name of S-17.
 const STATUSES = Object.keys(orderStatus) as OrderStatus[];
 
-// REQ-010: detalle del pedido para el distribuidor (almacén, líneas con precios congelados, total y estado),
-// desde la lista del panel ya cargada (como S-19, sin consulta nueva). REQ-011: "Cambiar estado" con los 5
-// estados como botones; el elegido se guarda con setOrderStatus y la respuesta del servidor actualiza el
-// detalle y el panel. Sin confirmación y sin orden obligatorio; elegir el actual no es error (S-24).
+// REQ-010: order detail for the distributor (store, lines with frozen prices, total and status),
+// from the already loaded panel list (like S-19, no new query). REQ-011: "Cambiar estado" with the 5
+// statuses as buttons; the chosen one is saved with setOrderStatus and the server response updates the
+// detail and the panel. No confirmation and no required order; choosing the current one is not an error (S-24).
 export default function DistOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { orders, replaceOrder } = usePanel();
@@ -45,7 +45,7 @@ export default function DistOrderScreen() {
     try {
       replaceOrder(await setOrderStatus(order.customerId, order.id, status));
     } catch {
-      // E7: el detalle conserva el estado anterior (la lista no cambió).
+      // E7: the detail keeps the previous status (the list didn't change).
       setError('No se pudo cambiar el estado');
     } finally {
       setSaving(null);

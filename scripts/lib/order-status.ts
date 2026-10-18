@@ -1,5 +1,5 @@
-// Cambio de estado de un pedido por el distribuidor (SPEC §Plan, DEC-009). El pedido se busca solo por
-// `id`: con las claves de DEC-006 eso es un Scan, suficiente para la demo (consecuencia aceptada en DEC-009).
+// The distributor changes an order's status (SPEC §Plan, DEC-009). The order is looked up by `id` only:
+// with the DEC-006 keys that's a Scan, enough for the demo (consequence accepted in DEC-009).
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { ScanCommand, UpdateCommand, type DynamoDBDocumentClient, type ScanCommandOutput } from '@aws-sdk/lib-dynamodb';
 import { CUSTOMER_PK_PREFIX, orderSk } from '../../backend/src/data/keys.ts';
@@ -7,7 +7,7 @@ import { ORDER_STATUSES, isOrderStatus, type OrderStatus } from '../../backend/s
 
 export class SetStatusError extends Error {}
 
-/** Clave del pedido `orderId` de cualquier cliente; `null` si no existe. */
+/** Key of order `orderId` of any customer; `null` if it doesn't exist. */
 export async function findOrderKey(
   doc: DynamoDBDocumentClient,
   tableName: string,
@@ -31,7 +31,7 @@ export async function findOrderKey(
   return null;
 }
 
-/** Valida el estado (S-04) antes de tocar la tabla y lo escribe; solo cambia `status` (el pedido es inmutable). */
+/** Validates the status (S-04) before touching the table and writes it; changes only `status` (the order is immutable). */
 export async function setOrderStatus(
   doc: DynamoDBDocumentClient,
   tableName: string,
@@ -39,10 +39,10 @@ export async function setOrderStatus(
   status: string,
 ): Promise<OrderStatus> {
   if (!isOrderStatus(status)) {
-    throw new SetStatusError(`Estado inválido: ${status}. Válidos: ${ORDER_STATUSES.join(', ')}`);
+    throw new SetStatusError(`Invalid status: ${status}. Valid: ${ORDER_STATUSES.join(', ')}`);
   }
   const key = await findOrderKey(doc, tableName, orderId);
-  if (!key) throw new SetStatusError(`No existe el pedido ${orderId}`);
+  if (!key) throw new SetStatusError(`Order ${orderId} does not exist`);
   try {
     await doc.send(
       new UpdateCommand({
@@ -55,7 +55,7 @@ export async function setOrderStatus(
       }),
     );
   } catch (e) {
-    if (e instanceof ConditionalCheckFailedException) throw new SetStatusError(`No existe el pedido ${orderId}`);
+    if (e instanceof ConditionalCheckFailedException) throw new SetStatusError(`Order ${orderId} does not exist`);
     throw e;
   }
   return status;

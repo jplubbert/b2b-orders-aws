@@ -1,6 +1,6 @@
-// REQ-008 E1–E5 con jest-expo: detalle de producto desde el catálogo cargado (S-19) sobre el mismo carrito.
-// El router va simulado: `push` a /product/<id> cambia la pantalla dibujada dentro del mismo CartProvider,
-// y `back` vuelve al catálogo. La verificación en el teléfono es manual (DEC-011).
+// REQ-008 E1–E5 with jest-expo: product detail from the loaded catalog (S-19) on the same cart.
+// The router is mocked: `push` to /product/<id> changes the screen rendered inside the same CartProvider,
+// and `back` returns to the catalog. The check on the phone is manual (DEC-011).
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect, useState } from 'react';
@@ -33,10 +33,10 @@ const mockCanGoBack = jest.mocked(router.canGoBack);
 const arroz: Product = { productId: 'arroz-1kg', name: 'Arroz 1 kg', presentation: 'Paquete 1 kg', unitPrice: 1300 };
 const yerba: Product = { productId: 'yerba-1kg', name: 'Yerba 1 kg', presentation: 'Bolsa 1 kg', unitPrice: 4500 };
 
-// Intl en Node y en Hermes puede separar con espacios distintos; se compara sin ellos.
+// Intl in Node and in Hermes may separate with different spaces; compare without them.
 const money = (text: string) => new RegExp(text.replace(/[$.]/g, '\\$&').replace(/\s/g, '\\s*'));
 
-// Pila mínima: catálogo o detalle según la última navegación simulada, con un solo carrito.
+// Minimal stack: catalog or detail depending on the last mocked navigation, with a single cart.
 let navigate: (productId: string | null) => void = () => {};
 function App() {
   const [id, setId] = useState<string | null>(null);
@@ -71,8 +71,8 @@ async function pressTimes(label: string, times: number, index = 0) {
   for (let i = 0; i < times; i++) await fireEvent.press(screen.getAllByLabelText(label)[index]);
 }
 
-describe('REQ-008 E1: tocar un producto del catálogo abre su detalle', () => {
-  it('"Arroz 1 kg" → detalle con nombre, presentación, $1.300 y cantidad 0', async () => {
+describe('REQ-008 E1: tapping a catalog product opens its detail', () => {
+  it('"Arroz 1 kg" → detail with name, presentation, $1.300 and quantity 0', async () => {
     await renderApp();
     await open('Arroz 1 kg');
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/product/[id]', params: { id: 'arroz-1kg' } });
@@ -85,21 +85,21 @@ describe('REQ-008 E1: tocar un producto del catálogo abre su detalle', () => {
     expect(screen.queryByText('Yerba 1 kg')).toBeNull();
   });
 
-  it('S-18: recuadro con la inicial del producto (sin imagen)', async () => {
+  it("S-18: a box with the product's initial (no image)", async () => {
     await renderApp();
     await open('Yerba 1 kg');
     expect(screen.getByTestId('product-initial')).toHaveTextContent('Y');
   });
 
-  it('tocar − / + en el catálogo no abre el detalle', async () => {
+  it('tapping − / + in the catalog does not open the detail', async () => {
     await renderApp();
     await pressTimes('Agregar uno', 1);
     expect(mockPush).not.toHaveBeenCalled();
   });
 });
 
-describe('REQ-008 E2: cambiar la cantidad en el detalle actualiza el mismo carrito', () => {
-  it('+ dos veces → cantidad 2, subtotal $2.600; al volver, catálogo y barra con 2 u.', async () => {
+describe('REQ-008 E2: changing the quantity in the detail updates the same cart', () => {
+  it('+ twice → quantity 2, subtotal $2.600; going back, catalog and bar with 2 u.', async () => {
     await renderApp();
     await open('Arroz 1 kg');
     await pressTimes('Agregar uno', 2);
@@ -113,8 +113,8 @@ describe('REQ-008 E2: cambiar la cantidad en el detalle actualiza el mismo carri
   });
 });
 
-describe('REQ-008 E3: el detalle abre con la cantidad que ya está en el carrito', () => {
-  it('"Yerba 1 kg" con 3 en el carrito → cantidad 3, subtotal $13.500', async () => {
+describe('REQ-008 E3: the detail opens with the quantity already in the cart', () => {
+  it('"Yerba 1 kg" with 3 in the cart → quantity 3, subtotal $13.500', async () => {
     await renderApp();
     await pressTimes('Agregar uno', 3, 1);
     await open('Yerba 1 kg');
@@ -123,8 +123,8 @@ describe('REQ-008 E3: el detalle abre con la cantidad que ya está en el carrito
   });
 });
 
-describe('REQ-008 E4: bajar de 1 a 0 en el detalle', () => {
-  it('el producto sale del carrito', async () => {
+describe('REQ-008 E4: going from 1 to 0 in the detail', () => {
+  it('the product leaves the cart', async () => {
     await renderApp();
     await open('Arroz 1 kg');
     await pressTimes('Agregar uno', 1);
@@ -137,8 +137,8 @@ describe('REQ-008 E4: bajar de 1 a 0 en el detalle', () => {
   });
 });
 
-describe('REQ-008 E5: id que no está en el catálogo cargado', () => {
-  // Pone un carrito y un catálogo sin "aceite" para simular la ruta /product/aceite-900.
+describe('REQ-008 E5: id that is not in the loaded catalog', () => {
+  // Sets up a cart and a catalog without "aceite" to simulate the /product/aceite-900 route.
   function Seeded({ catalog }: { catalog: Product[] | null }) {
     const { setCatalog } = useCart();
     const [ready, setReady] = useState(false);
@@ -150,9 +150,9 @@ describe('REQ-008 E5: id que no está en el catálogo cargado', () => {
   }
 
   it.each([
-    ['id fuera del catálogo', [arroz, yerba]],
-    ['catálogo aún no cargado', null],
-  ])('%s → "Este producto ya no está disponible", sin − / +, con "Volver al catálogo"', async (_case, catalog) => {
+    ['id outside the catalog', [arroz, yerba]],
+    ['catalog not loaded yet', null],
+  ])('%s → "Este producto ya no está disponible", no − / +, with "Volver al catálogo"', async (_case, catalog) => {
     mockParams.mockReturnValue({ id: 'aceite-900' });
     await render(
       <CartProvider>
@@ -166,7 +166,7 @@ describe('REQ-008 E5: id que no está en el catálogo cargado', () => {
     expect(screen.getByText('Volver al catálogo')).toBeOnTheScreen();
   });
 
-  it('"Volver al catálogo" vuelve atrás; sin historial (enlace directo) reemplaza por el catálogo', async () => {
+  it('"Volver al catálogo" goes back; without history (direct link) it replaces with the catalog', async () => {
     mockParams.mockReturnValue({ id: 'aceite-900' });
     await render(
       <CartProvider>

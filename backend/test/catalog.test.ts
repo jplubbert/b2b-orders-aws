@@ -10,7 +10,7 @@ const p = (name: string, unitPrice: number, active = true): Product => ({
 });
 
 describe('activeCatalog (REQ-002)', () => {
-  it('E1: ordena los activos por nombre', () => {
+  it('E1: sorts active products by name', () => {
     const out = activeCatalog([p('Yerba 1 kg', 4500), p('Arroz 1 kg', 1300)]);
     expect(out.map((x) => [x.name, x.unitPrice])).toEqual([
       ['Arroz 1 kg', 1300],
@@ -18,16 +18,16 @@ describe('activeCatalog (REQ-002)', () => {
     ]);
   });
 
-  it('E2: excluye inactivos', () => {
+  it('E2: excludes inactive products', () => {
     const out = activeCatalog([p('Aceite 900 ml', 2100, false), p('Arroz 1 kg', 1300)]);
     expect(out.map((x) => x.name)).toEqual(['Arroz 1 kg']);
   });
 
-  it('E3: sin activos devuelve lista vacía', () => {
+  it('E3: with no active products returns an empty list', () => {
     expect(activeCatalog([p('Aceite 900 ml', 2100, false)])).toEqual([]);
   });
 
-  it('no expone el campo active', () => {
+  it('does not expose the active field', () => {
     expect(activeCatalog([p('Arroz 1 kg', 1300)])[0]).not.toHaveProperty('active');
   });
 });

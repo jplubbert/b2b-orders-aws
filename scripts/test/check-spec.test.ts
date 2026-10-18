@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Fixtures: copia de spec/ del repo en un git temporal, mutada por cada caso.
+// Fixtures: a copy of the repo's spec/ in a temporary git repo, mutated by each case.
 const REPO = fileURLToPath(new URL('../../', import.meta.url));
 const SCRIPT = join(REPO, 'scripts/check-spec.mjs');
 const HOOK = join(REPO, '.githooks/commit-msg');
@@ -50,30 +50,30 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe('check:spec', () => {
-  it('pasa con la spec del repo', () => {
+  it("passes with the repo's spec", () => {
     expect(check()).toMatchObject({ code: 0 });
   });
 
-  it('pasa en el repositorio real (incluido su historial)', () => {
+  it('passes on the real repository (including its history)', () => {
     const r = spawnSync('node', [SCRIPT], { encoding: 'utf8' });
     expect(r.stdout + r.stderr).toContain('check:spec: ok');
   });
 
-  it('falla si TASKS.json no es JSON válido', () => {
+  it('fails if TASKS.json is not valid JSON', () => {
     write('spec/TASKS.json', '{ "tasks": [');
-    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('no es JSON válido') });
+    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('not valid JSON') });
   });
 
-  it('falla con done sin evidencia completa', () => {
+  it('fails with done without complete evidence', () => {
     editTasks((ts) => Object.assign(task(ts, 'T-02'), { status: 'done', evidence: { command: 'npm run check:spec' } }));
     const r = check();
     expect(r.code).toBe(1);
-    expect(r.out).toContain('T-02: está "done" sin evidence.result');
-    expect(r.out).toContain('T-02: está "done" sin evidence.commit');
-    expect(r.out).not.toContain('sin evidence.command');
+    expect(r.out).toContain('T-02: is "done" without evidence.result');
+    expect(r.out).toContain('T-02: is "done" without evidence.commit');
+    expect(r.out).not.toContain('without evidence.command');
   });
 
-  it('pasa con done y evidencia completa', () => {
+  it('passes with done and complete evidence', () => {
     editTasks((ts) =>
       Object.assign(task(ts, 'T-02'), {
         status: 'done',
@@ -83,103 +83,103 @@ describe('check:spec', () => {
     expect(check()).toMatchObject({ code: 0 });
   });
 
-  it('falla con blocked sin blocked_by', () => {
+  it('fails with blocked without blocked_by', () => {
     editTasks((ts) => Object.assign(task(ts, 'T-04'), { status: 'blocked', blocked_by: null }));
-    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('T-04: está "blocked" sin blocked_by') });
+    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('T-04: is "blocked" without blocked_by') });
   });
 
-  it('falla con blocked cuya referencia no está en reqs/decisions/depends_on', () => {
+  it('fails with blocked whose reference is not in reqs/decisions/depends_on', () => {
     editTasks((ts) => Object.assign(task(ts, 'T-04'), { status: 'blocked', blocked_by: 'DEC-004' }));
-    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('blocked_by DEC-004 no figura') });
+    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('blocked_by DEC-004 is not in') });
   });
 
-  it('falla con blocked por una Q- inexistente', () => {
+  it('fails with blocked by a missing Q-', () => {
     editTasks((ts) => Object.assign(task(ts, 'T-04'), { status: 'blocked', blocked_by: 'Q-99' }));
-    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('Q-99 no existe') });
+    expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('Q-99 does not exist') });
   });
 
-  it.each(['DEC-005', 'T-03', 'REQ-002', 'Q-02'])('pasa con blocked referenciado a %s', (ref) => {
+  it.each(['DEC-005', 'T-03', 'REQ-002', 'Q-02'])('passes with blocked referencing %s', (ref) => {
     editTasks((ts) => Object.assign(task(ts, 'T-04'), { status: 'blocked', blocked_by: ref }));
     expect(check()).toMatchObject({ code: 0 });
   });
 
-  it('falla con un archivo extra en spec/', () => {
+  it('fails with an extra file in spec/', () => {
     write('spec/research.md');
-    write('spec/contracts/otro.graphql');
+    write('spec/contracts/other.graphql');
     const r = check();
     expect(r.code).toBe(1);
-    expect(r.out).toContain('spec/research.md: archivo no permitido');
-    expect(r.out).toContain('spec/contracts/otro.graphql: archivo no permitido');
+    expect(r.out).toContain('spec/research.md: file not allowed');
+    expect(r.out).toContain('spec/contracts/other.graphql: file not allowed');
   });
 
-  it('falla con referencias a REQ, DEC o tareas inexistentes', () => {
+  it('fails with references to missing REQs, DECs or tasks', () => {
     editTasks((ts) => Object.assign(task(ts, 'T-04'), { reqs: ['REQ-999'], decisions: ['DEC-999'], depends_on: ['T-99'] }));
     const r = check();
-    expect(r.out).toContain('REQ-999 no existe');
-    expect(r.out).toContain('DEC-999 no existe');
-    expect(r.out).toContain('depende de T-99');
+    expect(r.out).toContain('REQ-999 does not exist');
+    expect(r.out).toContain('DEC-999 does not exist');
+    expect(r.out).toContain('depends on T-99');
   });
 
-  describe('historial', () => {
-    it('falla si una tarea de implementación edita tests/acceptance/', () => {
+  describe('history', () => {
+    it('fails if an implementation task edits tests/acceptance/', () => {
       write('tests/acceptance/req_002.test.ts');
-      commit('Catálogo\n\nTask: T-04\nReq: REQ-002');
+      commit('Catalog\n\nTask: T-04\nReq: REQ-002');
       expect(check()).toMatchObject({
         code: 1,
-        out: expect.stringContaining('modifica tests/acceptance/ (tests/acceptance/req_002.test.ts) con Task T-04'),
+        out: expect.stringContaining('modifies tests/acceptance/ (tests/acceptance/req_002.test.ts) with Task T-04'),
       });
     });
 
-    it('falla si un commit con Task: none edita tests/acceptance/', () => {
+    it('fails if a commit with Task: none edits tests/acceptance/', () => {
       write('tests/acceptance/req_002.test.ts');
-      commit('Arreglo\n\nTask: none\nReq: none');
-      expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('con Task none') });
+      commit('Fix\n\nTask: none\nReq: none');
+      expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('with Task none') });
     });
 
-    it('pasa si la tarea de spec (T-03) edita tests/acceptance/', () => {
+    it('passes if the spec task (T-03) edits tests/acceptance/', () => {
       write('tests/acceptance/req_002.test.ts');
-      commit('Aceptación\n\nTask: T-03\nReq: REQ-001, REQ-002, REQ-003, REQ-004');
+      commit('Acceptance\n\nTask: T-03\nReq: REQ-001, REQ-002, REQ-003, REQ-004');
       expect(check()).toMatchObject({ code: 0 });
     });
 
-    it('falla con commits sin trailers o con Task/Req inexistentes', () => {
+    it('fails with commits without trailers or with missing Task/Req', () => {
       write('a.txt');
-      commit('Sin trailers');
+      commit('No trailers');
       write('b.txt');
-      commit('Inventado\n\nTask: T-99\nReq: REQ-999');
+      commit('Made up\n\nTask: T-99\nReq: REQ-999');
       const r = check();
-      expect(r.out).toMatch(/debe tener exactamente un trailer "Task:"/);
-      expect(r.out).toMatch(/falta el trailer "Req:"/);
-      expect(r.out).toContain('Task T-99 no existe');
-      expect(r.out).toContain('Req REQ-999 no existe');
+      expect(r.out).toMatch(/must have exactly one "Task:" trailer/);
+      expect(r.out).toMatch(/missing the "Req:" trailer/);
+      expect(r.out).toContain('Task T-99 does not exist');
+      expect(r.out).toContain('Req REQ-999 does not exist');
     });
 
-    it('acepta "Req: N/A" solo en commits de tareas tooling (T-08)', () => {
+    it('accepts "Req: N/A" only in commits of tooling tasks (T-08)', () => {
       write('a.txt');
-      commit('Orquestador\n\nTask: T-08\nReq: N/A');
+      commit('Orchestrator\n\nTask: T-08\nReq: N/A');
       expect(check()).toMatchObject({ code: 0 });
       write('b.txt');
-      commit('Catálogo\n\nTask: T-04\nReq: N/A');
+      commit('Catalog\n\nTask: T-04\nReq: N/A');
       write('c.txt');
-      commit('Suelto\n\nTask: none\nReq: n/a');
+      commit('Loose\n\nTask: none\nReq: n/a');
       const r = check();
       expect(r.code).toBe(1);
-      expect(r.out.match(/"Req: N\/A" solo se admite en tareas con kind "tooling"/g)).toHaveLength(2);
+      expect(r.out.match(/"Req: N\/A" is only allowed for tasks with kind "tooling"/g)).toHaveLength(2);
     });
 
-    it('rechaza un kind desconocido', () => {
+    it('rejects an unknown kind', () => {
       editTasks((ts) => Object.assign(task(ts, 'T-08'), { kind: 'ops' }));
-      expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('T-08: kind desconocido "ops"') });
+      expect(check()).toMatchObject({ code: 1, out: expect.stringContaining('T-08: unknown kind "ops"') });
     });
 
-    it('acepta Task/Req en un párrafo anterior a Co-Authored-By', () => {
+    it('accepts Task/Req in a paragraph before Co-Authored-By', () => {
       write('a.txt');
-      commit('Algo\n\nTask: T-02\nReq: none\n\nCo-Authored-By: X <x@example.com>');
+      commit('Something\n\nTask: T-02\nReq: none\n\nCo-Authored-By: X <x@example.com>');
       expect(check()).toMatchObject({ code: 0 });
     });
   });
 
-  describe('hook commit-msg', () => {
+  describe('commit-msg hook', () => {
     beforeEach(() => {
       git('config', 'core.hooksPath', join(REPO, '.githooks'));
     });
@@ -193,27 +193,27 @@ describe('check:spec', () => {
       );
     };
 
-    it('es ejecutable', () => {
+    it('is executable', () => {
       expect(spawnSync('test', ['-x', HOOK]).status).toBe(0);
     });
 
-    it('rechaza un commit sin trailers', () => {
+    it('rejects a commit without trailers', () => {
       write('a.txt');
-      const r = tryCommit('Sin trailers');
+      const r = tryCommit('No trailers');
       expect(r.status).not.toBe(0);
-      expect(r.stderr).toContain('commit en preparación: debe tener exactamente un trailer "Task:"');
+      expect(r.stderr).toContain('pending commit: must have exactly one "Task:" trailer');
     });
 
-    it('rechaza una tarea de implementación que edita tests/acceptance/', () => {
+    it('rejects an implementation task that edits tests/acceptance/', () => {
       write('tests/acceptance/req_003.test.ts');
-      const r = tryCommit('Pedido\n\nTask: T-05\nReq: REQ-003');
+      const r = tryCommit('Order\n\nTask: T-05\nReq: REQ-003');
       expect(r.status).not.toBe(0);
-      expect(r.stderr).toContain('modifica tests/acceptance/');
+      expect(r.stderr).toContain('modifies tests/acceptance/');
     });
 
-    it('acepta un commit con trailers válidos', () => {
+    it('accepts a commit with valid trailers', () => {
       write('a.txt');
-      const r = tryCommit('Algo\n\nTask: T-02\nReq: none');
+      const r = tryCommit('Something\n\nTask: T-02\nReq: none');
       expect(r.status).toBe(0);
     });
   });

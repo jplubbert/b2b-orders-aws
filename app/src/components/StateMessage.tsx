@@ -1,9 +1,9 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
-// REQ-007 E5: carga, lista vacía y error se muestran con este mismo componente en todas las pantallas.
-// Los textos los pone cada pantalla (S-21: se conservan los de REQ-001..005).
-// En la carga, `label` es solo para lectores de pantalla (p. ej. "Comprobando sesión").
+// REQ-007 E5: loading, empty list and error are shown with this same component on every screen.
+// Each screen sets the texts (S-21: those of REQ-001..005 are kept).
+// While loading, `label` is only for screen readers (e.g. "Comprobando sesión").
 export function StateMessage(
   props:
     | { kind: 'loading'; label?: string }

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 export const envPath = (stage = 'dev') => `${ROOT}.env.${stage}`;
 
-/** Variables que escribe `npm run deploy:dev` (fuera de git). */
+/** Variables written by `npm run deploy:dev` (outside git). */
 export interface StageEnv {
   AWS_REGION: string;
   USER_POOL_ID: string;
@@ -37,7 +37,7 @@ export function loadStageEnv(stage = 'dev'): StageEnv {
   const env = { ...readEnvFile(stage), ...pick(process.env) };
   const missing = REQUIRED.filter((k) => !env[k]);
   if (missing.length) {
-    throw new Error(`Faltan ${missing.join(', ')} en ${envPath(stage)}; ejecuta \`npm run deploy:${stage}\`.`);
+    throw new Error(`Missing ${missing.join(', ')} in ${envPath(stage)}; run \`npm run deploy:${stage}\`.`);
   }
   return env as StageEnv;
 }

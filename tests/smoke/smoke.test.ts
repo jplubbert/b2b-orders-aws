@@ -1,4 +1,4 @@
-// Prueba de humo de T-01: app de punta a punta sin UI (Cognito → AppSync → Lambda → DynamoDB).
+// T-01 smoke test: the app end to end without UI (Cognito → AppSync → Lambda → DynamoDB).
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SEED_PRODUCTS, SEED_USERS } from '../../scripts/lib/seed-data.ts';
 import { gql, login, stageEnv } from '../lib/api.ts';
@@ -16,14 +16,14 @@ beforeAll(() => {
 });
 
 describe('smoke dev', () => {
-  it('almacen1 inicia sesión y listProducts devuelve los productos sembrados', async () => {
+  it('almacen1 signs in and listProducts returns the seeded products', async () => {
     const token = await login(env, SEED_USERS[0]!.email);
     const t0 = performance.now();
     const first = await gql<ListProducts>(env, LIST_PRODUCTS, {}, token);
     const t1 = performance.now();
     await gql<ListProducts>(env, LIST_PRODUCTS, {}, token);
     const t2 = performance.now();
-    console.log(`latencia listProducts: primera ${Math.round(t1 - t0)} ms, siguiente ${Math.round(t2 - t1)} ms`);
+    console.log(`listProducts latency: first ${Math.round(t1 - t0)} ms, next ${Math.round(t2 - t1)} ms`);
 
     expect(first.errors).toBeUndefined();
     const names = first.data!.listProducts.map((p) => p.name);
@@ -32,7 +32,7 @@ describe('smoke dev', () => {
     expect(arroz?.unitPrice).toBe(1300);
   });
 
-  it('sin token → Unauthorized y sin datos', async () => {
+  it('no token → Unauthorized and no data', async () => {
     const res = await gql<ListProducts>(env, LIST_PRODUCTS);
     expect(res.data ?? null).toBeNull();
     expect(res.errors?.[0]?.errorType).toMatch(/Unauthorized/);

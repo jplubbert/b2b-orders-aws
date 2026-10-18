@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
-// `npm run test:acceptance`: contra `dev` real (DEC-007). Las pruebas las escribe T-03;
-// esta config vive fuera de tests/acceptance/ (carpeta protegida). Al terminar, borra los pedidos de los
-// clientes desechables `C-ACEPT-…` (T-19).
+// `npm run test:acceptance`: against the real `dev` (DEC-007). T-03 writes the tests;
+// this config lives outside tests/acceptance/ (protected folder). When done, it deletes the orders of the
+// throwaway `C-ACEPT-…` customers (T-19).
 export default defineConfig({
   test: {
     include: ['tests/acceptance/**/*.test.ts'],

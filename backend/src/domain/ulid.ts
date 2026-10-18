@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto';
 
-// Base32 de Crockford: el orden lexicográfico del ULID es el orden por tiempo (DEC-006: `SK=ORDER#<ulid>`).
+// Crockford's Base32: the ULID's lexicographic order is its time order (DEC-006: `SK=ORDER#<ulid>`).
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
-/** ULID: 48 bits de milisegundos (10 caracteres) + 80 bits aleatorios (16 caracteres). */
+/** ULID: 48 bits of milliseconds (10 characters) + 80 random bits (16 characters). */
 export function ulid(now = Date.now(), random: (n: number) => Uint8Array = randomBytes): string {
   let time = '';
   for (let t = now, i = 0; i < 10; i++, t = Math.floor(t / 32)) time = ALPHABET[t % 32] + time;
@@ -15,7 +15,7 @@ export function ulid(now = Date.now(), random: (n: number) => Uint8Array = rando
   return time + rand;
 }
 
-/** Milisegundos codificados en un ULID. */
+/** Milliseconds encoded in a ULID. */
 export function ulidTime(id: string): number {
   let t = 0;
   for (const c of id.slice(0, 10)) t = t * 32 + ALPHABET.indexOf(c);

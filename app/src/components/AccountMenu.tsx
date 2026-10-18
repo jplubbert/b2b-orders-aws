@@ -6,9 +6,9 @@ import { Card } from '@/components/Card';
 import { SignOutButton } from '@/components/SignOutButton';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// REQ-006 (S-15): botón de cuenta con la inicial del correo; abre un menú con el correo de la sesión,
-// "Cerrar sesión" (REQ-005) y "Cancelar". Tocar fuera, "Cancelar" o el botón atrás de Android lo cierran
-// sin tocar la sesión ni el carrito (E3). El correo sale de los atributos de Cognito vía Amplify.
+// REQ-006 (S-15): account button with the email's initial; it opens a menu with the session's email,
+// "Cerrar sesión" (REQ-005) and "Cancelar". Tapping outside, "Cancelar" or Android's back button close it
+// without touching the session or the cart (E3). The email comes from the Cognito attributes via Amplify.
 export function AccountMenu() {
   const [email, setEmail] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -20,7 +20,7 @@ export function AccountMenu() {
         const attributes = await fetchUserAttributes();
         if (alive) setEmail(attributes.email ?? null);
       } catch {
-        // sin correo: el botón muestra "?" y el menú igual permite cerrar sesión
+        // no email: the button shows "?" and the menu still allows signing out
       }
     })();
     return () => {

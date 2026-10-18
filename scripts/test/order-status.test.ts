@@ -3,7 +3,7 @@ import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { describe, expect, it } from 'vitest';
 import { SetStatusError, setOrderStatus } from '../lib/order-status.ts';
 
-// Cliente falso: devuelve las respuestas en orden (o las lanza si son Error) y guarda cada comando.
+// Fake client: returns the responses in order (or throws them if they're Errors) and records each command.
 function fakeDoc(responses: unknown[]) {
   const sent: Array<{ name: string; input: Record<string, unknown> }> = [];
   const doc = {
@@ -21,18 +21,18 @@ const ID = '01JAAAAAAAAAAAAAAAAAB7XQ2M9Z';
 const key = { PK: 'CUSTOMER#C-1', SK: `ORDER#${ID}` };
 
 describe('order:set-status (DEC-009, REQ-004 E2)', () => {
-  it('busca el pedido por id en todas las particiones de clientes (recorre páginas) y cambia solo el estado', async () => {
+  it('looks up the order by id across every customer partition (walking pages) and changes only the status', async () => {
     const { doc, sent } = fakeDoc([{ Items: [], LastEvaluatedKey: { PK: 'x', SK: 'y' } }, { Items: [key] }, {}]);
-    await expect(setOrderStatus(doc, 'tabla', ID, 'ENVIADO')).resolves.toBe('ENVIADO');
+    await expect(setOrderStatus(doc, 'table', ID, 'ENVIADO')).resolves.toBe('ENVIADO');
     expect(sent.map((s) => s.name)).toEqual(['ScanCommand', 'ScanCommand', 'UpdateCommand']);
     expect(sent[0]!.input).toMatchObject({
-      TableName: 'tabla',
+      TableName: 'table',
       FilterExpression: 'SK = :sk AND begins_with(PK, :pk)',
       ExpressionAttributeValues: { ':sk': `ORDER#${ID}`, ':pk': 'CUSTOMER#' },
     });
     expect(sent[1]!.input.ExclusiveStartKey).toEqual({ PK: 'x', SK: 'y' });
     expect(sent[2]!.input).toEqual({
-      TableName: 'tabla',
+      TableName: 'table',
       Key: key,
       UpdateExpression: 'SET #status = :status',
       ConditionExpression: 'attribute_exists(PK)',
@@ -41,21 +41,21 @@ describe('order:set-status (DEC-009, REQ-004 E2)', () => {
     });
   });
 
-  it.each(['PERDIDO', 'enviado', ''])('rechaza el estado %j sin tocar la tabla', async (status) => {
+  it.each(['PERDIDO', 'enviado', ''])('rejects status %j without touching the table', async (status) => {
     const { doc, sent } = fakeDoc([]);
-    await expect(setOrderStatus(doc, 'tabla', ID, status)).rejects.toBeInstanceOf(SetStatusError);
+    await expect(setOrderStatus(doc, 'table', ID, status)).rejects.toBeInstanceOf(SetStatusError);
     expect(sent).toEqual([]);
   });
 
-  it('pedido inexistente → error, sin escribir', async () => {
+  it('missing order → error, without writing', async () => {
     const { doc, sent } = fakeDoc([{ Items: [] }]);
-    await expect(setOrderStatus(doc, 'tabla', 'NOPE', 'ENVIADO')).rejects.toThrow('No existe el pedido NOPE');
+    await expect(setOrderStatus(doc, 'table', 'NOPE', 'ENVIADO')).rejects.toThrow('Order NOPE does not exist');
     expect(sent.map((s) => s.name)).toEqual(['ScanCommand']);
   });
 
-  it('si el pedido desaparece entre la búsqueda y la escritura → error de pedido inexistente', async () => {
+  it('if the order disappears between lookup and write → missing-order error', async () => {
     const gone = new ConditionalCheckFailedException({ message: 'gone', $metadata: {} });
     const { doc } = fakeDoc([{ Items: [key] }, gone]);
-    await expect(setOrderStatus(doc, 'tabla', ID, 'ENTREGADO')).rejects.toBeInstanceOf(SetStatusError);
+    await expect(setOrderStatus(doc, 'table', ID, 'ENTREGADO')).rejects.toBeInstanceOf(SetStatusError);
   });
 });

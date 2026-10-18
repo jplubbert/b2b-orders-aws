@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { dynamoOrderRepo } from '../src/data/orderRepo.js';
 import type { Order } from '../src/domain/order.js';
 
-// Cliente falso: devuelve las respuestas en orden (lanza las que son Error) y guarda la entrada de cada comando.
+// Fake client: returns the responses in order (throws those that are Errors) and records each command's input.
 function fakeDoc(responses: Array<Record<string, unknown> | Error>) {
   const inputs: Record<string, unknown>[] = [];
   const doc = {
@@ -29,51 +29,51 @@ const order: Order = {
 };
 
 describe('dynamoOrderRepo (DEC-006)', () => {
-  it('putOrder escribe en CUSTOMER#<id> / ORDER#<ulid> con las líneas embebidas, sin sobrescribir', async () => {
+  it('putOrder writes to CUSTOMER#<id> / ORDER#<ulid> with embedded lines, without overwriting', async () => {
     const { doc, inputs } = fakeDoc([{}]);
-    await dynamoOrderRepo(doc, 'tabla').putOrder('C-1', order);
+    await dynamoOrderRepo(doc, 'table').putOrder('C-1', order);
     expect(inputs).toEqual([
       {
-        TableName: 'tabla',
+        TableName: 'table',
         Item: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}`, ...order },
         ConditionExpression: 'attribute_not_exists(PK)',
       },
     ]);
   });
 
-  it('listOrders consulta la partición del cliente del más reciente al más antiguo y recorre páginas', async () => {
+  it("listOrders queries the customer's partition newest first and walks the pages", async () => {
     const item = { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}`, ...order };
     const { doc, inputs } = fakeDoc([
       { Items: [item], LastEvaluatedKey: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` } },
-      { Items: [{ ...item, id: 'otro' }] },
+      { Items: [{ ...item, id: 'other' }] },
     ]);
-    const out = await dynamoOrderRepo(doc, 'tabla').listOrders('C-1');
+    const out = await dynamoOrderRepo(doc, 'table').listOrders('C-1');
     expect(inputs[0]).toMatchObject({
-      TableName: 'tabla',
+      TableName: 'table',
       KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
       ExpressionAttributeValues: { ':pk': 'CUSTOMER#C-1', ':sk': 'ORDER#' },
       ScanIndexForward: false,
     });
     expect(inputs[0]!.ExclusiveStartKey).toBeUndefined();
     expect(inputs[1]!.ExclusiveStartKey).toEqual({ PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` });
-    expect(out[0]).toEqual(order); // sin claves de tabla
-    expect(out.map((o) => o.id)).toEqual([order.id, 'otro']);
+    expect(out[0]).toEqual(order); // no table keys
+    expect(out.map((o) => o.id)).toEqual([order.id, 'other']);
   });
 
-  it('getOrder lee solo la clave del cliente pedido; si no está, null', async () => {
+  it("getOrder reads only the requested customer's key; null if missing", async () => {
     const item = { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}`, ...order };
     const { doc, inputs } = fakeDoc([{ Item: item }, {}]);
-    const repo = dynamoOrderRepo(doc, 'tabla');
+    const repo = dynamoOrderRepo(doc, 'table');
     expect(await repo.getOrder('C-1', order.id)).toEqual(order);
     expect(await repo.getOrder('C-2', order.id)).toBeNull();
     expect(inputs).toEqual([
-      { TableName: 'tabla', Key: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` } },
-      { TableName: 'tabla', Key: { PK: 'CUSTOMER#C-2', SK: `ORDER#${order.id}` } },
+      { TableName: 'table', Key: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` } },
+      { TableName: 'table', Key: { PK: 'CUSTOMER#C-2', SK: `ORDER#${order.id}` } },
     ]);
   });
 });
 
-describe('dynamoOrderRepo: distribuidor (DEC-013)', () => {
+describe('dynamoOrderRepo: distributor (DEC-013)', () => {
   const item = (id: string, customerId: string, status = 'RECIBIDO') => ({
     PK: `CUSTOMER#${customerId}`,
     SK: `ORDER#${id}`,
@@ -83,14 +83,14 @@ describe('dynamoOrderRepo: distribuidor (DEC-013)', () => {
     status,
   });
 
-  it('listAllOrders recorre el Scan paginado de ORDER# y ordena por ULID descendente', async () => {
+  it('listAllOrders walks the paginated Scan of ORDER# and sorts by descending ULID', async () => {
     const { doc, inputs } = fakeDoc([
       { Items: [item('01JA0000000000000000000001', 'C-1')], LastEvaluatedKey: { PK: 'x', SK: 'y' } },
       { Items: [item('01JA0000000000000000000003', 'C-2'), item('01JA0000000000000000000002', 'C-1')] },
     ]);
-    const out = await dynamoOrderRepo(doc, 'tabla').listAllOrders();
+    const out = await dynamoOrderRepo(doc, 'table').listAllOrders();
     expect(inputs[0]).toEqual({
-      TableName: 'tabla',
+      TableName: 'table',
       FilterExpression: 'begins_with(SK, :sk)',
       ExpressionAttributeValues: { ':sk': 'ORDER#' },
       ExclusiveStartKey: undefined,
@@ -104,9 +104,9 @@ describe('dynamoOrderRepo: distribuidor (DEC-013)', () => {
     expect(out[0]).not.toHaveProperty('PK');
   });
 
-  it('listAllOrders con estado filtra por status en el Scan', async () => {
+  it('listAllOrders with a status filters by status in the Scan', async () => {
     const { doc, inputs } = fakeDoc([{ Items: [item('01JA0000000000000000000001', 'C-1', 'ENVIADO')] }]);
-    const out = await dynamoOrderRepo(doc, 'tabla').listAllOrders('ENVIADO');
+    const out = await dynamoOrderRepo(doc, 'table').listAllOrders('ENVIADO');
     expect(inputs[0]).toMatchObject({
       FilterExpression: 'begins_with(SK, :sk) AND #status = :status',
       ExpressionAttributeNames: { '#status': 'status' },
@@ -115,12 +115,12 @@ describe('dynamoOrderRepo: distribuidor (DEC-013)', () => {
     expect(out.map((o) => o.status)).toEqual(['ENVIADO']);
   });
 
-  it('setStatus actualiza solo status, condicionado a que el pedido exista en esa partición', async () => {
+  it('setStatus updates only status, provided the order exists in that partition', async () => {
     const { doc, inputs } = fakeDoc([{ Attributes: item(order.id, 'C-1', 'ENVIADO') }]);
-    expect(await dynamoOrderRepo(doc, 'tabla').setStatus('C-1', order.id, 'ENVIADO')).toEqual({ ...order, status: 'ENVIADO' });
+    expect(await dynamoOrderRepo(doc, 'table').setStatus('C-1', order.id, 'ENVIADO')).toEqual({ ...order, status: 'ENVIADO' });
     expect(inputs).toEqual([
       {
-        TableName: 'tabla',
+        TableName: 'table',
         Key: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` },
         UpdateExpression: 'SET #status = :status',
         ConditionExpression: 'attribute_exists(PK)',
@@ -131,14 +131,14 @@ describe('dynamoOrderRepo: distribuidor (DEC-013)', () => {
     ]);
   });
 
-  it('setStatus devuelve null si la condición falla (pedido inexistente o de otro cliente)', async () => {
+  it("setStatus returns null if the condition fails (missing order or another customer's)", async () => {
     const failed = new ConditionalCheckFailedException({ message: 'no', $metadata: {} });
     const { doc } = fakeDoc([failed]);
-    expect(await dynamoOrderRepo(doc, 'tabla').setStatus('C-2', order.id, 'ENVIADO')).toBeNull();
+    expect(await dynamoOrderRepo(doc, 'table').setStatus('C-2', order.id, 'ENVIADO')).toBeNull();
   });
 
-  it('setStatus propaga otros errores', async () => {
+  it('setStatus propagates other errors', async () => {
     const { doc } = fakeDoc([new Error('throttled')]);
-    await expect(dynamoOrderRepo(doc, 'tabla').setStatus('C-1', order.id, 'ENVIADO')).rejects.toThrow('throttled');
+    await expect(dynamoOrderRepo(doc, 'table').setStatus('C-1', order.id, 'ENVIADO')).rejects.toThrow('throttled');
   });
 });

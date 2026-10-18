@@ -13,19 +13,19 @@ import type { Order, OrderLine, OrderStatus } from '../domain/order.js';
 import { ORDER_SK_PREFIX, customerPk, orderSk } from './keys.js';
 
 export interface OrderRepo {
-  /** Guarda el pedido nuevo en la partición del cliente; nunca sobrescribe uno existente. */
+  /** Stores the new order in the customer's partition; never overwrites an existing one. */
   putOrder(customerId: string, order: Order): Promise<void>;
-  /** Pedidos del cliente, del más reciente al más antiguo (orden del ULID). */
+  /** The customer's orders, newest first (ULID order). */
   listOrders(customerId: string): Promise<Order[]>;
-  /** Pedido `orderId` dentro de la partición del cliente; `null` si no está (o es de otro cliente). */
+  /** Order `orderId` within the customer's partition; `null` if missing (or owned by another customer). */
   getOrder(customerId: string, orderId: string): Promise<Order | null>;
-  /** Pedidos de todos los clientes, del más reciente al más antiguo; solo los de `status` si se indica (DEC-013). */
+  /** Orders of every customer, newest first; only those in `status` if given (DEC-013). */
   listAllOrders(status?: OrderStatus | null): Promise<Order[]>;
-  /** Cambia solo `status` del pedido en la partición del cliente; `null` si no está (no crea nada). */
+  /** Changes only the order's `status` in the customer's partition; `null` if missing (creates nothing). */
   setStatus(customerId: string, orderId: string, status: OrderStatus): Promise<Order | null>;
 }
 
-// DEC-006: `PK=CUSTOMER#<customerId>`, `SK=ORDER#<ulid>`, líneas embebidas con nombre y precio congelados.
+// DEC-006: `PK=CUSTOMER#<customerId>`, `SK=ORDER#<ulid>`, embedded lines with frozen name and price.
 export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string): OrderRepo {
   return {
     async putOrder(customerId, order) {
@@ -57,7 +57,7 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
       return orders;
     },
 
-    // La clave incluye al cliente del token: un pedido ajeno no se puede leer ni distinguir de uno inexistente.
+    // The key includes the token's customer: another customer's order can't be read or told apart from a missing one.
     async getOrder(customerId, orderId) {
       const { Item } = await doc.send(
         new GetCommand({ TableName: tableName, Key: { PK: customerPk(customerId), SK: orderSk(orderId) } }),
@@ -65,7 +65,7 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
       return Item ? toOrder(Item) : null;
     },
 
-    // DEC-013: Scan paginado de la tabla (S-26: decenas de pedidos); el orden lo da el ULID, no la tabla.
+    // DEC-013: paginated Scan of the table (S-26: tens of orders); the ULID gives the order, not the table.
     async listAllOrders(status) {
       const orders: Order[] = [];
       let startKey: ScanCommandOutput['LastEvaluatedKey'];
@@ -89,7 +89,7 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
       return orders.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
     },
 
-    // La condición evita que UpdateItem cree un pedido vacío cuando la clave no existe (REQ-011 E5).
+    // The condition keeps UpdateItem from creating an empty order when the key doesn't exist (REQ-011 E5).
     async setStatus(customerId, orderId, status) {
       try {
         const { Attributes } = await doc.send(

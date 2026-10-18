@@ -8,8 +8,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { formatCLP, formatDate, myOrders, type OrderSummary } from '@/lib/api';
 import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
-// REQ-004: pedidos del más reciente al más antiguo (el servidor ordena) con número, fecha, total y estado.
-// El estado vigente se pide de nuevo al volver a la pantalla y al deslizar hacia abajo (S-06).
+// REQ-004: orders newest first (the server sorts) with number, date, total and status.
+// The current status is requested again when returning to the screen and when pulling down (S-06).
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<OrderSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);

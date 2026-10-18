@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_QUANTITY } from '@/lib/cart';
 import { colors, disabledOpacity, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// − cantidad +; con 0 el producto sale del carrito. Botones de 44 dp (REQ-007 E4).
+// − quantity +; at 0 the product leaves the cart. 44 dp buttons (REQ-007 E4).
 export function QuantityStepper({ quantity, onChange }: { quantity: number; onChange: (q: number) => void }) {
   return (
     <View style={styles.row}>

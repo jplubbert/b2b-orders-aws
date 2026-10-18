@@ -11,22 +11,22 @@ import type { OrderStatus } from '@/lib/generated/graphql';
 import { usePanel } from '@/lib/PanelProvider';
 import { colors, fontSize, fontWeight, orderStatus, radius, spacing, touchTarget } from '@/theme';
 
-// S-28: "Todos" + los 5 estados con su nombre legible (S-17), en el orden de S-04.
+// S-28: "Todos" + the 5 statuses with their readable name (S-17), in S-04 order.
 const FILTERS: { status: OrderStatus | null; label: string }[] = [
   { status: null, label: 'Todos' },
   ...(Object.keys(orderStatus) as OrderStatus[]).map((s) => ({ status: s, label: orderStatus[s].label })),
 ];
 
-// REQ-010: pedidos de todos los almacenes del más reciente al más antiguo (el servidor ordena) con número,
-// almacén (customerId, S-23), fecha, total y estado. El filtro pide `allOrders(status)` al servidor (E2).
-// El estado vigente se pide de nuevo al volver a la pantalla y al deslizar hacia abajo (S-06).
-// La lista vive en PanelProvider: el detalle (dist/order/[id]) la lee y la actualiza al cambiar el estado.
+// REQ-010: orders of every store, newest first (the server sorts), with number, store (customerId, S-23),
+// date, total and status. The filter asks the server for `allOrders(status)` (E2).
+// The current status is requested again when returning to the screen and when pulling down (S-06).
+// The list lives in PanelProvider: the detail (dist/order/[id]) reads it and updates it when the status changes.
 export default function PanelScreen() {
   const [filter, setFilter] = useState<OrderStatus | null>(null);
   const { orders, setOrders } = usePanel();
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  // Solo vale la respuesta del último pedido: al cambiar rápido de filtro no gana una respuesta vieja.
+  // Only the response to the latest request counts: when switching filters fast, an old response doesn't win.
   const latest = useRef(0);
 
   const load = useCallback(async () => {
@@ -42,12 +42,12 @@ export default function PanelScreen() {
     }
   }, [filter, setOrders]);
 
-  // Al entrar (nueva sesión) no se muestra la lista de una sesión anterior mientras llega la nueva.
+  // On entering (new session) the list of a previous session isn't shown while the new one arrives.
   useEffect(() => {
     setOrders(null);
   }, [setOrders]);
 
-  // Corre al ganar el foco y cada vez que cambia el filtro.
+  // Runs on gaining focus and every time the filter changes.
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -56,7 +56,7 @@ export default function PanelScreen() {
 
   function onFilter(status: OrderStatus | null) {
     if (status === filter) return;
-    // Sin la lista del filtro anterior mientras llega la nueva.
+    // Without the previous filter's list while the new one arrives.
     setOrders(null);
     setError(null);
     setFilter(status);
@@ -68,7 +68,7 @@ export default function PanelScreen() {
     setRefreshing(false);
   }
 
-  // Título "Pedidos" desde _layout.tsx; a la derecha el menú de cuenta con "Cerrar sesión" (S-28, REQ-006).
+  // "Pedidos" title from _layout.tsx; on the right the account menu with "Cerrar sesión" (S-28, REQ-006).
   const header = <Stack.Screen options={{ headerRight: () => <AccountMenu /> }} />;
 
   const filters = (
@@ -114,7 +114,7 @@ export default function PanelScreen() {
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListHeaderComponent={error ? <StateMessage kind="error" message={error} /> : null}
-        // REQ-010 E4 (sin filtro) y E3 (con filtro)
+        // REQ-010 E4 (no filter) and E3 (with filter)
         ListEmptyComponent={
           orders ? (
             <StateMessage kind="empty" message={filter ? 'No hay pedidos en este estado' : 'Todavía no hay pedidos'} />

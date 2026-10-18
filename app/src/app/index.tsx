@@ -10,10 +10,10 @@ import { isConfigured } from '@/lib/amplify';
 import { currentSession, type Home, loginErrorMessage, NO_ACCESS, rejectSession } from '@/lib/session';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// REQ-001: con sesión vigente abre la pantalla del rol sin pedir credenciales (E3, REQ-009 E4); si no,
-// pide correo y contraseña y, si son inválidas, muestra "Correo o contraseña incorrectos" sin salir de
-// aquí (E2). REQ-009: almaceneros → catálogo, distribuidores → panel "Pedidos"; sin grupo → NO_ACCESS,
-// sesión cerrada y sigue en inicio (E3).
+// REQ-001: with a live session it opens the role's screen without asking for credentials (E3, REQ-009 E4);
+// otherwise it asks for email and password and, if they're invalid, shows "Correo o contraseña incorrectos"
+// without leaving (E2). REQ-009: almaceneros → catalog, distribuidores → "Pedidos" panel; no group → NO_ACCESS,
+// session closed and it stays on the login screen (E3).
 export default function LoginScreen() {
   const [checking, setChecking] = useState(isConfigured);
   const [home, setHome] = useState<Home | null>(null);
@@ -29,9 +29,9 @@ export default function LoginScreen() {
       const session = await currentSession();
       if (session && !session.home) await rejectSession();
       if (!active) return;
-      // Sin `router.replace` aquí: al abrir la app la sesión puede resolverse antes de que el navegador
-      // raíz esté montado ("Can't perform a React state update on a component that hasn't mounted yet").
-      // `<Redirect>` navega recién cuando esta pantalla tiene foco dentro del navegador.
+      // No `router.replace` here: when the app opens, the session may resolve before the root navigator
+      // is mounted ("Can't perform a React state update on a component that hasn't mounted yet").
+      // `<Redirect>` navigates only once this screen has focus inside the navigator.
       if (session?.home) return setHome(session.home);
       if (session) setError(NO_ACCESS);
       setChecking(false);
@@ -41,7 +41,7 @@ export default function LoginScreen() {
     };
   }, []);
 
-  // Tras iniciar sesión, el rol sale de los grupos del token recién emitido (REQ-009 E1–E3).
+  // After signing in, the role comes from the groups of the freshly issued token (REQ-009 E1–E3).
   async function enter() {
     const target = (await currentSession())?.home;
     if (target) return router.replace(target);
@@ -53,7 +53,7 @@ export default function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      // USER_PASSWORD_AUTH en vez de SRP: SRP necesita el módulo nativo AmplifyRTNCore, ausente en Expo Go.
+      // USER_PASSWORD_AUTH instead of SRP: SRP needs the AmplifyRTNCore native module, missing in Expo Go.
       const { isSignedIn, nextStep } = await signIn({
         username: email.trim(),
         password,
@@ -62,7 +62,7 @@ export default function LoginScreen() {
       if (isSignedIn) await enter();
       else setError(`Paso pendiente: ${nextStep.signInStep}`);
     } catch (e) {
-      // Puede quedar una sesión que la comprobación inicial no vio (p. ej. un token recién renovado).
+      // There may be a session the initial check didn't see (e.g. a freshly renewed token).
       if (e instanceof Error && e.name === 'UserAlreadyAuthenticatedException') await enter();
       else setError(loginErrorMessage(e));
     } finally {
@@ -91,7 +91,7 @@ export default function LoginScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* S-16: marca neutra de la demo. */}
+        {/* S-16: the demo's neutral brand. */}
         <View style={styles.brand}>
           <View style={styles.logo}>
             <Text style={styles.logoText}>B2B</Text>

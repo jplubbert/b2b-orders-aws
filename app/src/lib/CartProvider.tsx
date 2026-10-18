@@ -5,15 +5,15 @@ interface CartContextValue {
   cart: Cart;
   setQuantity: (product: CartProduct, quantity: number) => void;
   clear: () => void;
-  /** Último catálogo cargado (null si aún no se cargó); lo usa el detalle de producto (S-19). */
+  /** Last loaded catalog (null if not loaded yet); the product detail uses it (S-19). */
   catalog: CartProduct[] | null;
   setCatalog: (products: CartProduct[]) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-// S-09: el carrito vive en memoria mientras la app está abierta.
-// S-19: junto a él, el catálogo que cargó la pantalla Catálogo, para abrir el detalle sin consulta nueva.
+// S-09: the cart lives in memory while the app is open.
+// S-19: next to it, the catalog the Catalog screen loaded, to open the detail without a new query.
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart>([]);
   const [catalog, setCatalog] = useState<CartProduct[] | null>(null);
@@ -32,6 +32,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart(): CartContextValue {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart fuera de CartProvider');
+  if (!ctx) throw new Error('useCart outside CartProvider');
   return ctx;
 }

@@ -1,28 +1,28 @@
 #!/usr/bin/env node
-// Operaciones sobre spec/ que usa scripts/autopilot.sh (T-08). Sin dependencias.
+// Operations on spec/ used by scripts/autopilot.sh (T-08). No dependencies.
 //
-//   node scripts/lib/autopilot-tasks.mjs [--root DIR] <orden> [args]
+//   node scripts/lib/autopilot-tasks.mjs [--root DIR] <command> [args]
 //
 //   pick [--task T-NN] [--exclude T-NN,…]
-//                           primera tarea elegible (in_progress/ready/approved_for_impl) con todas sus dependencias cerradas
-//                           (done/reviewed/accepted/delivered) y fuera de --exclude, o la forzada → JSON | null
-//   pending-reviews         ids de las tareas en verified_auto (esperan revisión independiente) → JSON
-//   manual-pending          verificaciones manuales diferidas a la aceptación en lote (DEC-011) → JSON ["T-NN: …"]
-//   snapshot                mapa id → status de todas las tareas → JSON
-//   check-authority FILE    compara con el snapshot FILE; falla si el ejecutor otorgó un estado reservado
-//   status T-NN             imprime el estado de la tarea
-//   context T-NN            Markdown con la tarea, sus REQ (SPEC.md) y sus DEC (DECISIONS.md) para el revisor
-//   parse-verdict FILE      extrae el veredicto JSON de la salida del revisor → JSON normalizado (exit 1 si no hay)
-//   set-review T-NN FILE    guarda el veredicto (FILE, JSON normalizado) en TASKS.json; approved → reviewed
+//                           first eligible task (in_progress/ready/approved_for_impl) with all its dependencies closed
+//                           (done/reviewed/accepted/delivered) and not in --exclude, or the forced one → JSON | null
+//   pending-reviews         ids of the tasks in verified_auto (awaiting independent review) → JSON
+//   manual-pending          manual checks deferred to the batch acceptance (DEC-011) → JSON ["T-NN: …"]
+//   snapshot                map id → status of every task → JSON
+//   check-authority FILE    compares with snapshot FILE; fails if the executor granted a reserved status
+//   status T-NN             prints the task's status
+//   context T-NN            Markdown with the task, its REQs (SPEC.md) and its DECs (DECISIONS.md) for the reviewer
+//   parse-verdict FILE      extracts the JSON verdict from the reviewer output → normalized JSON (exit 1 if none)
+//   set-review T-NN FILE    stores the verdict (FILE, normalized JSON) in TASKS.json; approved → reviewed
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Estados desde los que el orquestador puede tomar una tarea; `in_progress` para retomar una a medias. */
+/** States from which the orchestrator may take a task; `in_progress` to resume a half-done one. */
 export const ELIGIBLE_STATES = ['in_progress', 'ready', 'approved_for_impl'];
-/** Estados que cierran una dependencia. `reviewed` incluido para encadenar tareas sin esperar la aceptación del usuario. */
+/** States that close a dependency. `reviewed` included to chain tasks without waiting for the user's acceptance. */
 export const DONE_STATES = ['done', 'reviewed', 'accepted', 'delivered'];
-/** Estados que solo otorgan el revisor o el usuario (AGENTS.md §Autoridad). El ejecutor nunca los escribe. */
+/** States only the reviewer or the user grant (AGENTS.md §Autoridad). The executor never writes them. */
 export const RESERVED_STATES = ['reviewed', 'accepted', 'approved_for_impl', 'delivered'];
 export const VERDICTS = ['approved', 'rejected'];
 
@@ -38,7 +38,7 @@ function writeTasks(root, data) {
 
 function findTask(data, id) {
   const t = data.tasks.find((x) => x.id === id);
-  if (!t) throw new Error(`${id} no existe en spec/TASKS.json`);
+  if (!t) throw new Error(`${id} does not exist in spec/TASKS.json`);
   return t;
 }
 
@@ -55,15 +55,15 @@ export function pick(data, forced, exclude = []) {
   );
 }
 
-/** Tareas que esperan revisión independiente: el orquestador las revisa antes de elegir tarea nueva. */
+/** Tasks awaiting independent review: the orchestrator reviews them before picking a new task. */
 export function pendingReviews(data) {
   return data.tasks.filter((t) => t.status === 'verified_auto').map((t) => t.id);
 }
 
-/** Estados en que una verificación manual sigue pendiente: la tarea aún no fue aceptada por el usuario. */
+/** States in which a manual check is still pending: the user hasn't accepted the task yet. */
 export const MANUAL_PENDING_STATES = ['verified_auto', 'reviewed'];
 
-/** Verificaciones manuales diferidas (DEC-011): `evidence.manual_pending` de las tareas aún sin aceptar. */
+/** Deferred manual checks (DEC-011): `evidence.manual_pending` of the tasks not yet accepted. */
 export function manualPending(data) {
   return data.tasks
     .filter((t) => MANUAL_PENDING_STATES.includes(t.status) && typeof t.evidence?.manual_pending === 'string' && t.evidence.manual_pending.trim())
@@ -74,14 +74,14 @@ export function snapshot(data) {
   return Object.fromEntries(data.tasks.map((t) => [t.id, t.status]));
 }
 
-/** Tareas cuyo estado pasó a uno reservado desde el snapshot (o que aparecieron ya en uno reservado). */
+/** Tasks whose status moved to a reserved one since the snapshot (or that appeared already in one). */
 export function authorityViolations(before, data) {
   return data.tasks
     .filter((t) => RESERVED_STATES.includes(t.status) && before[t.id] !== t.status)
-    .map((t) => `${t.id}: ${before[t.id] ?? '(nueva)'} → ${t.status}`);
+    .map((t) => `${t.id}: ${before[t.id] ?? '(new)'} → ${t.status}`);
 }
 
-/** Sección Markdown que empieza en el encabezado del id (nivel 2–4) hasta el siguiente encabezado del mismo nivel o superior. */
+/** Markdown section from the id's heading (level 2–4) to the next heading of the same or higher level. */
 function section(text, id) {
   const lines = text.split('\n');
   const start = lines.findIndex((l) => new RegExp(`^#{2,4} ${id}\\b`).test(l));
@@ -103,22 +103,22 @@ export function context(root, id) {
   const spec = existsSync(join(root, 'spec/SPEC.md')) ? readFileSync(join(root, 'spec/SPEC.md'), 'utf8') : '';
   const decs = existsSync(join(root, 'spec/DECISIONS.md')) ? readFileSync(join(root, 'spec/DECISIONS.md'), 'utf8') : '';
   const out = [];
-  out.push(`# Tarea ${t.id}: ${t.title}`, '');
-  if (t.kind) out.push(`- Clase: ${t.kind}`);
-  if (t.description) out.push(`- Descripción: ${t.description}`);
-  if (t.verify) out.push(`- Verificación declarada: ${t.verify}`);
-  out.push(`- Requisitos citados: ${(t.reqs ?? []).join(', ') || 'ninguno (la descripción y la verificación declarada hacen de requisito)'}`);
-  out.push(`- Decisiones citadas: ${(t.decisions ?? []).join(', ') || 'ninguna'}`);
-  out.push('', '# Requisitos (spec/SPEC.md)', '');
-  for (const r of t.reqs ?? []) out.push(section(spec, r) ?? `(${r} no encontrado en spec/SPEC.md)`, '');
-  if ((t.reqs ?? []).length === 0) out.push('(sin REQ de producto)', '');
-  out.push('# Decisiones aceptadas citadas (spec/DECISIONS.md)', '');
-  for (const d of t.decisions ?? []) out.push(section(decs, d) ?? `(${d} no encontrada en spec/DECISIONS.md)`, '');
-  if ((t.decisions ?? []).length === 0) out.push('(ninguna)', '');
+  out.push(`# Task ${t.id}: ${t.title}`, '');
+  if (t.kind) out.push(`- Kind: ${t.kind}`);
+  if (t.description) out.push(`- Description: ${t.description}`);
+  if (t.verify) out.push(`- Declared verification: ${t.verify}`);
+  out.push(`- Cited requirements: ${(t.reqs ?? []).join(', ') || 'none (the description and the declared verification act as the requirement)'}`);
+  out.push(`- Cited decisions: ${(t.decisions ?? []).join(', ') || 'none'}`);
+  out.push('', '# Requirements (spec/SPEC.md)', '');
+  for (const r of t.reqs ?? []) out.push(section(spec, r) ?? `(${r} not found in spec/SPEC.md)`, '');
+  if ((t.reqs ?? []).length === 0) out.push('(no product REQ)', '');
+  out.push('# Cited accepted decisions (spec/DECISIONS.md)', '');
+  for (const d of t.decisions ?? []) out.push(section(decs, d) ?? `(${d} not found in spec/DECISIONS.md)`, '');
+  if ((t.decisions ?? []).length === 0) out.push('(none)', '');
   return out.join('\n');
 }
 
-/** Veredicto del revisor: el último bloque ```json … ```; si no hay, el último `{"verdict"…}` del texto; si no, el texto entero. */
+/** The reviewer's verdict: the last ```json … ``` block; failing that, the last `{"verdict"…}` in the text; failing that, the whole text. */
 export function parseVerdict(text) {
   const fenced = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].map((m) => m[1]);
   const candidates = [];
@@ -137,7 +137,7 @@ export function parseVerdict(text) {
   return null;
 }
 
-/** JSON.parse tolerante: recorta hasta la llave que cierra el primer objeto. */
+/** Lenient JSON.parse: cuts at the brace that closes the first object. */
 function tryParseObject(s) {
   const start = s.indexOf('{');
   if (start < 0) return null;
@@ -162,17 +162,17 @@ function tryParseObject(s) {
 }
 
 export function setReview(root, id, review) {
-  if (!VERDICTS.includes(review.verdict)) throw new Error(`veredicto inválido: ${review.verdict}`);
+  if (!VERDICTS.includes(review.verdict)) throw new Error(`invalid verdict: ${review.verdict}`);
   const data = readTasks(root);
   const t = findTask(data, id);
   t.review = {
-    reviewer: review.reviewer ?? 'desconocido',
+    reviewer: review.reviewer ?? 'desconocido', // value stored in spec/, which stays in Spanish (DEC-018)
     verdict: review.verdict,
     findings: review.findings ?? [],
     notes: review.notes ?? '',
     date: review.date ?? new Date().toISOString().slice(0, 10),
   };
-  // verified_auto → reviewed solo con aprobación (sdd.md §8.2). Rechazo: conserva el estado y queda el veredicto.
+  // verified_auto → reviewed only with approval (sdd.md §8.2). Rejection: keeps the status and records the verdict.
   if (review.verdict === 'approved' && t.status === 'verified_auto') t.status = 'reviewed';
   writeTasks(root, data);
   return t.status;
@@ -209,7 +209,7 @@ function main(argv) {
       const before = JSON.parse(readFileSync(args[0], 'utf8'));
       const v = authorityViolations(before, readTasks(root));
       if (v.length > 0) {
-        console.error(`autopilot: el ejecutor otorgó estados reservados (${RESERVED_STATES.join(', ')}):`);
+        console.error(`autopilot: the executor granted reserved statuses (${RESERVED_STATES.join(', ')}):`);
         for (const line of v) console.error(`  ✗ ${line}`);
         return 1;
       }
@@ -227,7 +227,7 @@ function main(argv) {
     case 'parse-verdict': {
       const v = parseVerdict(readFileSync(args[0], 'utf8'));
       if (!v) {
-        console.error('autopilot: la salida del revisor no contiene un veredicto JSON válido');
+        console.error('autopilot: the reviewer output contains no valid JSON verdict');
         return 1;
       }
       out(v);
@@ -239,7 +239,7 @@ function main(argv) {
       return 0;
     }
     default:
-      console.error(`orden desconocida: ${cmd ?? '(ninguna)'}`);
+      console.error(`unknown command: ${cmd ?? '(none)'}`);
       return 2;
   }
 }

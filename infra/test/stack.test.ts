@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 
 describe('PedidosStack', () => {
-  it('DEC-005: cada campo raíz del contrato usa la fuente de datos `api`', () => {
+  it('DEC-005: every root field of the contract uses the `api` data source', () => {
     const fields = rootFields();
     expect(fields).toContainEqual(['Query', 'listProducts']);
     expect(fields).toContainEqual(['Mutation', 'createOrder']);
@@ -34,7 +34,7 @@ describe('PedidosStack', () => {
     template.hasResourceProperties('AWS::AppSync::DataSource', { Name: 'api', Type: 'AWS_LAMBDA' });
   });
 
-  it('DEC-004: user pool sin auto-registro, grupo almaceneros y AppSync con user pool', () => {
+  it('DEC-004: user pool without self sign-up, almaceneros group and AppSync with user pool', () => {
     template.hasResourceProperties('AWS::Cognito::UserPool', {
       AdminCreateUserConfig: { AllowAdminCreateUserOnly: true },
       Schema: Match.arrayWith([Match.objectLike({ Name: 'customerId', Mutable: false })]),
@@ -44,7 +44,7 @@ describe('PedidosStack', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', { WriteAttributes: [] });
   });
 
-  it('DEC-013: grupo distribuidores y cada campo raíz autorizado solo para su grupo', () => {
+  it('DEC-013: distribuidores group and every root field authorized only for its group', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolGroup', { GroupName: 'distribuidores' });
     expect(rootFieldGroups()).toEqual({
       'Query.listProducts': ['almaceneros'],
@@ -56,7 +56,7 @@ describe('PedidosStack', () => {
     });
   });
 
-  it('DEC-013: la Lambda api puede hacer Scan y UpdateItem sobre la tabla', () => {
+  it('DEC-013: the api Lambda can Scan and UpdateItem on the table', () => {
     const fnRole = Object.keys(template.findResources('AWS::IAM::Role')).find((id) => id.startsWith('ApiFunction'));
     const policies = Object.values(template.findResources('AWS::IAM::Policy')).filter((p) =>
       JSON.stringify(p.Properties.Roles ?? []).includes(fnRole!),
@@ -67,7 +67,7 @@ describe('PedidosStack', () => {
     expect(actions).toEqual(expect.arrayContaining(['dynamodb:Scan', 'dynamodb:UpdateItem']));
   });
 
-  it('DEC-006: tabla única PK/SK on-demand', () => {
+  it('DEC-006: single PK/SK on-demand table', () => {
     template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
       BillingMode: 'PAY_PER_REQUEST',
       KeySchema: [
@@ -77,36 +77,36 @@ describe('PedidosStack', () => {
     });
   });
 
-  it('DEC-005: Lambda api en Node.js 24 con TABLE_NAME', () => {
+  it('DEC-005: api Lambda on Node.js 24 with TABLE_NAME', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       Runtime: 'nodejs24.x',
       Environment: { Variables: { TABLE_NAME: Match.anyValue() } },
     });
   });
 
-  it('expone las salidas que usa scripts/write-env.ts', () => {
+  it('exposes the outputs scripts/write-env.ts uses', () => {
     const outputs = Object.keys(template.toJSON().Outputs ?? {});
     expect(outputs).toEqual(expect.arrayContaining(['Region', 'UserPoolId', 'UserPoolClientId', 'GraphqlUrl', 'TableName']));
   });
 
-  it('DEC-010: sin usuario de pruebas fuera de dev', () => {
+  it('DEC-010: no test user outside dev', () => {
     template.resourceCountIs('AWS::IAM::User', 0);
   });
 });
 
-describe('PedidosStack dev: usuario autopilot-tests (DEC-010, DEC-015)', () => {
+describe('PedidosStack dev: autopilot-tests user (DEC-010, DEC-015)', () => {
   let dev: Template;
   beforeAll(() => {
     dev = Template.fromStack(new PedidosStack(new App(), 'PedidosB2B-dev', { stage: 'dev', env: { region: 'us-east-1' } }));
   });
 
-  it('existe, sin llaves de acceso ni login de consola en la plantilla', () => {
+  it('exists, with no access keys or console login in the template', () => {
     dev.hasResourceProperties('AWS::IAM::User', { UserName: TEST_RUNNER_USER });
     dev.resourceCountIs('AWS::IAM::AccessKey', 0);
     expect(dev.findResources('AWS::IAM::User', { Properties: { LoginProfile: Match.anyValue() } })).toEqual({});
   });
 
-  it('solo tiene las acciones de datos de la tabla y de admin del user pool, sobre esos recursos', () => {
+  it('has only the table data actions and user pool admin actions, on those resources', () => {
     const policies = Object.values(dev.findResources('AWS::IAM::Policy')).filter((p) =>
       JSON.stringify(p.Properties.Users ?? []).includes('AutopilotTestsUser'),
     );

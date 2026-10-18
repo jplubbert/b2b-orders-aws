@@ -4,9 +4,9 @@ import { signOut } from 'aws-amplify/auth';
 import { Button } from '@/components/Button';
 import { useCart } from '@/lib/CartProvider';
 
-// REQ-005: borra la sesión local (tokens de Amplify en AsyncStorage) y el carrito (S-09) y vuelve al
-// inicio. signOut sin `global` limpia los tokens locales aunque falle la revocación en Cognito (sin
-// red), así que un error no impide salir.
+// REQ-005: clears the local session (Amplify tokens in AsyncStorage) and the cart (S-09) and returns to
+// the login screen. signOut without `global` clears the local tokens even if the revocation in Cognito
+// fails (no network), so an error doesn't prevent leaving.
 export function SignOutButton({ variant = 'link' }: { variant?: 'secondary' | 'link' }) {
   const { clear } = useCart();
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export function SignOutButton({ variant = 'link' }: { variant?: 'secondary' | 'l
     try {
       await signOut();
     } catch {
-      // ver arriba: la sesión local ya no se usa
+      // see above: the local session is no longer used
     }
     clear();
     router.replace('/');

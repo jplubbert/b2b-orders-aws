@@ -11,14 +11,14 @@ import { quantityOf } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/theme';
 
-// REQ-008: detalle de un producto del catálogo ya cargado (S-19, sin consulta nueva), con la cantidad
-// que tiene en el mismo carrito del catálogo (REQ-003) y su subtotal. Sin imagen (S-18): recuadro con la inicial.
+// REQ-008: detail of a product from the already loaded catalog (S-19, no new query), with the quantity
+// it has in the catalog's same cart (REQ-003) and its subtotal. No image (S-18): a box with the initial.
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cart, setQuantity, catalog } = useCart();
   const product = catalog?.find((p) => p.productId === id);
 
-  // E5: id fuera del catálogo cargado → no se puede agregar.
+  // E5: id outside the loaded catalog → it can't be added.
   if (!product) {
     return (
       <Screen style={styles.missing}>

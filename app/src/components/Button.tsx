@@ -3,9 +3,9 @@ import { colors, disabledOpacity, fontSize, fontWeight, radius, spacing, touchTa
 
 type Variant = 'primary' | 'secondary' | 'link';
 
-// Botón del tema; alto mínimo de 44 dp (REQ-007 E4).
-// primary: relleno azul; secondary: borde azul; link: solo texto (enlaces de la barra).
-// loading: indicador en lugar del texto y botón deshabilitado (p. ej. mientras se envía).
+// Themed button; minimum height of 44 dp (REQ-007 E4).
+// primary: blue fill; secondary: blue border; link: text only (header links).
+// loading: indicator instead of the text and the button disabled (e.g. while submitting).
 export function Button({
   title,
   onPress,

@@ -13,8 +13,8 @@ import { cartTotal, lineSubtotal, rejectionMessage, toOrderLines } from '@/lib/c
 import { useCart } from '@/lib/CartProvider';
 import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
-// REQ-003: subtotal por línea y total; Confirmar crea el pedido (precios del servidor), vacía el carrito
-// y muestra el número. Con el carrito vacío, Confirmar está deshabilitado (E5).
+// REQ-003: subtotal per line and total; Confirm creates the order (server prices), empties the cart
+// and shows the number. With an empty cart, Confirm is disabled (E5).
 export default function CartScreen() {
   const { cart, setQuantity, clear } = useCart();
   const [busy, setBusy] = useState(false);

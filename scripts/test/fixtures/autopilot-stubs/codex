@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Doble de `codex exec` para las pruebas de scripts/autopilot.sh. Guarda el prompt recibido y emite STUB_VERDICT (o un rechazo).
+# `codex exec` double for the scripts/autopilot.sh tests. Saves the received prompt and emits STUB_VERDICT (or a rejection).
+# The default findings are in Spanish, like a real reviewer's (they go to spec/TASKS.json and spec/LOG.md, DEC-018).
 [ "$1" = "--version" ] && { echo "codex-stub 0.0"; exit 0; }
 out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out=$2; shift; done
 cat >"$(dirname "$out")/codex-received-prompt.md"
 v=${STUB_VERDICT:-'{"verdict":"rejected","findings":["REQ-001: E2 sin prueba (confirmado con npm run test:acceptance)"],"notes":"stub codex"}'}
-printf 'Análisis del diff…\n```json\n%s\n```\n' "$v" | tee "$out"
+printf 'Diff analysis…\n```json\n%s\n```\n' "$v" | tee "$out"

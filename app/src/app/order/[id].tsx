@@ -8,8 +8,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { formatCLP, formatDate, getOrder, type OrderDetail } from '@/lib/api';
 import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
-// REQ-004: líneas con los precios congelados al confirmar (E5) y el estado vigente, que se pide de nuevo
-// al volver a la pantalla y al deslizar hacia abajo (S-06). Un pedido ajeno llega como null (E3).
+// REQ-004: lines with the prices frozen at confirmation (E5) and the current status, which is requested again
+// when returning to the screen and when pulling down (S-06). Another customer's order arrives as null (E3).
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null | undefined>(undefined);

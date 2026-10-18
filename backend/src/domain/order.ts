@@ -3,7 +3,7 @@ import type { Product } from './catalog.js';
 
 export type { Order, OrderLine, OrderLineInput, OrderStatus };
 
-/** Estados del pedido (S-04), en el orden del contrato. */
+/** Order statuses (S-04), in contract order. */
 export const ORDER_STATUSES = ['RECIBIDO', 'EN_PREPARACION', 'ENVIADO', 'ENTREGADO', 'CANCELADO'] as const satisfies readonly OrderStatus[];
 
 export const isOrderStatus = (s: string): s is OrderStatus => (ORDER_STATUSES as readonly string[]).includes(s);
@@ -14,7 +14,8 @@ export const MAX_LINES = 50;
 
 export type OrderErrorCode = 'EMPTY_ORDER' | 'TOO_MANY_LINES' | 'INVALID_QUANTITY' | 'PRODUCT_UNAVAILABLE';
 
-// Con resolvers Lambda directos, AppSync expone `error.name` como `errorType` (DEC-005).
+// With direct Lambda resolvers, AppSync exposes `error.name` as `errorType` (DEC-005).
+// The messages below travel through the API and the app may show them, so they stay in Spanish (DEC-018 a).
 export class OrderRejectedError extends Error {
   constructor(
     readonly code: OrderErrorCode,
@@ -25,7 +26,7 @@ export class OrderRejectedError extends Error {
   }
 }
 
-/** `setOrderStatus` sobre un pedido que no está en la partición indicada (REQ-011 E5, DEC-013). */
+/** `setOrderStatus` on an order that isn't in the given partition (REQ-011 E5, DEC-013). */
 export class OrderNotFoundError extends Error {
   constructor(customerId: string, orderId: string) {
     super(`No existe el pedido ${orderId} del almacén ${customerId}`);
@@ -33,7 +34,7 @@ export class OrderNotFoundError extends Error {
   }
 }
 
-/** Suma las cantidades de las líneas del mismo producto, en el orden de su primera aparición (REQ-003 E6). */
+/** Adds up the quantities of lines for the same product, in order of first appearance (REQ-003 E6). */
 export function mergeLines(lines: readonly OrderLineInput[]): OrderLineInput[] {
   const merged = new Map<string, number>();
   for (const { productId, quantity } of lines) merged.set(productId, (merged.get(productId) ?? 0) + quantity);
@@ -41,8 +42,8 @@ export function mergeLines(lines: readonly OrderLineInput[]): OrderLineInput[] {
 }
 
 /**
- * Pedido nuevo en `RECIBIDO` con nombre, presentación y precio del catálogo congelados (REQ-003, S-05).
- * Fusiona antes de validar; cualquier línea inválida rechaza el pedido entero. Nunca usa precios del cliente.
+ * New `RECIBIDO` order with the catalog's name, presentation and price frozen (REQ-003, S-05).
+ * Merges before validating; any invalid line rejects the whole order. Never uses client prices.
  */
 export function buildOrder(
   input: readonly OrderLineInput[],
@@ -85,5 +86,5 @@ export function buildOrder(
   };
 }
 
-/** Últimos 8 caracteres del ULID en mayúsculas (S-11). */
+/** Last 8 characters of the ULID, uppercased (S-11). */
 export const orderNumber = (id: string) => id.slice(-8).toUpperCase();

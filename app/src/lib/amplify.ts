@@ -13,7 +13,7 @@ const aws = Constants.expoConfig?.extra?.aws as AwsExtra | undefined;
 
 export const isConfigured = Boolean(aws?.userPoolId && aws.userPoolClientId && aws.graphqlUrl);
 
-/** Configura Amplify v6 como librería cliente (DEC-003) con los recursos de `.env.dev`. */
+/** Configures Amplify v6 as a client library (DEC-003) with the resources from `.env.dev`. */
 export function configureAmplify(): void {
   if (!aws || !isConfigured) return;
   Amplify.configure(
@@ -24,8 +24,8 @@ export function configureAmplify(): void {
     {
       API: {
         GraphQL: {
-          // Amplify envía el access token por defecto; `custom:customerId` solo viaja en el
-          // ID token (DEC-004). Estas cabeceras se aplican después y lo reemplazan.
+          // Amplify sends the access token by default; `custom:customerId` only travels in the
+          // ID token (DEC-004). These headers are applied afterwards and replace it.
           headers: async () => {
             const idToken = (await fetchAuthSession()).tokens?.idToken?.toString();
             return idToken ? { Authorization: idToken } : {};

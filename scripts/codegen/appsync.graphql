@@ -1,5 +1,5 @@
-# Directivas y escalares que AppSync define implícitamente. Solo para que la generación de tipos
-# (codegen.ts) entienda spec/contracts/schema.graphql; no se despliega.
+# Directives and scalars AppSync defines implicitly. Only so type generation (codegen.ts)
+# understands spec/contracts/schema.graphql; not deployed.
 directive @aws_auth(cognito_groups: [String]) on OBJECT | FIELD_DEFINITION
 directive @aws_cognito_user_pools(cognito_groups: [String]) on OBJECT | FIELD_DEFINITION
 directive @aws_api_key on OBJECT | FIELD_DEFINITION

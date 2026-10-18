@@ -1,12 +1,12 @@
-// Limpieza de los datos que deja la aceptación en `dev` (DEC-007, T-19). Los clientes desechables de
-// tests/acceptance/support/fixtures.ts tienen `customerId` `C-ACEPT-…`; sus usuarios ya se borran en cada
-// archivo, sus pedidos no. Con las claves de DEC-006 encontrarlos es un Scan (como DEC-009).
+// Cleanup of the data acceptance leaves in `dev` (DEC-007, T-19). The throwaway customers of
+// tests/acceptance/support/fixtures.ts have `customerId` `C-ACEPT-…`; each file already deletes their users,
+// but not their orders. With the DEC-006 keys, finding them is a Scan (like DEC-009).
 import { DeleteCommand, ScanCommand, type DynamoDBDocumentClient, type ScanCommandOutput } from '@aws-sdk/lib-dynamodb';
 import { CUSTOMER_PK_PREFIX, ORDER_SK_PREFIX, customerPk } from '../../backend/src/data/keys.ts';
 
 export const ACCEPTANCE_CUSTOMER_PREFIX = 'C-ACEPT-';
 
-/** Borra los pedidos de clientes `C-ACEPT-…` (recorre todas las páginas); devuelve cuántos borró. */
+/** Deletes the orders of `C-ACEPT-…` customers (walks every page); returns how many it deleted. */
 export async function deleteAcceptanceOrders(doc: DynamoDBDocumentClient, tableName: string): Promise<number> {
   let deleted = 0;
   let startKey: ScanCommandOutput['LastEvaluatedKey'];
@@ -22,7 +22,7 @@ export async function deleteAcceptanceOrders(doc: DynamoDBDocumentClient, tableN
     );
     for (const item of page.Items ?? []) {
       const key = { PK: String(item.PK), SK: String(item.SK) };
-      // Doble guarda: nunca toca pedidos de clientes reales aunque el filtro cambie.
+      // Double guard: never touches real customers' orders even if the filter changes.
       if (!key.PK.startsWith(`${CUSTOMER_PK_PREFIX}${ACCEPTANCE_CUSTOMER_PREFIX}`)) continue;
       await doc.send(new DeleteCommand({ TableName: tableName, Key: key }));
       deleted++;

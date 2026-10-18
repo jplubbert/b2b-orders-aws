@@ -4,9 +4,9 @@ cdk.out/
 cdk-outputs*.json
 .expo/
 dist/
-# ruta de Expo Router del panel del distribuidor (T-15), no es salida de compilación
+# Expo Router route of the distributor panel (T-15), not build output
 !app/src/app/dist/
 *.tsbuildinfo
 .autopilot/
-# configuración local del autopilot (tema de ntfy: secreto); va en ~/.config/autopilot/
+# local autopilot configuration (the ntfy topic is a secret); it lives in ~/.config/autopilot/
 autopilot.config.sh

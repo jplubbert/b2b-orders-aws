@@ -7,7 +7,7 @@ import { colors, fontSize, fontWeight } from '@/theme';
 
 configureAmplify();
 
-// Barra de la pila con el tema (REQ-006, REQ-007): superficie blanca, título a la izquierda, enlaces en azul.
+// Stack header with the theme (REQ-006, REQ-007): white surface, title on the left, links in blue.
 const screenOptions = {
   headerStyle: { backgroundColor: colors.surface },
   headerTintColor: colors.primary,
@@ -29,9 +29,9 @@ export default function RootLayout() {
           <Stack.Screen name="cart"options={{ title: 'Carrito' }} />
           <Stack.Screen name="orders" options={{ title: 'Mis pedidos' }} />
           <Stack.Screen name="order/[id]" options={{ title: 'Pedido' }} />
-          {/* REQ-009/REQ-010: inicio del distribuidor (S-28). */}
+          {/* REQ-009/REQ-010: the distributor's home (S-28). */}
           <Stack.Screen name="dist/index" options={{ title: 'Pedidos', headerBackVisible: false }} />
-          {/* REQ-010 E5/REQ-011: el detalle pone "Pedido <número>" al encontrar el pedido. */}
+          {/* REQ-010 E5/REQ-011: the detail sets "Pedido <number>" once it finds the order. */}
           <Stack.Screen name="dist/order/[id]" options={{ title: 'Pedido' }} />
         </Stack>
       </PanelProvider>

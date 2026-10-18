@@ -1,4 +1,4 @@
-// Siembra el catálogo y los usuarios de prueba en `dev` (idempotente). Requiere `.env.dev`.
+// Seeds the catalog and the test users in `dev` (idempotent). Requires `.env.dev`.
 import {
   AdminAddUserToGroupCommand,
   AdminCreateUserCommand,
@@ -26,9 +26,9 @@ await doc.send(
     },
   }),
 );
-console.log(`Productos: ${SEED_PRODUCTS.map((p) => p.name).join(', ')}`);
+console.log(`Products: ${SEED_PRODUCTS.map((p) => p.name).join(', ')}`);
 
-/** Crea el usuario si no existe, fija la contraseña de demo y lo agrega al grupo. */
+/** Creates the user if missing, sets the demo password and adds it to the group. */
 async function seedUser(email: string, group: string, attributes: Array<{ Name: string; Value: string }> = []) {
   try {
     await idp.send(
@@ -55,10 +55,10 @@ async function seedUser(email: string, group: string, attributes: Array<{ Name: 
 
 for (const u of SEED_USERS) {
   await seedUser(u.email, CUSTOMER_GROUP, [{ Name: 'custom:customerId', Value: u.customerId }]);
-  console.log(`Usuario: ${u.email} (${u.customerId})`);
+  console.log(`User: ${u.email} (${u.customerId})`);
 }
 for (const u of SEED_DISTRIBUTORS) {
   await seedUser(u.email, DISTRIBUTOR_GROUP);
-  console.log(`Usuario: ${u.email} (distribuidor)`);
+  console.log(`User: ${u.email} (distributor)`);
 }
-console.log('Contraseña de demo: DEMO_PASSWORD en .env.dev');
+console.log('Demo password: DEMO_PASSWORD in .env.dev');

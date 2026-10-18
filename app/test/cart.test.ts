@@ -14,15 +14,15 @@ import {
 const yerba = { productId: 'yerba-1kg', name: 'Yerba 1 kg', presentation: 'Paquete 1 kg', unitPrice: 4500 };
 const arroz = { productId: 'arroz-1kg', name: 'Arroz 1 kg', presentation: 'Paquete 1 kg', unitPrice: 1300 };
 
-describe('carrito (REQ-003)', () => {
-  it('subtotal por línea y total: 2 × Yerba + 5 × Arroz = 9000 + 6500 = 15500', () => {
+describe('cart (REQ-003)', () => {
+  it('subtotal per line and total: 2 × Yerba + 5 × Arroz = 9000 + 6500 = 15500', () => {
     const cart = setQuantity(setQuantity([], yerba, 2), arroz, 5);
     expect(cart.map(lineSubtotal)).toEqual([9000, 6500]);
     expect(cartTotal(cart)).toBe(15500);
     expect(cartUnits(cart)).toBe(7);
   });
 
-  it('cambiar la cantidad actualiza la línea existente y los montos', () => {
+  it('changing the quantity updates the existing line and the amounts', () => {
     let cart = setQuantity(setQuantity([], yerba, 2), arroz, 5);
     cart = setQuantity(cart, yerba, 3);
     expect(cart.map((l) => [l.product.productId, l.quantity])).toEqual([
@@ -33,19 +33,19 @@ describe('carrito (REQ-003)', () => {
     expect(quantityOf(cart, 'yerba-1kg')).toBe(3);
   });
 
-  it('cantidad 0 quita la línea; el carrito vacío suma 0', () => {
+  it('quantity 0 removes the line; the empty cart adds up to 0', () => {
     const cart = setQuantity(setQuantity([], yerba, 1), yerba, 0);
     expect(cart).toEqual([]);
     expect(cartTotal(cart)).toBe(0);
     expect(quantityOf(cart, 'yerba-1kg')).toBe(0);
   });
 
-  it('la cantidad queda entre 0 y 999', () => {
+  it('the quantity stays between 0 and 999', () => {
     expect(setQuantity([], yerba, MAX_QUANTITY + 1)[0]!.quantity).toBe(999);
     expect(setQuantity([], yerba, -3)).toEqual([]);
   });
 
-  it('la entrada de createOrder no lleva precios (S-12)', () => {
+  it('the createOrder input carries no prices (S-12)', () => {
     const cart: Cart = setQuantity([], yerba, 2);
     expect(toOrderLines(cart)).toEqual([{ productId: 'yerba-1kg', quantity: 2 }]);
   });
@@ -54,7 +54,7 @@ describe('carrito (REQ-003)', () => {
 describe('rejectionMessage', () => {
   const cart = setQuantity([], yerba, 1);
 
-  it('PRODUCT_UNAVAILABLE nombra el producto del carrito', () => {
+  it('PRODUCT_UNAVAILABLE names the cart product', () => {
     expect(rejectionMessage(cart, 'PRODUCT_UNAVAILABLE', 'Producto no disponible: yerba-1kg')).toBe(
       'Ya no está disponible: Yerba 1 kg. Quítalo del carrito.',
     );
@@ -64,11 +64,11 @@ describe('rejectionMessage', () => {
     ['INVALID_QUANTITY', 'Cada cantidad debe estar entre 1 y 999.'],
     ['TOO_MANY_LINES', 'El pedido supera los 50 productos distintos.'],
     ['EMPTY_ORDER', 'El carrito está vacío.'],
-  ])('%s → motivo en español', (code, text) => {
+  ])('%s → reason in Spanish', (code, text) => {
     expect(rejectionMessage(cart, code, 'x')).toBe(text);
   });
 
-  it('otro error muestra el mensaje del servidor', () => {
+  it('any other error shows the server message', () => {
     expect(rejectionMessage(cart, 'Unauthorized', 'Unauthorized')).toBe('Unauthorized');
     expect(rejectionMessage(cart, undefined, '')).toBe('No se pudo confirmar el pedido.');
   });

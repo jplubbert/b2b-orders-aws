@@ -5,15 +5,16 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Fixtures: copia de una spec/ fija (scripts/test/fixtures/autopilot-spec) en un directorio temporal, mutada por cada caso.
-// No se usa spec/ del repo: su estado real cambia con el proyecto.
+// Fixtures: a copy of a fixed spec/ (scripts/test/fixtures/autopilot-spec) in a temporary directory, mutated by each case.
+// The repo's spec/ is not used: its real state changes with the project.
+// spec/LOG.md and spec/TASKS.json stay in Spanish; terminal, live.log, ntfy and commits are in English (DEC-018).
 const REPO = fileURLToPath(new URL('../../', import.meta.url));
 const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-spec');
 const SCRIPT = join(REPO, 'scripts/lib/autopilot-tasks.mjs');
 const AUTOPILOT_SH = join(REPO, 'scripts/autopilot.sh');
-// Credenciales falsas con [default] y [autopilot]: autopilot solo debe pasar el perfil autopilot a los hijos.
+// Fake credentials with [default] and [autopilot]: autopilot must pass only the autopilot profile to the children.
 const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-aws/credentials');
-// Sin la configuración local del usuario (~/.config/autopilot): las pruebas nunca envían avisos reales.
+// Without the user's local configuration (~/.config/autopilot): the tests never send real notices.
 const NO_CONFIG = { AUTOPILOT_CONFIG: '/dev/null', NTFY_TOPIC: '', NTFY_URL: '' };
 
 let root: string;
@@ -42,7 +43,7 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe('autopilot-tasks manual-pending (DEC-011)', () => {
-  it('lista evidence.manual_pending de las tareas verified_auto o reviewed; no las aceptadas', () => {
+  it('lists evidence.manual_pending of verified_auto or reviewed tasks; not accepted ones', () => {
     expect(JSON.parse(run('manual-pending').out)).toEqual([]);
     editTasks((ts) => {
       task(ts, 'T-04').status = 'verified_auto';
@@ -59,80 +60,80 @@ describe('autopilot-tasks manual-pending (DEC-011)', () => {
 });
 
 describe('autopilot-tasks pick', () => {
-  it('no elige nada si ninguna elegible tiene sus dependencias cerradas', () => {
-    // T-03..T-07 (approved_for_impl) esperan a T-01 (verified_auto: abierta); T-08 (in_progress) espera a T-02.
+  it('picks nothing if no eligible task has its dependencies closed', () => {
+    // T-03..T-07 (approved_for_impl) wait for T-01 (verified_auto: open); T-08 (in_progress) waits for T-02.
     editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; });
     expect(run('pick')).toMatchObject({ code: 0, out: 'null\n' });
   });
 
-  it('elige una approved_for_impl cuyas dependencias están cerradas, igual que una ready', () => {
-    editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; }); // T-03 approved_for_impl, depende de T-01
+  it('picks an approved_for_impl task whose dependencies are closed, same as a ready one', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; }); // T-03 approved_for_impl, depends on T-01
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'approved_for_impl', kind: 'spec' });
-    editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; }); // T-04 y T-07 (approved_for_impl) quedan elegibles: la primera
+    editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; }); // T-04 and T-07 (approved_for_impl) become eligible: the first one
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', status: 'approved_for_impl' });
   });
 
-  it('retoma una tarea in_progress con sus dependencias cerradas', () => {
+  it('resumes an in_progress task with its dependencies closed', () => {
     editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; task(ts, 'T-03').status = 'in_progress'; });
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'in_progress' });
   });
 
-  it('--exclude salta las tareas indicadas y elige la siguiente elegible', () => {
+  it('--exclude skips the given tasks and picks the next eligible one', () => {
     editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; task(ts, 'T-03').status = 'accepted'; });
     expect(JSON.parse(run('pick', '--exclude', 'T-04,').out)).toMatchObject({ id: 'T-07' });
     expect(run('pick', '--exclude', 'T-04,T-07')).toMatchObject({ code: 0, out: 'null\n' });
     expect(JSON.parse(run('pick', '--exclude', '').out)).toMatchObject({ id: 'T-04' });
   });
 
-  it('no elige tareas en otros estados aunque sus dependencias estén cerradas', () => {
+  it('does not pick tasks in other states even if their dependencies are closed', () => {
     editTasks((ts) => {
       task(ts, 'T-01').status = 'accepted';
       for (const id of ['T-03', 'T-04', 'T-05', 'T-06', 'T-07']) task(ts, id).status = 'verified_auto';
-      task(ts, 'T-08').status = 'blocked'; // depende de T-02 (verified_auto: abierta)
+      task(ts, 'T-08').status = 'blocked'; // depends on T-02 (verified_auto: open)
       task(ts, 'T-02').status = 'accepted';
     });
     expect(run('pick').out).toBe('null\n');
   });
 
-  it('elige la primera ready cuyas dependencias están done/accepted/delivered', () => {
+  it('picks the first ready task whose dependencies are done/accepted/delivered', () => {
     editTasks((ts) => {
       task(ts, 'T-01').status = 'done';
-      task(ts, 'T-03').status = 'ready'; // depende de T-01
-      task(ts, 'T-04').status = 'ready'; // depende de T-01 y T-03 (T-03 no cerrada)
+      task(ts, 'T-03').status = 'ready'; // depends on T-01
+      task(ts, 'T-04').status = 'ready'; // depends on T-01 and T-03 (T-03 not closed)
     });
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', kind: 'spec' });
     editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; });
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', kind: 'impl', reqs: ['REQ-002'] });
   });
 
-  it('una dependencia reviewed cuenta como cerrada (encadena sin esperar accepted); verified_auto no', () => {
-    editTasks((ts) => { task(ts, 'T-01').status = 'reviewed'; }); // T-03 approved_for_impl, depende de T-01
+  it('a reviewed dependency counts as closed (chains without waiting for accepted); verified_auto does not', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'reviewed'; }); // T-03 approved_for_impl, depends on T-01
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03' });
     editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; });
     expect(run('pick').out).toBe('null\n');
   });
 
-  it('salta una ready cuya dependencia sigue abierta', () => {
+  it('skips a ready task whose dependency is still open', () => {
     editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; task(ts, 'T-03').status = 'ready'; });
     expect(run('pick').out).toBe('null\n');
   });
 
-  it('--task fuerza una tarea concreta aunque no esté ready', () => {
+  it('--task forces a specific task even if it is not ready', () => {
     expect(JSON.parse(run('pick', '--task', 'T-08').out)).toMatchObject({ id: 'T-08', kind: 'tooling' });
-    expect(run('pick', '--task', 'T-99')).toMatchObject({ code: 1, err: expect.stringContaining('T-99 no existe') });
+    expect(run('pick', '--task', 'T-99')).toMatchObject({ code: 1, err: expect.stringContaining('T-99 does not exist') });
   });
 });
 
 describe('autopilot-tasks pending-reviews', () => {
-  it('lista las tareas en verified_auto, en orden', () => {
-    expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-02']); // la fixture deja T-02 en verified_auto
+  it('lists the tasks in verified_auto, in order', () => {
+    expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-02']); // the fixture leaves T-02 in verified_auto
     editTasks((ts) => { task(ts, 'T-05').status = 'verified_auto'; task(ts, 'T-02').status = 'reviewed'; });
     expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-05']);
   });
 });
 
 describe('autopilot-tasks check-authority', () => {
-  it('detecta estados reservados otorgados por el ejecutor', () => {
+  it('detects reserved statuses granted by the executor', () => {
     const snap = join(root, 'before.json');
     writeFileSync(snap, run('snapshot').out);
     expect(run('check-authority', snap).code).toBe(0);
@@ -143,7 +144,7 @@ describe('autopilot-tasks check-authority', () => {
     expect(r.err).not.toContain('T-04');
   });
 
-  it('acepta accepted si ya lo estaba antes', () => {
+  it('accepts accepted if it already was before', () => {
     editTasks((ts) => { task(ts, 'T-02').status = 'accepted'; });
     const snap = join(root, 'before.json');
     writeFileSync(snap, run('snapshot').out);
@@ -152,9 +153,9 @@ describe('autopilot-tasks check-authority', () => {
 });
 
 describe('autopilot-tasks context', () => {
-  it('incluye la tarea, sus REQ completos y sus DEC', () => {
+  it('includes the task, its full REQs and its DECs', () => {
     const out = run('context', 'T-04').out;
-    expect(out).toContain('# Tarea T-04: Catálogo completo');
+    expect(out).toContain('# Task T-04: Catálogo completo');
     expect(out).toContain('### REQ-002 Ver catálogo');
     expect(out).toContain('## DEC-005');
     expect(out).toContain('## DEC-006');
@@ -162,10 +163,10 @@ describe('autopilot-tasks context', () => {
     expect(out).not.toContain('## DEC-004');
   });
 
-  it('sin REQ, declara que la descripción hace de requisito', () => {
+  it('without REQs, states that the description acts as the requirement', () => {
     const out = run('context', 'T-08').out;
-    expect(out).toContain('(sin REQ de producto)');
-    expect(out).toContain('Verificación declarada:');
+    expect(out).toContain('(no product REQ)');
+    expect(out).toContain('Declared verification:');
   });
 });
 
@@ -176,22 +177,22 @@ describe('autopilot-tasks parse-verdict', () => {
     return run('parse-verdict', f);
   };
 
-  it('extrae el bloque json final', () => {
-    const r = parse('Análisis…\n```json\n{"verdict":"rejected","findings":["REQ-002: falta E3"],"notes":"x"}\n```\n');
+  it('extracts the final json block', () => {
+    const r = parse('Analysis…\n```json\n{"verdict":"rejected","findings":["REQ-002: falta E3"],"notes":"x"}\n```\n');
     expect(JSON.parse(r.out)).toEqual({ verdict: 'rejected', findings: ['REQ-002: falta E3'], notes: 'x' });
   });
 
-  it('acepta un objeto JSON a secas (salida de --output-schema)', () => {
+  it('accepts a bare JSON object (output of --output-schema)', () => {
     expect(JSON.parse(parse('{"verdict":"Approved","findings":[]}').out)).toMatchObject({ verdict: 'approved' });
   });
 
-  it('usa el último bloque cuando hay varios', () => {
-    const r = parse('```json\n{"verdict":"approved","findings":[]}\n```\nCorrijo:\n```json\n{"verdict":"rejected","findings":["DEC-004: x"]}\n```');
+  it('uses the last block when there are several', () => {
+    const r = parse('```json\n{"verdict":"approved","findings":[]}\n```\nCorrection:\n```json\n{"verdict":"rejected","findings":["DEC-004: x"]}\n```');
     expect(JSON.parse(r.out).verdict).toBe('rejected');
   });
 
-  it('falla sin veredicto o con veredicto desconocido', () => {
-    expect(parse('No hay bloque.').code).toBe(1);
+  it('fails without a verdict or with an unknown verdict', () => {
+    expect(parse('No block.').code).toBe(1);
     expect(parse('```json\n{"verdict":"maybe"}\n```').code).toBe(1);
   });
 });
@@ -203,7 +204,7 @@ describe('autopilot-tasks set-review', () => {
     return f;
   };
 
-  it('approved sobre verified_auto pasa a reviewed y guarda review', () => {
+  it('approved on verified_auto moves to reviewed and stores review', () => {
     const r = run('set-review', 'T-02', verdict({ verdict: 'approved', findings: [], notes: 'ok', reviewer: 'codex' }));
     expect(r).toMatchObject({ code: 0, out: 'reviewed\n' });
     const t = task(readTasks(), 'T-02');
@@ -212,33 +213,33 @@ describe('autopilot-tasks set-review', () => {
     expect((t.review as { date: string }).date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('rejected conserva el estado y registra los hallazgos', () => {
+  it('rejected keeps the status and records the findings', () => {
     run('set-review', 'T-02', verdict({ verdict: 'rejected', findings: ['REQ-001: x'] }));
     const t = task(readTasks(), 'T-02');
     expect(t.status).toBe('verified_auto');
     expect(t.review).toMatchObject({ verdict: 'rejected', findings: ['REQ-001: x'] });
   });
 
-  it('approved sobre una tarea que no está verified_auto no cambia el estado', () => {
+  it('approved on a task that is not verified_auto does not change the status', () => {
     expect(run('set-review', 'T-04', verdict({ verdict: 'approved' })).out).toBe('approved_for_impl\n');
   });
 
-  it('rechaza veredictos inválidos', () => {
+  it('rejects invalid verdicts', () => {
     expect(run('set-review', 'T-02', verdict({ verdict: 'ok' })).code).toBe(1);
   });
 });
 
 describe('autopilot.sh', () => {
-  it('es ejecutable y --help describe el ciclo', () => {
+  it('is executable and --help describes the cycle', () => {
     expect(spawnSync('test', ['-x', AUTOPILOT_SH]).status).toBe(0);
     const r = spawnSync(AUTOPILOT_SH, ['--help'], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG } });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('--dry-run');
-    expect(r.stdout).toContain('Nunca hace push');
+    expect(r.stdout).toContain('Never pushes');
   });
 
-  it('--dry-run no lanza nada ni modifica el repo (fixture git limpio)', () => {
-    // Copia mínima del repo: scripts/, package.json y la spec/ fija, en un git temporal con árbol limpio.
+  it('--dry-run launches nothing and does not modify the repo (clean git fixture)', () => {
+    // Minimal copy of the repo: scripts/, package.json and the fixed spec/, in a temporary git with a clean tree.
     for (const d of ['scripts']) cpSync(join(REPO, d), join(root, d), { recursive: true });
     cpSync(join(REPO, 'package.json'), join(root, 'package.json'));
     const git = (...a: string[]) =>
@@ -255,26 +256,26 @@ describe('autopilot.sh', () => {
     });
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('Revisiones pendientes antes de elegir tarea (verified_auto, revisor claude): T-02');
-    expect(r.stdout).toContain('Tarea elegida: T-03');
-    expect(r.stdout).toContain('claude -p Lee\\ AGENTS.md\\ y\\ ejecuta\\ T-03');
+    expect(r.stdout).toContain('Pending reviews before picking a task (verified_auto, reviewer claude): T-02');
+    expect(r.stdout).toContain('Chosen task: T-03');
+    expect(r.stdout).toContain('claude -p Read\\ AGENTS.md\\ and\\ execute\\ T-03');
     expect(r.stdout).toContain('--disallowedTools');
     expect(r.stdout).toContain('Bash\\(git\\ push\\*\\)');
     expect(r.stdout).toContain('Bash\\(npm\\ run\\ deploy\\*\\)');
-    expect(r.stdout).not.toContain('Bash\\(npm\\ run\\ smoke'); // humo permitido (DEC-010)
+    expect(r.stdout).not.toContain('Bash\\(npm\\ run\\ smoke'); // smoke allowed (DEC-010)
     expect(r.stdout).toContain('--output-format stream-json --verbose');
-    expect(r.stdout).toContain('sin\\ prefijos\\ de\\ entorno');
-    expect(r.stdout).toContain('sin\\ \\`\\&\\&\\`\\ ni\\ \\`cd\\`');
+    expect(r.stdout).toContain('without\\ environment\\ prefixes');
+    expect(r.stdout).toContain('no\\ \\`\\&\\&\\`\\ and\\ no\\ \\`cd\\`');
     expect(r.stdout).toContain('Pendiente\\ deploy:');
-    expect(r.stdout).toContain('AWS_PROFILE=autopilot (llave AKIAAUTOPILOTFAKE');
-    expect(r.stdout).not.toContain('secreto');
-    expect(r.stdout).toContain('Entrada que se anotaría en spec/LOG.md');
+    expect(r.stdout).toContain('AWS_PROFILE=autopilot (key AKIAAUTOPILOTFAKE');
+    expect(r.stdout).not.toContain('secret-');
+    expect(r.stdout).toContain('Entry that would be added to spec/LOG.md');
     expect(git('status', '--porcelain')).toBe('');
     expect(git('rev-parse', 'HEAD')).toBe(head);
     expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).not.toContain('autopilot (scripts/autopilot.sh)');
   });
 
-  describe('ciclo completo con dobles de claude/codex', () => {
+  describe('full cycle with claude/codex doubles', () => {
     let git: (...a: string[]) => string;
     let bin: string;
     const autopilot = (env: Record<string, string>, ...args: string[]) =>
@@ -284,7 +285,7 @@ describe('autopilot.sh', () => {
       });
     const t03 = () => task(readTasks(), 'T-03') as Task & { review?: { verdict: string } };
     const curlLog = () => join(root, '..', `${root.split('/').pop()}-curl.log`);
-    // Llamadas al doble de curl: cada una es la lista de sus argumentos.
+    // Calls to the curl double: each one is the list of its arguments.
     const curlCalls = (): string[][] => {
       let raw: string;
       try { raw = readFileSync(curlLog(), 'utf8'); } catch { return []; }
@@ -312,16 +313,16 @@ describe('autopilot.sh', () => {
     });
     afterEach(() => { rmSync(bin, { recursive: true, force: true }); rmSync(curlLog(), { force: true }); });
 
-    it('implementa, revisa (approved → reviewed), anota LOG y confirma; nunca toca push', () => {
+    it('implements, reviews (approved → reviewed), writes LOG and commits; never pushes', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
-      expect(r.stderr.replace(/check:spec: ok\n/g, '')).toBe(''); // el hook commit-msg imprime su ok
+      expect(r.stderr.replace(/check:spec: ok\n/g, '')).toBe(''); // the commit-msg hook prints its ok
       expect(r.status).toBe(0);
-      expect(r.stdout).toContain('veredicto sobre T-03: approved → estado reviewed');
-      expect(r.stdout).toContain('parada: presupuesto de tareas alcanzado (1)');
+      expect(r.stdout).toContain('verdict on T-03: approved → status reviewed');
+      expect(r.stdout).toContain('stop: task budget reached (1)');
       expect(t03()).toMatchObject({ status: 'reviewed', review: { verdict: 'approved', reviewer: expect.stringContaining('codex') } });
       const log = git('log', '--format=%s%n%b');
-      expect(log).toContain('T-03: revisión independiente (approved)');
-      expect(log).toContain('Orquestador nocturno: resumen');
+      expect(log).toContain('T-03: independent review (approved)');
+      expect(log).toContain('Nightly orchestrator: summary');
       expect(log).toContain('Task: T-08\nReq: N/A');
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('Motivo de parada: presupuesto de tareas alcanzado (1)');
       expect(git('status', '--porcelain')).toBe('');
@@ -332,38 +333,38 @@ describe('autopilot.sh', () => {
       expect(prompt).not.toContain('## DEC-001');
     });
 
-    const pendingT02 = () => { // T-02 implementada fuera del orquestador, esperando revisión
+    const pendingT02 = () => { // T-02 implemented outside the orchestrator, awaiting review
       editTasks((ts) => { task(ts, 'T-02').status = 'verified_auto'; });
-      git('commit', '-q', '-am', 'T-02: hecho a mano\n\nTask: T-02\nReq: none');
+      git('commit', '-q', '-am', 'T-02: done by hand\n\nTask: T-02\nReq: none');
     };
     const count = (s: string, sub: string) => s.split(sub).length - 1;
 
-    it('antes de elegir tarea revisa las verified_auto pendientes (approved → reviewed) sin contarlas como tareas', () => {
+    it('before picking a task it reviews pending verified_auto tasks (approved → reviewed) without counting them as tasks', () => {
       pendingT02();
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
-      const reviewed = r.stdout.indexOf('veredicto sobre T-02: approved → estado reviewed');
+      const reviewed = r.stdout.indexOf('verdict on T-02: approved → status reviewed');
       expect(reviewed).toBeGreaterThan(-1);
-      expect(reviewed).toBeLessThan(r.stdout.indexOf('T-03 › Empiezo la tarea'));
-      expect(r.stdout).toContain('veredicto sobre T-03: approved → estado reviewed');
-      expect(r.stdout).toContain('parada: presupuesto de tareas alcanzado (1)');
+      expect(reviewed).toBeLessThan(r.stdout.indexOf('T-03 › Starting the task'));
+      expect(r.stdout).toContain('verdict on T-03: approved → status reviewed');
+      expect(r.stdout).toContain('stop: task budget reached (1)');
       expect(task(readTasks(), 'T-02')).toMatchObject({ status: 'reviewed', review: { verdict: 'approved', reviewer: expect.stringContaining('codex') } });
-      expect(git('log', '--format=%s')).toContain('T-02: revisión independiente (approved)');
-      expect(git('log', '-1', '--format=%b', '--grep=^T-02: revisión')).toContain('Task: T-02\nReq: none');
+      expect(git('log', '--format=%s')).toContain('T-02: independent review (approved)');
+      expect(git('log', '-1', '--format=%b', '--grep=^T-02: independent review')).toContain('Task: T-02\nReq: none');
       expect(git('status', '--porcelain')).toBe('');
     });
 
-    it('una pendiente rechazada queda verified_auto y no se revisa otra vez en la misma corrida', () => {
+    it('a rejected pending task stays verified_auto and is not reviewed again in the same run', () => {
       pendingT02();
-      const r = autopilot({}); // el doble de codex rechaza por defecto
+      const r = autopilot({}); // the codex double rejects by default
       expect(r.status).toBe(0);
-      expect(count(r.stdout, 'veredicto sobre T-02: rejected')).toBe(1);
-      expect(count(r.stdout, 'veredicto sobre T-03: rejected')).toBe(1);
+      expect(count(r.stdout, 'verdict on T-02: rejected')).toBe(1);
+      expect(count(r.stdout, 'verdict on T-03: rejected')).toBe(1);
       expect(task(readTasks(), 'T-02')).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected' } });
-      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('stop: no in_progress/ready/approved_for_impl tasks with closed dependencies');
     });
 
-    it('el implementador solo ve el perfil autopilot; el progreso sale legible en la terminal y en live.log', () => {
+    it('the implementer sees only the autopilot profile; progress is readable in the terminal and in live.log', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
       const runDir = join(root, '.autopilot', readdirSync(join(root, '.autopilot')).find((d) => d.startsWith('20'))!);
@@ -374,109 +375,109 @@ describe('autopilot.sh', () => {
       expect(seen).not.toContain('default');
       const live = readFileSync(join(runDir, 'live.log'), 'utf8');
       for (const out of [r.stdout, live]) {
-        expect(out).toMatch(/T-03 › Empiezo la tarea/);
+        expect(out).toMatch(/T-03 › Starting the task/);
         expect(out).toMatch(/T-03 ▸ Bash {2}npm run test:acceptance/);
-        expect(out).toMatch(/T-03 {3}✓ 1 línea\(s\): Tests 25 passed/);
-        expect(out).toContain('T-03 ■ fin (ok): 5 turnos, tokens: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481');
-        expect(out).toContain('tokens de T-03 en la corrida: entrada 44 · salida 11.440');
-        expect(out).toContain('tokens (implementador): T-03: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481; total de la corrida: entrada 44');
-        expect(out).not.toMatch(/costo|US\$/);
+        expect(out).toMatch(/T-03 {3}✓ 1 line\(s\): Tests 25 passed/);
+        expect(out).toContain('T-03 ■ end (ok): 5 turns, tokens: input 44 · output 11,440 · cache read 1,266,786 · cache write 64,481');
+        expect(out).toContain('tokens for T-03 in the run: input 44 · output 11,440');
+        expect(out).toContain('tokens (implementer): T-03: input 44 · output 11,440 · cache read 1,266,786 · cache write 64,481; total for the run: input 44');
+        expect(out).not.toMatch(/cost|US\$/);
       }
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain(
         '- Tokens (implementador, campo usage del evento result): T-03: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481; total de la corrida: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481.',
       );
-      expect(live).toContain('veredicto sobre T-03: approved → estado reviewed');
+      expect(live).toContain('verdict on T-03: approved → status reviewed');
       expect(readFileSync(join(runDir, 'T-03-impl-1.jsonl'), 'utf8').trim().split('\n')).toHaveLength(4);
       expect(JSON.parse(readFileSync(join(runDir, 'T-03-impl-1.json'), 'utf8'))).toMatchObject({ type: 'result', num_turns: 5 });
     });
 
-    it('encadena: con T-03 reviewed toma T-04 (depende de T-01 y T-03) en la misma corrida', () => {
+    it('chains: with T-03 reviewed it takes T-04 (depends on T-01 and T-03) in the same run', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '2');
       expect(r.status).toBe(0);
-      expect(r.stdout).toContain('veredicto sobre T-04: approved → estado reviewed');
+      expect(r.stdout).toContain('verdict on T-04: approved → status reviewed');
       expect(task(readTasks(), 'T-04').status).toBe('reviewed');
     });
 
-    it('rejected conserva verified_auto y sigue; sin más ready termina con exit 0', () => {
+    it('rejected keeps verified_auto and goes on; with no more ready tasks it ends with exit 0', () => {
       const r = autopilot({});
       expect(r.status).toBe(0);
       expect(t03()).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected', findings: [expect.stringContaining('REQ-001')] } });
-      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('stop: no in_progress/ready/approved_for_impl tasks with closed dependencies');
     });
 
-    it('se detiene con exit 1 si el implementador otorga accepted', () => {
+    it('stops with exit 1 if the implementer grants accepted', () => {
       const r = autopilot({ STUB_MODE: 'accepted' });
       expect(r.status).toBe(1);
       expect(r.stderr).toContain('T-03: ready → accepted');
-      expect(r.stdout).toContain('violación de autoridad');
+      expect(r.stdout).toContain('authority violation');
       expect(t03().review).toBeNull();
     });
 
-    it('se detiene con exit 1 y sin confirmar nada si el implementador deja el árbol sucio', () => {
+    it('stops with exit 1 and commits nothing if the implementer leaves the tree dirty', () => {
       const head = git('rev-parse', 'HEAD');
       const r = autopilot({ STUB_MODE: 'dirty' });
       expect(r.status).toBe(1);
-      expect(r.stdout).toContain('SIN commit');
+      expect(r.stdout).toContain('WITHOUT commit');
       expect(git('rev-parse', 'HEAD')).toBe(head);
       expect(git('status', '--porcelain')).toContain('spec/LOG.md');
     });
 
-    it('una tarea que queda sin cambios no es fallo: se salta y se toma la siguiente independiente', () => {
-      editTasks((ts) => { task(ts, 'T-08').status = 'ready'; }); // depende solo de T-02 (done): independiente de T-03
+    it('a task that ends unchanged is not a failure: it is skipped and the next independent one is taken', () => {
+      editTasks((ts) => { task(ts, 'T-08').status = 'ready'; }); // depends only on T-02 (done): independent of T-03
       git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
       const r = autopilot({ STUB_NOOP: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(0);
-      expect(r.stdout).toContain('T-03 quedó sin cambios: no cuenta como fallo');
-      expect(r.stdout).not.toContain('fallo 1/');
-      expect(r.stdout).not.toContain('intento 2');
-      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
-      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('T-03 ended unchanged: not counted as a failure');
+      expect(r.stdout).not.toContain('failure 1/');
+      expect(r.stdout).not.toContain('attempt 2');
+      expect(r.stdout).toContain('verdict on T-08: approved → status reviewed');
+      expect(r.stdout).toContain('stop: no in_progress/ready/approved_for_impl tasks with closed dependencies');
       expect(t03().status).toBe('ready');
       const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
       expect(log).toContain('T-03: el implementador la dejó sin cambios (estado ready); se salta en esta corrida');
       expect(log).toContain('0 fallo(s)');
     });
 
-    const t08Ready = () => { // tarea independiente de T-03 (depende solo de T-02, done)
+    const t08Ready = () => { // task independent of T-03 (depends only on T-02, done)
       editTasks((ts) => { task(ts, 'T-08').status = 'ready'; });
       git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
     };
 
-    it('los fallos se cuentan por tarea: dos en T-03 la abandonan y la corrida sigue con T-08', () => {
+    it('failures are counted per task: two on T-03 abandon it and the run goes on with T-08', () => {
       t08Ready();
       const r = autopilot({ STUB_FAIL: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
-      expect(r.status).toBe(1); // un abandono requiere intervención
-      expect(r.stdout).toContain('fallo 1/2 en T-03');
-      expect(r.stdout).toContain('fallo 2/2 en T-03');
-      expect(r.stdout).toContain('implementador sobre T-08 (intento 1');
-      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(r.status).toBe(1); // an abandoned task needs intervention
+      expect(r.stdout).toContain('failure 1/2 on T-03');
+      expect(r.stdout).toContain('failure 2/2 on T-03');
+      expect(r.stdout).toContain('implementer on T-08 (attempt 1');
+      expect(r.stdout).toContain('verdict on T-08: approved → status reviewed');
       expect(t03().status).toBe('ready');
       const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
       expect(log).toContain('T-03 abandonada en esta corrida tras 2 fallos (tope por tarea 2)');
       expect(log).toContain('1 tarea(s) completada(s), 2 fallo(s)');
     });
 
-    it('una tarea que necesita desplegar queda in_progress con Pendiente deploy: no es fallo y sigue la siguiente', () => {
+    it('a task that needs a deploy stays in_progress with Pendiente deploy: not a failure, the next one follows', () => {
       t08Ready();
       const r = autopilot({ STUB_DEPLOY: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(0);
-      expect(r.stdout).toContain('T-03 espera un despliegue (Pendiente deploy): no cuenta como fallo');
-      expect(r.stdout).not.toContain('fallo 1/');
-      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(r.stdout).toContain('T-03 waits for a deploy (Pendiente deploy): not counted as a failure');
+      expect(r.stdout).not.toContain('failure 1/');
+      expect(r.stdout).toContain('verdict on T-08: approved → status reviewed');
       expect(t03().status).toBe('in_progress');
       const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
       expect(log).toContain('- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-03.');
       expect(log).toContain('0 fallo(s)');
     });
 
-    it('"Pendiente deploy: ninguno" no es despliegue: una tarea de spec in_progress con commits espera al usuario y no es fallo', () => {
+    it('"Pendiente deploy: ninguno" is not a deploy: a spec task in_progress with commits waits for the user and is not a failure', () => {
       t08Ready();
       const r = autopilot({ STUB_WAIT: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(0);
-      expect(r.stdout).not.toContain('T-03 espera un despliegue');
-      expect(r.stdout).toContain('T-03 espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo');
-      expect(r.stdout).not.toContain('fallo 1/');
-      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(r.stdout).not.toContain('T-03 waits for a deploy');
+      expect(r.stdout).toContain('T-03 waits for the user to approve the tests/acceptance/ diff (spec task): not counted as a failure');
+      expect(r.stdout).not.toContain('failure 1/');
+      expect(r.stdout).toContain('verdict on T-08: approved → status reviewed');
       expect(t03().status).toBe('in_progress');
       const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
       expect(log).toContain('- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.');
@@ -484,132 +485,132 @@ describe('autopilot.sh', () => {
       expect(log).toContain('0 fallo(s)');
     });
 
-    it('"Pendiente deploy: ninguno" en una tarea que no es de spec y queda in_progress cuenta como fallo', () => {
+    it('"Pendiente deploy: ninguno" on a non-spec task that stays in_progress counts as a failure', () => {
       editTasks((ts) => { task(ts, 'T-08').status = 'ready'; task(ts, 'T-03').status = 'reviewed'; });
       git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
       const r = autopilot({ STUB_WAIT: 'T-08' }, '--task', 'T-08');
-      expect(r.stdout).not.toContain('T-08 espera un despliegue');
-      expect(r.stdout).toContain('fallo 1/2 en T-08');
+      expect(r.stdout).not.toContain('T-08 waits for a deploy');
+      expect(r.stdout).toContain('failure 1/2 on T-08');
     });
 
-    it('el resumen lista las verificaciones manuales pendientes (DEC-011)', () => {
+    it('the summary lists the pending manual checks (DEC-011)', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.');
     });
 
-    it('con dos fallos del implementador abandona la tarea (exit 1) tras reintentar la misma', () => {
+    it('with two implementer failures it abandons the task (exit 1) after retrying the same one', () => {
       const r = autopilot({ STUB_MODE: 'fail' });
       expect(r.status).toBe(1);
-      expect(r.stdout).toContain('intento 2');
-      expect(r.stdout).toContain('T-03 llegó al tope de 2 fallos: se abandona en esta corrida');
-      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-03)');
-      expect(r.stdout).toContain('tokens de T-03 en la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000 (2 invocaciones)');
+      expect(r.stdout).toContain('attempt 2');
+      expect(r.stdout).toContain('T-03 reached the cap of 2 failures: abandoned in this run');
+      expect(r.stdout).toContain('stop: no in_progress/ready/approved_for_impl tasks with closed dependencies (skipped in this run: T-03)');
+      expect(r.stdout).toContain('tokens for T-03 in the run: input 6 · output 200 · cache read 4,000 · cache write 1,000 (2 invocations)');
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('total de la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000.');
       expect(t03().status).toBe('ready');
     });
 
-    describe('aviso ntfy al detenerse (T-21)', () => {
-      const ntfy = { NTFY_TOPIC: 'tema-prueba', NTFY_URL: 'https://ntfy.example' };
+    describe('ntfy notice on stop (T-21)', () => {
+      const ntfy = { NTFY_TOPIC: 'test-topic', NTFY_URL: 'https://ntfy.example' };
       const approved = { STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' };
 
-      it('sin NTFY_TOPIC no llama a curl', () => {
+      it('without NTFY_TOPIC it does not call curl', () => {
         const r = autopilot(approved, '--max-tasks', '1');
         expect(r.status).toBe(0);
         expect(curlCalls()).toEqual([]);
       });
 
-      it('si terminó bien: un aviso de prioridad normal al tema, con motivo, hechas/fallidas y próxima acción', () => {
-        // Solo T-03 es elegible: se implementa, se revisa y la corrida termina sin tareas (sin límite ni fallos).
+      it('if it finished fine: one normal-priority notice to the topic, with reason, done/failed and next action', () => {
+        // Only T-03 is eligible: it is implemented, reviewed and the run ends with no tasks left (no limit, no failures).
         editTasks((ts) => { for (const id of ['T-04', 'T-05', 'T-06', 'T-07']) task(ts, id).status = 'accepted'; });
-        git('commit', '-q', '-am', 'solo T-03\n\nTask: none\nReq: none');
+        git('commit', '-q', '-am', 'only T-03\n\nTask: none\nReq: none');
         const r = autopilot({ ...approved, ...ntfy });
         expect(r.status).toBe(0);
         const calls = curlCalls();
         expect(calls).toHaveLength(1);
         const c = calls[0]!;
-        expect(c.at(-1)).toBe('https://ntfy.example/tema-prueba');
+        expect(c.at(-1)).toBe('https://ntfy.example/test-topic');
         expect(header(c, 'Priority')).toBe('default');
         expect(header(c, 'Tags')).toBe('white_check_mark');
-        expect(header(c, 'Title')).toMatch(/^autopilot .*: terminó bien$/);
-        expect(body(c)).toContain('Motivo de parada: no hay tareas in_progress/ready/approved_for_impl');
-        expect(body(c)).toContain('Hechas: 1 tarea(s) · Fallidas: 0 fallo(s)');
-        expect(body(c)).toContain('Detalle: T-03 implementada');
-                expect(body(c)).toContain('Próxima acción: revisar el resumen en spec/LOG.md');
-        expect(r.stdout).toContain('aviso ntfy enviado (prioridad default)');
+        expect(header(c, 'Title')).toMatch(/^autopilot .*: finished fine$/);
+        expect(body(c)).toContain('Stop reason: no in_progress/ready/approved_for_impl');
+        expect(body(c)).toContain('Done: 1 task(s) · Failed: 0 failure(s)');
+        expect(body(c)).toContain('Detail: T-03 implemented');
+        expect(body(c)).toContain('Next action: review the summary in spec/LOG.md');
+        expect(r.stdout).toContain('ntfy notice sent (priority default)');
       });
 
-      it('un límite de presupuesto (tareas) pide intervención: prioridad alta', () => {
+      it('a budget limit (tasks) asks for intervention: high priority', () => {
         const r = autopilot({ ...approved, ...ntfy }, '--max-tasks', '1');
         expect(r.status).toBe(0);
         const [c] = curlCalls();
         expect(header(c!, 'Priority')).toBe('high');
         expect(header(c!, 'Tags')).toBe('warning,rotating_light');
-        expect(body(c!)).toContain('Motivo de parada: presupuesto de tareas alcanzado (1)');
-        expect(body(c!)).toContain('Próxima acción: relanzar el autopilot para seguir (límite alcanzado)');
+        expect(body(c!)).toContain('Stop reason: task budget reached (1)');
+        expect(body(c!)).toContain('Next action: relaunch the autopilot to continue (limit reached)');
       });
 
-      it('si requiere intervención (fallos): prioridad alta y tag de alerta, con las abandonadas', () => {
+      it('if it needs intervention (failures): high priority and alert tag, with the abandoned tasks', () => {
         const r = autopilot({ ...ntfy, STUB_MODE: 'fail' });
         expect(r.status).toBe(1);
         const [c] = curlCalls();
         expect(header(c!, 'Priority')).toBe('high');
         expect(header(c!, 'Tags')).toBe('warning,rotating_light');
-        expect(header(c!, 'Title')).toMatch(/requiere tu intervención$/);
-        expect(body(c!)).toContain('Fallidas: 2 fallo(s); abandonadas: T-03');
-        expect(body(c!)).toContain('Próxima acción: revisar los fallos de T-03 en .autopilot/');
+        expect(header(c!, 'Title')).toMatch(/needs your intervention$/);
+        expect(body(c!)).toContain('Failed: 2 failure(s); abandoned: T-03');
+        expect(body(c!)).toContain('Next action: review the failures of T-03 in .autopilot/');
       });
 
-      it('un despliegue pendiente también pide intervención', () => {
+      it('a pending deploy also asks for intervention', () => {
         const r = autopilot({ ...ntfy, ...approved, STUB_DEPLOY: 'T-03' });
         expect(r.status).toBe(0);
         const [c] = curlCalls();
         expect(header(c!, 'Priority')).toBe('high');
-        expect(body(c!)).toContain('Próxima acción: correr npm run deploy:dev (T-03)');
+        expect(body(c!)).toContain('Next action: run npm run deploy:dev (T-03)');
       });
 
-      it('un rechazo del revisor pide intervención: prioridad alta, con la tarea rechazada', () => {
+      it('a reviewer rejection asks for intervention: high priority, with the rejected task', () => {
         const r = autopilot({ ...ntfy, STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: falta un borde"],"notes":"n"}' }, '--max-tasks', '1');
         expect(r.status).toBe(0);
         const [c] = curlCalls();
         expect(header(c!, 'Priority')).toBe('high');
-        expect(body(c!)).toContain('rechazadas por el revisor: T-03');
-        expect(body(c!)).toContain('Próxima acción: atender los hallazgos del revisor (review de T-03');
+        expect(body(c!)).toContain('rejected by the reviewer: T-03');
+        expect(body(c!)).toContain("Next action: address the reviewer's findings (review of T-03");
       });
 
-      it('un AUTOPILOT_NTFY_MAX menor que 1000 se toma como 1000: los campos fijos van completos', () => {
+      it('an AUTOPILOT_NTFY_MAX below 1000 is taken as 1000: the fixed fields are complete', () => {
         const r = autopilot({ ...ntfy, STUB_MODE: 'fail', AUTOPILOT_NTFY_MAX: '110' });
         expect(r.status).toBe(1);
         const b = body(curlCalls()[0]!);
         expect(b.length <= 1000).toBe(true);
         const lines = b.split('\n');
-        expect(lines[0]).toBe('Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-03)');
-        expect(lines[1]).toBe('Hechas: 0 tarea(s) · Fallidas: 2 fallo(s); abandonadas: T-03');
-        expect(lines[2]).toMatch(/^Próxima acción: revisar los fallos de T-03 en \.autopilot\/[0-9_-]+\/ y relanzar$/);
-        expect(lines[3]).toMatch(/^Corrida [0-9_-]+ \(registros en \.autopilot\/[0-9_-]+\/\)$/);
-        expect(lines[4]).toMatch(/^Detalle: /);
+        expect(lines[0]).toBe('Stop reason: no in_progress/ready/approved_for_impl tasks with closed dependencies (skipped in this run: T-03)');
+        expect(lines[1]).toBe('Done: 0 task(s) · Failed: 2 failure(s); abandoned: T-03');
+        expect(lines[2]).toMatch(/^Next action: review the failures of T-03 in \.autopilot\/[0-9_-]+\/ and relaunch$/);
+        expect(lines[3]).toMatch(/^Run [0-9_-]+ \(logs in \.autopilot\/[0-9_-]+\/\)$/);
+        expect(lines[4]).toMatch(/^Detail: /);
       });
 
-      it('con muchas tareas: las listas se acortan (5 y "(+N más)") y solo el detalle se recorta al límite', () => {
-        // 7 de la fixture + 20 nuevas en verified_auto: el revisor las rechaza todas antes de elegir tarea nueva.
+      it('with many tasks: lists are shortened (5 and "(+N more)") and only the detail is trimmed to the limit', () => {
+        // 7 from the fixture + 20 new ones in verified_auto: the reviewer rejects them all before picking a new task.
         editTasks((ts) => {
           for (const id of ['T-02', 'T-03', 'T-04', 'T-05', 'T-06', 'T-07', 'T-08']) { task(ts, id).status = 'verified_auto'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; }
           for (let i = 9; i <= 28; i++) ts.push({ ...task(ts, 'T-08'), id: `T-${String(i).padStart(2, '0')}`, depends_on: [] });
         });
-        git('commit', '-q', '-am', 'veintisiete por revisar\n\nTask: none\nReq: none');
+        git('commit', '-q', '-am', 'twenty-seven to review\n\nTask: none\nReq: none');
         const r = autopilot({ ...ntfy, AUTOPILOT_NTFY_MAX: '1000', STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: x"],"notes":"n"}' });
-        expect(r.stdout).toContain('veredicto sobre T-28: rejected');
+        expect(r.stdout).toContain('verdict on T-28: rejected');
         const b = body(curlCalls()[0]!);
         expect(b.length <= 1000).toBe(true);
         const lines = b.split('\n');
-        expect(lines[1]).toBe('Hechas: 0 tarea(s) · Fallidas: 0 fallo(s); rechazadas por el revisor: T-02 T-03 T-04 T-05 T-06 … (+22 más)');
-        expect(lines[2]).toBe('Próxima acción: atender los hallazgos del revisor (review de T-02 T-03 T-04 T-05 T-06 … (+22 más) en spec/TASKS.json)');
-        expect(lines[3]).toMatch(/^Corrida /);
-        expect(lines[4]).toMatch(/^Detalle: T-02 revisada por /);
+        expect(lines[1]).toBe('Done: 0 task(s) · Failed: 0 failure(s); rejected by the reviewer: T-02 T-03 T-04 T-05 T-06 … (+22 more)');
+        expect(lines[2]).toBe("Next action: address the reviewer's findings (review of T-02 T-03 T-04 T-05 T-06 … (+22 more) in spec/TASKS.json)");
+        expect(lines[3]).toMatch(/^Run /);
+        expect(lines[4]).toMatch(/^Detail: T-02 reviewed by /);
         expect(lines[4]!.endsWith('…')).toBe(true);
       });
 
-      it('una tarea bloqueada con blocked_by largo: el motivo lleva un extracto de 200 caracteres y el aviso cabe', () => {
+      it('a blocked task with a long blocked_by: the reason carries a 200-character excerpt and the notice fits', () => {
         const r = autopilot({ ...ntfy, STUB_MODE: 'blocked', STUB_BLOCKED_BY: 'x'.repeat(5000) });
         expect(r.status).toBe(1);
         const [c] = curlCalls();
@@ -617,59 +618,58 @@ describe('autopilot.sh', () => {
         const b = body(c!);
         expect(b.length <= 3000).toBe(true);
         const lines = b.split('\n');
-        expect(lines[0]).toBe(`Motivo de parada: T-03 quedó blocked (${'x'.repeat(199)}…)`);
-        expect(lines[2]).toMatch(/^Próxima acción: resolver el bloqueo \(T-03 quedó blocked \(x+…\)\) y relanzar el autopilot$/);
+        expect(lines[0]).toBe(`Stop reason: T-03 ended blocked (${'x'.repeat(199)}…)`);
+        expect(lines[2]).toMatch(/^Next action: resolve the block \(T-03 ended blocked \(x+…\)\) and relaunch the autopilot$/);
       });
 
-      it('si ntfy falla, la corrida no cambia su resultado y el resumen se confirma igual', () => {
+      it('if ntfy fails, the run keeps its result and the summary is committed anyway', () => {
         const r = autopilot({ ...approved, ...ntfy, STUB_CURL_RC: '7' }, '--max-tasks', '1');
         expect(r.status).toBe(0);
-        expect(r.stdout).toContain('aviso: ntfy falló (código 7); la corrida no cambia su resultado');
-        expect(git('log', '-1', '--format=%s')).toContain('Orquestador nocturno: resumen de la corrida');
+        expect(r.stdout).toContain('warning: ntfy failed (code 7); the run keeps its result');
+        expect(git('log', '-1', '--format=%s')).toContain('Nightly orchestrator: summary of run');
         expect(git('status', '--porcelain')).toBe('');
       });
 
-      it('si se cae antes del resumen, avisa con prioridad alta', () => {
+      it('if it crashes before the summary, it notifies with high priority', () => {
         const r = autopilot(ntfy, '--task', 'T-99');
         expect(r.status).not.toBe(0);
         const [c] = curlCalls();
         expect(header(c!, 'Priority')).toBe('high');
-        expect(header(c!, 'Title')).toMatch(/se detuvo inesperadamente$/);
-        expect(body(c!)).toContain(`terminó con código ${r.status}`);
-        expect(body(c!)).toContain('Hechas: 0 tarea(s) · Fallidas: 0 fallo(s)');
-        expect(body(c!)).toContain('Próxima acción: revisar la terminal');
+        expect(header(c!, 'Title')).toMatch(/stopped unexpectedly$/);
+        expect(body(c!)).toContain(`exited with code ${r.status}`);
+        expect(body(c!)).toContain('Done: 0 task(s) · Failed: 0 failure(s)');
+        expect(body(c!)).toContain('Next action: check the terminal');
       });
 
-      it('lee el tema de AUTOPILOT_CONFIG y no lo pasa al implementador', () => {
+      it('reads the topic from AUTOPILOT_CONFIG and does not pass it to the implementer', () => {
         const cfg = join(root, '..', `${root.split('/').pop()}-config.sh`);
-        writeFileSync(cfg, 'NTFY_TOPIC=desde-config\nNTFY_URL=https://ntfy.example\n');
+        writeFileSync(cfg, 'NTFY_TOPIC=from-config\nNTFY_URL=https://ntfy.example\n');
         const r = autopilot({ ...approved, AUTOPILOT_CONFIG: cfg }, '--max-tasks', '1');
         expect(r.status).toBe(0);
-        expect(curlCalls()[0]!.at(-1)).toBe('https://ntfy.example/desde-config');
+        expect(curlCalls()[0]!.at(-1)).toBe('https://ntfy.example/from-config');
         expect(readFileSync(join(root, '.autopilot/stub-env-T-03.txt'), 'utf8')).toContain('NTFY_TOPIC=\n');
         rmSync(cfg, { force: true });
       });
 
-      it('--dry-run muestra el aviso sin enviarlo', () => {
+      it('--dry-run shows the notice without sending it', () => {
         const r = autopilot(ntfy, '--dry-run');
         expect(r.status).toBe(0);
-        expect(r.stdout).toContain('Aviso ntfy que se enviaría (no enviado: --dry-run');
-        expect(r.stdout).not.toContain('tema-prueba');
+        expect(r.stdout).toContain('ntfy notice that would be sent (not sent: --dry-run');
+        expect(r.stdout).not.toContain('test-topic');
         expect(curlCalls()).toEqual([]);
       });
     });
   });
 
-  it('se niega a correr con el árbol sucio (en ensayo solo avisa)', () => {
+  it('refuses to run with a dirty tree (in a dry run it only warns)', () => {
     cpSync(join(REPO, 'scripts'), join(root, 'scripts'), { recursive: true });
     const git = (...a: string[]) => execFileSync('git', ['-C', root, ...a], { encoding: 'utf8' });
     git('init', '-q');
     const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh')], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG } });
     expect(r.status).toBe(1);
-    expect(r.stderr).toContain('árbol de trabajo sucio');
+    expect(r.stderr).toContain('dirty working tree');
     const d = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG } });
     expect(d.status).toBe(0);
-    expect(d.stderr).toContain('aviso: árbol de trabajo sucio');
-
+    expect(d.stderr).toContain('warning: dirty working tree');
   });
 });
