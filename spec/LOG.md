@@ -403,3 +403,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Hecho (corte 2, verificación manual en el teléfono, DEC-011): informe del usuario José Pedro Lübbert: "Verifiqué en el teléfono el corte 2: barra superior, menú de cuenta, barra del carrito y detalle de producto funcionan". Registrado en `evidence.manual_result` de T-10 (REQ-006 E6, REQ-005 E1: barra superior, menú de cuenta, barra del carrito) y T-11 (REQ-008 E1–E2: detalle de producto); se quita su `manual_pending`.
+- Interpretación: el informe se toma como cubriendo la checklist completa de T-10 y T-11. T-09 no tenía pendiente manual (solo evidencia automática). T-12 (REQ-007 E6: Inicio con la marca, error de login, Carrito con tarjetas y total en el pie, pedido confirmado con etiqueta, Mis pedidos y Detalle de pedido, sistema visual consistente) no aparece en el informe y queda como pendiente manual.
+- Verificado y cómo: `npm run check:spec`.
+- Pendiente manual: T-12 (REQ-007 E6, ver la entrada de T-12 de las 02:18). Corte 1 sin cambios: T-04, T-05, T-06 E4, T-07 (ver el resumen del night-loop de las 02:20).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario confirma T-12 (REQ-007 E6) en el teléfono y decide `accepted` en lote del corte 2 (T-09..T-12); el corte 1 (T-03..T-07) sigue esperando su checklist y aceptación.
