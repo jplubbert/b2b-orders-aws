@@ -387,3 +387,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-12 (diff 8ff828c, REQ-007, DEC-003, DEC-008, DEC-012). Con T-09..T-12 en `reviewed`, el corte 2 queda listo para la aceptación en lote del usuario con las verificaciones manuales en el teléfono (DEC-011).
+
+## 2026-10-18 02:20 · revisor independiente (codex exec codex-cli 0.162.0) vía night-loop
+- Hecho: revisión independiente de T-12 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-12); salida íntegra en .night-loop/2026-10-18_014651/T-12-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.

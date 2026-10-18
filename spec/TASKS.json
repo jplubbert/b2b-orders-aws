@@ -384,14 +384,20 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t12-export && npm run test:acceptance && npm run smoke && git show --stat 8ff828c",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 103/103 (app/test/theme.test.tsx: REQ-007 E1 sin colores literales ni fontSize numérico en todo app/src/app (_layout, index, catalog, product/[id], cart, orders, order/[id]) y app/src/components; E2 contraste ≥ 4,5:1 de los pares del tema; E3 Mis pedidos con los 5 estados como etiqueta \"Recibido\"…\"Cancelado\" sin el código, Detalle de pedido \"En preparación\" y pedido confirmado en Carrito con \"Recibido\"; E4 \"Ingresar\", campos de Inicio y \"Confirmar pedido\" ≥ 44 dp; E5 StateMessage en Inicio (comprobando sesión, \"Correo o contraseña incorrectos\"), Carrito (\"El carrito está vacío\", rechazo), Mis pedidos (carga, \"Todavía no hiciste pedidos\", error de red) y Detalle de pedido (carga, \"Pedido no encontrado\", error de red); orders.test.tsx solo con las etiquetas de estado de S-17); expo export android ok; test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
         "commit": "8ff828c",
         "manual_pending": "REQ-007 E6 en el teléfono (Android, Expo Go 57): npm run app → Inicio con la marca \"Pedidos B2B\", campos y botón azul; contraseña errónea → \"Correo o contraseña incorrectos\" en el recuadro de error; login almacen1 → Catálogo; tocar \"Arroz 1 kg\" → Detalle de producto; 2 Arroz + 1 Yerba → Carrito con tarjetas por línea, subtotales $2.600 y $4.500, \"Total $7.100\" en el pie (no tapado por la navegación de Android) → Confirmar → \"Pedido confirmado\", N° y etiqueta \"Recibido\"; Mis pedidos → tarjetas con etiqueta de color; abrir el pedido → Detalle con tarjetas, etiqueta y total. Todas las pantallas se ven del mismo sistema visual (colores, espaciado, tipografía)."
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "REQ-007 E1–E5 conformes según el diff y las pruebas ejecutadas. E6 pendiente de comprobación manual en teléfono. No ejecuté exportación Android, aceptación ni smoke; sus resultados declarados no se consideran verificados por esta revisión.",
+        "date": "2026-10-18"
+      },
       "blocked_by": null,
       "depends_on": [
         "T-09"
