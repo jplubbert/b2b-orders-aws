@@ -146,3 +146,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: 2 fallos (tope 2).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-17 23:20 · Claude (claude-opus-5-5)
+- Hecho (T-08, commit 8b34e02, pedido del usuario): (1) usuario IAM `night-loop-tests` en la pila dev con permisos mínimos (datos de la tabla, admin del user pool; DEC-010 accepted, decisión del usuario). Desplegado con `npm run deploy:dev` (perfil default, us-east-1); llave creada con `aws iam create-access-key` y guardada en el perfil local `night-loop`. El orquestador copia solo ese perfil a archivos temporales: `default` no existe para los hijos; `test:acceptance` y `smoke` permitidos; deploy/bootstrap/seed/cdk/aws denegados. (2) `reviewed` cierra dependencias (encadena sin esperar accepted). (3) Progreso en vivo: stream-json → líneas legibles en la terminal y en `.night-loop/<corrida>/live.log` (`scripts/lib/night-stream.mjs`).
+- Hecho (T-03): el usuario José Pedro Lübbert aprueba el diff de tests/acceptance/, DEC-009 (→ accepted) y S-12..S-14. Evidencia registrada → `verified_auto`.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 76/76; `npm run check:spec` ok; con el perfil night-loop: `sts get-caller-identity` → user/night-loop-tests, `dynamodb list-tables`/`s3 ls`/`iam get-user-policy` → AccessDenied; `npm run smoke` 2/2; `npm run test:acceptance` 6 pasan (req_001, req_002) y 19 fallan por ValidationError de AppSync (createOrder/myOrders/order fuera del contrato), sin AccessDenied, limpieza completa.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Riesgo: la llave del perfil night-loop es de larga duración (rotar con `aws iam create-access-key`/`delete-access-key`); el agente nocturno puede leer ~/.aws/credentials con `cat` (los permisos de lista no lo impiden).
+- Próxima acción autorizada: revisión independiente de T-03 (diff b3864e7, REQ-001..004, DEC-007, DEC-009) y, si el usuario la quiere, de este cambio de T-08; luego T-04 (con T-03 reviewed ya es elegible para el orquestador).

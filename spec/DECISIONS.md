@@ -143,9 +143,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: la Play Store publica Expo Go para SDK 58 (subir con `npx expo install expo@^58 && npx expo install --fix`).
 
 ## DEC-009 Forma de la API de pedidos en el contrato
-- Estado: proposed
+- Estado: accepted
 - Alcance: global
-- Fecha: 2026-10-17 · Aprobador: — (propuesta por el agente, R-03) · Confianza: media
+- Fecha: 2026-10-17 · Aprobador: José Pedro Lübbert (2026-10-17; propuesta por el agente, R-03) · Confianza: media
 - Problema: las pruebas de aceptación de REQ-003 y REQ-004 (T-03) se escriben antes de que el contrato tenga pedidos; app, backend y pruebas deben coincidir en nombres de campos, en cómo llega el `productId` de `PRODUCT_UNAVAILABLE` y en cómo se invoca el script del distribuidor.
 - Impulsores: REQ-003, REQ-004, S-02, S-04, S-11, DEC-005, DEC-006, T-03
 - Alternativas consideradas:
