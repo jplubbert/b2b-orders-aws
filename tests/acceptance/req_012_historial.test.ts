@@ -137,7 +137,10 @@ describe('REQ-012', () => {
 
       // A valid change after the rejections: once its event is recorded, earlier ones would be too.
       await change(order, 'ENVIADO');
-      const events = await waitForHistory(env, owner.token, order.id, 2);
+      await waitForHistory(env, owner.token, order.id, 2);
+      // Standard SQS does not guarantee order: wait 5 s more so a stray event would have arrived.
+      await new Promise((r) => setTimeout(r, 5_000));
+      const events = await listOrderHistory(env, owner.token, order.id);
       expect(transitions(events)).toEqual([
         [null, 'RECIBIDO'],
         ['RECIBIDO', 'ENVIADO'],
