@@ -530,3 +530,12 @@
 - Hecho: revisión independiente de T-17 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-17); salida íntegra en .autopilot/2026-10-18_040235/T-17-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Hecho (T-14, REQ-009..011, commit ef9c531): contrato con `Order.customerId`, `allOrders(status)` y `setOrderStatus(customerId, id, status)`, `@aws_auth` por campo (almaceneros / distribuidores; `Order` y `OrderLine` para ambos). Infra: grupo `distribuidores`; la Lambda ya tenía `Scan` y `UpdateItem` por `grantReadWriteData` y la prueba de plantilla ahora lo exige junto con el grupo de cada campo raíz. Backend: `identityFromClaims` con roles, `asCustomer`/`asDistributor` por resolver, `orderRepo.listAllOrders` (Scan paginado, ULID descendente, filtro de estado) y `setStatus` (UpdateItem condicional, solo `status`; `ORDER_NOT_FOUND`). Seed: `distribuidor@demo.test` (S-22). Codegen: cambia solo `backend/src/generated`; sin cambios en app/ ni tests/acceptance/.
+- Detalle interno: `allOrders(status: null)` equivale a sin filtro; un distribuidor con `custom:customerId` no gana el rol almacenero (hace falta el grupo).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 162/162 + jest 105/105; `npm run test:acceptance` contra el dev aún sin desplegar: 25 pasan (req_001..004), 3 fallan y 13 se omiten por "Group not found", igual que en T-13 (esperado hasta el deploy); `npm run smoke` 2/2.
+- Pendiente deploy: T-14 — el usuario corre `npm run deploy:dev` (pila PedidosB2B-dev con el contrato nuevo y el grupo `distribuidores`; el seed crea `distribuidor@demo.test`) y luego `npm run test:acceptance` (deben pasar los 41: req_001..004 y req_009..011) y `npm run smoke`; con eso, evidencia y `verified_auto`.
+- En curso / roto: T-14 `in_progress` esperando el deploy.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario despliega (`npm run deploy:dev`) y corre `npm run test:acceptance` y `npm run smoke`; si pasan, T-14 → `verified_auto` con esa evidencia y revisión independiente. T-15 depende de T-14 (necesita el contrato desplegado para su verificación manual) y no se toma antes.

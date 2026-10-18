@@ -474,10 +474,10 @@
       "depends_on": [
         "T-13"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "verify": "npm run lint && npm run typecheck && npm test + npm run deploy:dev (en autopilot: `- Pendiente deploy:` en LOG) + npm run test:acceptance completo (req_001..004 y req_009..011) + npm run smoke",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
+      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 (autopilot): implementada en ef9c531; antes del deploy: lint ok, typecheck ok, npm test vitest 162/162 + jest 105/105; test:acceptance contra el dev sin desplegar 25 pasan (req_001..004), 3 fallan y 13 se omiten igual que en T-13 (falta el grupo `distribuidores` y allOrders/setOrderStatus); smoke 2/2. Queda in_progress hasta `npm run deploy:dev` + test:acceptance completo + smoke."
     },
     {
       "id": "T-15",
