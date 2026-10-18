@@ -852,3 +852,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Opción B. Aplícala en pedidos-b2b-v2 y sdd-base, corre el autopilot para la revisión de T-21 y haz push."
+- Contexto: tercera revisión de T-21 rechazada (15:04): el recorte final cortaba motivo y hechas/fallidas, contra DEC-016 (solo se recorta el detalle). Se escaló (dos intentos fallidos sobre la misma falla) con dos opciones; el usuario eligió B: cumplir DEC-016 sin cambiarla. Se retira la interpretación anotada en la entrada anterior (orden de conservación con la próxima acción primero).
+- Hecho (T-21, db260f6): `ntfy_body` vuelve a dejar los campos fijos completos y primero (motivo, hechas · fallidas, próxima acción, corrida) y solo recorta el detalle; los campos fijos quedan acotados de origen: `short_list` (5 y "… (+N más)") en fallidas, próxima acción y tareas saltadas del motivo, y extracto de 200 caracteres de `blocked_by` (check:spec ya exige que sea un id, pero el camino de blocked no lo comprueba); `AUTOPILOT_NTFY_MAX` no baja de 1000. Mismo cambio en sdd-base (2e123cb, publicado).
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 177/177 + jest 137/137 (las 3 pruebas nuevas fallan con autopilot.sh de 938861b); `npm run check:spec` ok; `--dry-run` ok; sdd-base `npm test` 93/93.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: cuarta revisión independiente de T-21 (el autopilot, a continuación); el usuario decide `accepted` de T-21.
