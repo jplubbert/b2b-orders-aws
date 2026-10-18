@@ -948,7 +948,7 @@
         "T-26",
         "T-27"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "touches": [
         "spec/contracts/schema.graphql",
         "backend/",
@@ -959,10 +959,14 @@
         "app/src/lib/generated/"
       ],
       "verify": "npm run lint && npm run typecheck && npm test (backend: idempotencia, sin publicación ante rechazo, fallo de publicación, orderHistory por rol y orden; infra: suscripción, DLQ, permisos, orderHistory → orders) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios; REQ-012 E1–E4, E7–E10 pasan) && npm run smoke && npm run check:spec",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test (línea base); npm run codegen; npm run lint; npm run typecheck; npm test; npm run synth; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit). Sin deploy (pendiente)",
+        "result": "línea base: vitest 186/186. Después: lint ok; typecheck ok; vitest 231/231 (186 existentes + 45 nuevas). backend: publicación de OrderCreated (RECIBIDO, sin estado anterior, at = createdAt) y OrderStatusChanged (from → to, también ENVIADO → ENVIADO) solo tras escribir; nada publicado ante EMPTY_ORDER, INVALID_QUANTITY, PRODUCT_UNAVAILABLE, ORDER_NOT_FOUND, Unauthorized ni si la escritura falla; si la publicación falla, la operación responde bien y se registra el error (S-32); setStatus devuelve el estado reemplazado (ALL_OLD); consumidora: entrega duplicada (en el mismo lote o en otro) guarda un solo evento (E5), un mensaje que falla se reporta solo y el resto del lote se guarda, un mensaje malformado falla (→ DLQ, E6); historial con PutItem condicional en HISTORY#<orderId>/EVENT#<at>#<eventId> y Query ascendente paginada; orderHistory: el dueño ve sus eventos, otro almacén y un pedido inexistente → [], el distribuidor ve cualquiera, usuario en ambos grupos lee como distribuidor, sin grupo → Unauthorized. infra/test: 7 campos (orderHistory → orders, grupos almaceneros y distribuidores), 4 Lambdas, tópico estándar con suscripción sqs cruda, cola con DLQ (maxReceiveCount 3, retención 14 días, visibilidad 60 s), política de cola solo para SNS desde el tópico, fuente SQS en lotes de 10 con ReportBatchItemFailures, Lambda de historial solo PutItem en HISTORY#* y consumo de su cola, sns:Publish sobre el tópico solo para orders y distributor (TOPIC_ARN solo ahí), acciones de tabla de las 3 Lambdas de dominio sin cambios; limpieza de aceptación borra historial de C-ACEPT-… y nunca el de almacen1. app 152/152 sin cambios. synth ok. Contra el dev desplegado (sin esta tarea): aceptación 49 pruebas, 41 pasan, 5 fallan y 3 se omiten, todas de REQ-012 por `FieldUndefined: orderHistory` (igual que antes); el teardown nuevo corrió bien (28 pedidos y 0 eventos de C-ACEPT-…); humo 2/2. Falta: npm run deploy:dev y repetir aceptación (esperado 49/49) y humo.",
+        "commit": "7333914"
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido: suma la consulta orderHistory (S-29). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido: suma la consulta orderHistory (S-29). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18: implementada (commit 7333914). Detalles internos: `setStatus` del repositorio pasa a ReturnValues ALL_OLD y devuelve { order, previous }, así el `from` sale de la misma escritura atómica; el `at` de OrderCreated es el `createdAt` del pedido y el de OrderStatusChanged el reloj de la Lambda que publica (S-33); el mensaje SNS lleva el JSON del evento con `type` y un atributo `type`; la consumidora valida cada cuerpo (tipo, estados, fecha, ids) y un mensaje malformado falla para terminar en la DLQ; la fila del historial guarda también `type`, que orderHistory no devuelve; la Lambda de historial tiene PutItem limitado por `dynamodb:LeadingKeys` StringLike HISTORY#*; `PUBLISHING_DOMAINS` (orders, distributor) en backend/src/domains.ts decide TOPIC_ARN y sns:Publish; la función catalog no recibe TOPIC_ARN; nombre del tópico `pedidos-b2b-<stage>-order-events`. Dependencia nueva: @aws-sdk/client-sns (backend; el runtime Node.js 24 la trae y el bundle la deja externa); por eso cambia también package-lock.json. Tipos de app/src/lib/generated sin cambios: ninguna operación de la app usa orderHistory hasta T-31. El script `order:set-status` (DEC-009) escribe directo en la tabla y no publica eventos: fuera de alcance. Queda in_progress: falta deploy (Pendiente deploy en LOG.md)."
     },
     {
       "id": "T-29",
