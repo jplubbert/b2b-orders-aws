@@ -2,7 +2,12 @@ import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { rootFields } from '../lib/contract.js';
-import { PedidosStack } from '../lib/pedidos-stack.js';
+import {
+  PedidosStack,
+  TEST_RUNNER_TABLE_ACTIONS,
+  TEST_RUNNER_USER,
+  TEST_RUNNER_USER_POOL_ACTIONS,
+} from '../lib/pedidos-stack.js';
 
 let template: Template;
 
@@ -58,5 +63,42 @@ describe('PedidosStack', () => {
   it('expone las salidas que usa scripts/write-env.ts', () => {
     const outputs = Object.keys(template.toJSON().Outputs ?? {});
     expect(outputs).toEqual(expect.arrayContaining(['Region', 'UserPoolId', 'UserPoolClientId', 'GraphqlUrl', 'TableName']));
+  });
+
+  it('DEC-010: sin usuario de pruebas fuera de dev', () => {
+    template.resourceCountIs('AWS::IAM::User', 0);
+  });
+});
+
+describe('PedidosStack dev: usuario night-loop-tests (DEC-010)', () => {
+  let dev: Template;
+  beforeAll(() => {
+    dev = Template.fromStack(new PedidosStack(new App(), 'PedidosB2B-dev', { stage: 'dev', env: { region: 'us-east-1' } }));
+  });
+
+  it('existe, sin llaves de acceso ni login de consola en la plantilla', () => {
+    dev.hasResourceProperties('AWS::IAM::User', { UserName: TEST_RUNNER_USER });
+    dev.resourceCountIs('AWS::IAM::AccessKey', 0);
+    expect(dev.findResources('AWS::IAM::User', { Properties: { LoginProfile: Match.anyValue() } })).toEqual({});
+  });
+
+  it('solo tiene las acciones de datos de la tabla y de admin del user pool, sobre esos recursos', () => {
+    const policies = Object.values(dev.findResources('AWS::IAM::Policy')).filter((p) =>
+      JSON.stringify(p.Properties.Users ?? []).includes('NightLoopTestsUser'),
+    );
+    expect(policies).toHaveLength(1);
+    const statements = policies[0]!.Properties.PolicyDocument.Statement as Array<{
+      Action: string | string[];
+      Resource: unknown;
+      Effect: string;
+    }>;
+    const actions = statements.flatMap((s) => [s.Action].flat()).sort();
+    expect(actions).toEqual([...TEST_RUNNER_TABLE_ACTIONS, ...TEST_RUNNER_USER_POOL_ACTIONS].sort());
+    for (const s of statements) {
+      expect(s.Effect).toBe('Allow');
+      const resources = JSON.stringify(s.Resource);
+      expect(resources).not.toContain('"*"');
+      expect(resources).toMatch(/Table|UserPool/);
+    }
   });
 });

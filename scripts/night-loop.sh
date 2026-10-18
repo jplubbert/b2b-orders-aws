@@ -4,10 +4,13 @@
 #   scripts/night-loop.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
 # Ciclo:
-#   1. Elige la primera tarea "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas (done/accepted/delivered).
+#   1. Elige la primera tarea "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas
+#      (done/accepted/delivered, o reviewed: así encadena tareas sin esperar la aceptación del usuario).
 #      Si no hay, anota en spec/LOG.md y termina.
 #   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad."`
-#      con permisos acotados al repositorio (sin red, sin AWS, sin push, sin instalar nada fuera de npm).
+#      con permisos acotados al repositorio (sin red, sin push, sin instalar nada fuera de npm; AWS solo con el perfil
+#      `night-loop` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
+#      en la terminal y en .night-loop/<corrida>/live.log (`tail -f` desde otra terminal).
 #   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
 #      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
 #      TASKS.json (`review`; approved → reviewed) y a LOG.md.
@@ -16,12 +19,15 @@
 #      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
 #   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
 #
-# Guardas mecánicas sobre los procesos hijos: credenciales AWS anuladas (AWS_CONFIG_FILE=/dev/null…), pushurl de
+# Guardas mecánicas sobre los procesos hijos: solo el perfil AWS `night-loop` (usuario IAM night-loop-tests, DEC-010:
+# datos de la tabla y admin del user pool de PedidosB2B-dev) copiado a un AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE
+# temporales, así que `default` no existe para ellos (deploy/bootstrap/cdk fallan además por permisos); pushurl de
 # todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
 # y comprobación tras cada tarea de que el ejecutor no otorgó estados reservados (reviewed/accepted/…).
 #
 # Variables: NIGHT_MAX_TASKS (3), NIGHT_BUDGET_SECONDS (7200), NIGHT_MAX_FAILURES (2), NIGHT_REVIEWER (auto|codex|claude),
-#            NIGHT_IMPL_MODEL, NIGHT_REVIEW_MODEL, NIGHT_MAX_USD (tope por invocación de claude, opcional).
+#            NIGHT_IMPL_MODEL, NIGHT_REVIEW_MODEL, NIGHT_MAX_USD (tope por invocación de claude, opcional),
+#            NIGHT_AWS_PROFILE (night-loop), NIGHT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
 # Registros de cada corrida: .night-loop/<fecha>/ (fuera de git).
 set -euo pipefail
 
@@ -53,6 +59,7 @@ done
 tasks() { node "$ROOT/scripts/lib/night-tasks.mjs" --root "$ROOT" "$@"; }
 RUN_ID=$(date '+%Y-%m-%d_%H%M%S')
 RUN_DIR="$ROOT/.night-loop/$RUN_ID"
+LIVE="$RUN_DIR/live.log"
 START=$(date +%s)
 DEADLINE=$((START + BUDGET))
 SUMMARY=()        # líneas "Hecho" del resumen
@@ -62,7 +69,12 @@ ABNORMAL=0       # 1 = parada que requiere intervención (blocked, fallos, viola
 TASKS_DONE=0
 FAILURES=0
 
-log() { printf '%s night-loop: %s\n' "$(date '+%H:%M:%S')" "$*"; }
+log() { # a la terminal y, en una corrida real, a live.log
+  local line; line=$(printf '%s night-loop: %s' "$(date '+%H:%M:%S')" "$*")
+  printf '%s\n' "$line"
+  if [ "$DRY_RUN" = 0 ] && [ -d "$RUN_DIR" ]; then printf '%s\n' "$line" >>"$LIVE"; fi
+  return 0
+}
 die() { echo "night-loop: $*" >&2; exit 1; }
 remaining() { echo $((DEADLINE - $(date +%s))); }
 now_stamp() { date '+%Y-%m-%d %H:%M'; }
@@ -71,8 +83,30 @@ git_head() { git rev-parse --short HEAD; }
 # ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
 export NIGHT_LOOP=1
 export CI=1
-unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE
-export AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_EC2_METADATA_DISABLED=true
+# AWS: solo el perfil night-loop (DEC-010), copiado a archivos temporales; default y el resto no existen para los hijos.
+NIGHT_AWS_PROFILE=${NIGHT_AWS_PROFILE:-night-loop}
+AWS_SOURCE=${NIGHT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE AWS_DEFAULT_REGION
+AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/night-loop-aws.XXXXXX")
+trap 'rm -rf "$AWS_SANDBOX"' EXIT
+aws_profile_key() { # $1 = clave; lee la sección [$NIGHT_AWS_PROFILE] del archivo de credenciales de origen
+  [ -r "$AWS_SOURCE" ] || return 0
+  awk -v sec="[$NIGHT_AWS_PROFILE]" -v key="$1" '
+    /^[[:space:]]*\[/ { gsub(/[[:space:]]/, ""); inside = ($0 == sec); next }
+    inside { split($0, kv, "="); k = kv[1]; gsub(/[[:space:]]/, "", k)
+             if (k == key) { v = substr($0, index($0, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); print v; exit } }' "$AWS_SOURCE"
+}
+AWS_KEY_ID=$(aws_profile_key aws_access_key_id)
+( umask 077
+  printf '[profile %s]\nregion = us-east-1\n' "$NIGHT_AWS_PROFILE" >"$AWS_SANDBOX/config"
+  if [ -n "$AWS_KEY_ID" ]; then
+    printf '[%s]\naws_access_key_id = %s\naws_secret_access_key = %s\n' \
+      "$NIGHT_AWS_PROFILE" "$AWS_KEY_ID" "$(aws_profile_key aws_secret_access_key)" >"$AWS_SANDBOX/credentials"
+  else
+    : >"$AWS_SANDBOX/credentials"
+  fi )
+export AWS_CONFIG_FILE=$AWS_SANDBOX/config AWS_SHARED_CREDENTIALS_FILE=$AWS_SANDBOX/credentials
+export AWS_PROFILE=$NIGHT_AWS_PROFILE AWS_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true
 n=0
 for remote in $(git remote); do
   export "GIT_CONFIG_KEY_${n}=remote.${remote}.pushurl" "GIT_CONFIG_VALUE_${n}=/nonexistent/night-loop-sin-push"
@@ -93,7 +127,7 @@ IMPL_ALLOWED=(
 IMPL_DENIED=(
   WebFetch WebSearch Agent
   "Bash(git push*)" "Bash(git remote*)" "Bash(git config*)" "Bash(gh *)"
-  "Bash(npm run deploy*)" "Bash(npm run bootstrap*)" "Bash(npm run seed*)" "Bash(npm run smoke*)" "Bash(npm publish*)"
+  "Bash(npm run deploy*)" "Bash(npm run bootstrap*)" "Bash(npm run seed*)" "Bash(npm publish*)"
   "Bash(npx cdk*)" "Bash(cdk *)" "Bash(npx eas*)" "Bash(eas *)" "Bash(npx expo publish*)" "Bash(npx expo run*)"
   "Bash(aws *)" "Bash(curl *)" "Bash(wget *)" "Bash(ssh *)" "Bash(scp *)" "Bash(sudo *)" "Bash(rm *)"
 )
@@ -108,7 +142,7 @@ REVIEW_DENIED=(Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent "Bash(
 
 impl_cmd() { # $1 = ID
   local cmd=(claude -p "Lee AGENTS.md y ejecuta $1. Detente según las reglas de autoridad."
-    --permission-mode dontAsk --output-format json
+    --permission-mode dontAsk --output-format stream-json --verbose
     --allowedTools "${IMPL_ALLOWED[@]}" --disallowedTools "${IMPL_DENIED[@]}")
   [ -n "${NIGHT_IMPL_MODEL:-}" ] && cmd+=(--model "$NIGHT_IMPL_MODEL")
   [ -n "${NIGHT_MAX_USD:-}" ] && cmd+=(--max-budget-usd "$NIGHT_MAX_USD")
@@ -279,8 +313,15 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   tasks snapshot >"$before"
   head_before=$(git_head)
   log "implementador sobre $id (intento $attempt, $(remaining) s restantes)"
+  # Flujo stream-json → líneas legibles en la terminal y live.log; copia íntegra en .jsonl, evento final en .json.
+  set +e
   # shellcheck disable=SC2046
-  eval timeout -k 30 "$(remaining)" "$(impl_cmd "$id")" >"$RUN_DIR/$id-impl-$attempt.json" 2>"$RUN_DIR/$id-impl-$attempt.err" || rc=$?
+  eval timeout -k 30 "$(remaining)" "$(impl_cmd "$id")" 2>"$RUN_DIR/$id-impl-$attempt.err" \
+    | node "$ROOT/scripts/lib/night-stream.mjs" --label "$id" \
+        --raw "$RUN_DIR/$id-impl-$attempt.jsonl" --result "$RUN_DIR/$id-impl-$attempt.json" \
+    | tee -a "$LIVE"
+  rc=${PIPESTATUS[0]}
+  set -e
   node -e '
     const fs=require("fs");try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
     fs.writeFileSync(process.argv[2],(r.result??"")+"\n");
@@ -330,11 +371,12 @@ exec 9>"$ROOT/.night-loop/lock"
 flock -n 9 || die "otra corrida nocturna está en marcha (.night-loop/lock)"
 mkdir -p "$RUN_DIR"
 
+[ -n "$AWS_KEY_ID" ] || echo "night-loop: aviso: sin perfil [$NIGHT_AWS_PROFILE] en $AWS_SOURCE; aceptación y humo fallarán por credenciales" >&2
 log "inicio en $(git_head) (rama $(git rev-parse --abbrev-ref HEAD)); presupuesto ${BUDGET}s, máx. ${MAX_TASKS} tareas, máx. ${MAX_FAILURES} fallos; revisor: $REVIEWER_KIND"
 if [ "$DRY_RUN" = 1 ]; then
   echo
   echo "== Ensayo (--dry-run): no se lanza claude/codex, no se escribe LOG.md ni se hacen commits =="
-  echo "Guardas de entorno: AWS_CONFIG_FILE=$AWS_CONFIG_FILE AWS_SHARED_CREDENTIALS_FILE=$AWS_SHARED_CREDENTIALS_FILE AWS_EC2_METADATA_DISABLED=$AWS_EC2_METADATA_DISABLED"
+  echo "Guardas de entorno: AWS_PROFILE=$AWS_PROFILE ($( [ -n "$AWS_KEY_ID" ] && echo "llave $AWS_KEY_ID" || echo "SIN llaves en $AWS_SOURCE"); único perfil en AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE temporales) AWS_EC2_METADATA_DISABLED=$AWS_EC2_METADATA_DISABLED"
   echo "Remotos con push anulado: $(git remote | tr '\n' ' ')${GIT_CONFIG_COUNT:+(GIT_CONFIG_COUNT=$GIT_CONFIG_COUNT)}$( [ -z "$(git remote)" ] && echo '(ninguno configurado)')"
   echo
 fi

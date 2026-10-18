@@ -11,6 +11,8 @@ const REPO = fileURLToPath(new URL('../../', import.meta.url));
 const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/night-spec');
 const SCRIPT = join(REPO, 'scripts/lib/night-tasks.mjs');
 const LOOP = join(REPO, 'scripts/night-loop.sh');
+// Credenciales falsas con [default] y [night-loop]: el loop solo debe pasar night-loop a los hijos.
+const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/night-aws/credentials');
 
 let root: string;
 
@@ -69,6 +71,13 @@ describe('night-tasks pick', () => {
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', kind: 'spec' });
     editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; });
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', kind: 'impl', reqs: ['REQ-002'] });
+  });
+
+  it('una dependencia reviewed cuenta como cerrada (encadena sin esperar accepted); verified_auto no', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'reviewed'; }); // T-03 approved_for_impl, depende de T-01
+    expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03' });
+    editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; });
+    expect(run('pick').out).toBe('null\n');
   });
 
   it('salta una ready cuya dependencia sigue abierta', () => {
@@ -202,7 +211,7 @@ describe('night-loop.sh', () => {
     const head = git('rev-parse', 'HEAD');
     const r = spawnSync('bash', [join(root, 'scripts/night-loop.sh'), '--dry-run'], {
       encoding: 'utf8',
-      env: { ...process.env, PATH: process.env.PATH, NIGHT_REVIEWER: 'claude' },
+      env: { ...process.env, PATH: process.env.PATH, NIGHT_REVIEWER: 'claude', NIGHT_AWS_CREDENTIALS: AWS_FIXTURE },
     });
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
@@ -210,6 +219,11 @@ describe('night-loop.sh', () => {
     expect(r.stdout).toContain('claude -p Lee\\ AGENTS.md\\ y\\ ejecuta\\ T-03');
     expect(r.stdout).toContain('--disallowedTools');
     expect(r.stdout).toContain('Bash\\(git\\ push\\*\\)');
+    expect(r.stdout).toContain('Bash\\(npm\\ run\\ deploy\\*\\)');
+    expect(r.stdout).not.toContain('npm\\ run\\ smoke'); // humo permitido (DEC-010)
+    expect(r.stdout).toContain('--output-format stream-json --verbose');
+    expect(r.stdout).toContain('AWS_PROFILE=night-loop (llave AKIANIGHTLOOPFAKE');
+    expect(r.stdout).not.toContain('secreto');
     expect(r.stdout).toContain('Entrada que se anotaría en spec/LOG.md');
     expect(git('status', '--porcelain')).toBe('');
     expect(git('rev-parse', 'HEAD')).toBe(head);
@@ -222,7 +236,7 @@ describe('night-loop.sh', () => {
     const loop = (env: Record<string, string>, ...args: string[]) =>
       spawnSync('bash', [join(root, 'scripts/night-loop.sh'), ...args], {
         encoding: 'utf8',
-        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, ...env },
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, NIGHT_AWS_CREDENTIALS: AWS_FIXTURE, ...env },
       });
     const t03 = () => task(readTasks(), 'T-03') as Task & { review?: { verdict: string } };
 
@@ -259,6 +273,34 @@ describe('night-loop.sh', () => {
       expect(prompt).toContain('## DEC-007');
       expect(prompt).toContain('stub change for T-03');
       expect(prompt).not.toContain('## DEC-001');
+    });
+
+    it('el implementador solo ve el perfil night-loop; el progreso sale legible en la terminal y en live.log', () => {
+      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      expect(r.status).toBe(0);
+      const runDir = join(root, '.night-loop', readdirSync(join(root, '.night-loop')).find((d) => d.startsWith('20'))!);
+      const seen = readFileSync(join(root, '.night-loop/stub-env-T-03.txt'), 'utf8');
+      expect(seen).toContain('AWS_PROFILE=night-loop');
+      expect(seen).toContain('[night-loop]\naws_access_key_id = AKIANIGHTLOOPFAKE');
+      expect(seen).toContain('[profile night-loop]\nregion = us-east-1');
+      expect(seen).not.toContain('default');
+      const live = readFileSync(join(runDir, 'live.log'), 'utf8');
+      for (const out of [r.stdout, live]) {
+        expect(out).toMatch(/T-03 › Empiezo la tarea/);
+        expect(out).toMatch(/T-03 ▸ Bash {2}npm run test:acceptance/);
+        expect(out).toMatch(/T-03 {3}✓ 1 línea\(s\): Tests 25 passed/);
+        expect(out).toMatch(/T-03 ■ fin \(ok\): 5 turnos, US\$ 0\.42/);
+      }
+      expect(live).toContain('veredicto sobre T-03: approved → estado reviewed');
+      expect(readFileSync(join(runDir, 'T-03-impl-1.jsonl'), 'utf8').trim().split('\n')).toHaveLength(4);
+      expect(JSON.parse(readFileSync(join(runDir, 'T-03-impl-1.json'), 'utf8'))).toMatchObject({ type: 'result', num_turns: 5 });
+    });
+
+    it('encadena: con T-03 reviewed toma T-04 (depende de T-01 y T-03) en la misma corrida', () => {
+      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '2');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('veredicto sobre T-04: approved → estado reviewed');
+      expect(task(readTasks(), 'T-04').status).toBe('reviewed');
     });
 
     it('rejected conserva verified_auto y sigue; sin más ready termina con exit 0', () => {

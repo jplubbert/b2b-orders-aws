@@ -3,7 +3,8 @@
 //
 //   node scripts/lib/night-tasks.mjs [--root DIR] <orden> [args]
 //
-//   pick [--task T-NN]      primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas (o la forzada) → JSON | null
+//   pick [--task T-NN]      primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas
+//                           (done/reviewed/accepted/delivered), o la forzada → JSON | null
 //   snapshot                mapa id → status de todas las tareas → JSON
 //   check-authority FILE    compara con el snapshot FILE; falla si el ejecutor otorgó un estado reservado
 //   status T-NN             imprime el estado de la tarea
@@ -16,8 +17,8 @@ import { fileURLToPath } from 'node:url';
 
 /** Estados desde los que el orquestador puede tomar una tarea. */
 export const ELIGIBLE_STATES = ['ready', 'approved_for_impl'];
-/** Estados que cierran una dependencia. */
-export const DONE_STATES = ['done', 'accepted', 'delivered'];
+/** Estados que cierran una dependencia. `reviewed` incluido para encadenar tareas sin esperar la aceptación del usuario. */
+export const DONE_STATES = ['done', 'reviewed', 'accepted', 'delivered'];
 /** Estados que solo otorgan el revisor o el usuario (AGENTS.md §Autoridad). El ejecutor nunca los escribe. */
 export const RESERVED_STATES = ['reviewed', 'accepted', 'approved_for_impl', 'delivered'];
 export const VERDICTS = ['approved', 'rejected'];

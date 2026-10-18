@@ -166,3 +166,20 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: documentación de AppSync (resolvers Lambda directos: `errorType` y `message`).
 - Confirmación: tests/acceptance/req_003_* y req_004_* pasan contra `dev`; el contrato al cierre de T-06 coincide con esta forma.
 - Revisar si: la app necesita más campos del pedido o el distribuidor necesita otra forma de identificar pedidos.
+
+## DEC-010 Identidad AWS propia y acotada para el orquestador nocturno
+- Estado: accepted
+- Alcance: global
+- Fecha: 2026-10-17 · Aprobador: José Pedro Lübbert (decisión del usuario en sesión) · Confianza: alta
+- Problema: las pruebas de aceptación (DEC-007) y de humo corren contra `dev` y necesitan credenciales; el orquestador nocturno (T-08) las anulaba todas, así que T-03 no podía cerrar evidencia sin intervención. Pasarle el perfil `default` le daría permisos de administrador sobre la cuenta.
+- Impulsores: DEC-007, R-04, T-03, T-08
+- Alternativas consideradas:
+  1. Usuario IAM `night-loop-tests` en la pila `PedidosB2B-dev` con permisos mínimos y perfil local `night-loop` — a favor: radio de daño acotado a los datos de `dev`; en contra: una llave de larga duración en ~/.aws/credentials.
+  2. Pasar el perfil `default` y prohibir comandos por lista — a favor: sin infra; en contra: la lista de comandos no impide usar el SDK con credenciales de administrador.
+- Decisión: Usaremos la alternativa 1. Usuario IAM `night-loop-tests` (solo en stage `dev`, sin login de consola, sin llaves en la plantilla) con: sobre la tabla, `dynamodb:GetItem/Query/Scan/PutItem/UpdateItem/DeleteItem/BatchWriteItem`; sobre el user pool, `cognito-idp:AdminCreateUser/AdminSetUserPassword/AdminAddUserToGroup/AdminDeleteUser/ListUsers`. `Scan` y `UpdateItem` los necesita `order:set-status` (DEC-009). La llave se crea fuera de CDK (`aws iam create-access-key`) y vive solo en el perfil local `night-loop`. `scripts/night-loop.sh` copia únicamente ese perfil a archivos temporales y apunta ahí `AWS_CONFIG_FILE`/`AWS_SHARED_CREDENTIALS_FILE`; `default` no existe para los procesos hijos. El implementador puede correr `npm run test:acceptance` y `npm run smoke`; deploy, bootstrap, seed, cdk y `aws` siguen denegados.
+  No usaremos la alternativa 2, porque bloquear comandos no limita lo que permiten las credenciales.
+- Consecuencias: buenas: el orquestador cierra evidencia de aceptación sin intervención; un error del agente solo puede tocar datos de `dev`. Malas: hay una llave de larga duración que rotar. Neutrales: el agente puede escribir en la tabla y en el user pool de `dev`; `npm run seed` lo restaura.
+- Dependencias: depende de DEC-001, DEC-007 · afecta a T-08, infra/lib/pedidos-stack.ts
+- Evidencia: `npm run deploy:dev` 2026-10-17 (usuario creado); con el perfil `night-loop`, `sts get-caller-identity` → `user/night-loop-tests`; `dynamodb list-tables`, `s3 ls` e `iam get-user-policy` → AccessDenied.
+- Confirmación: infra/test/stack.test.ts (acciones exactas, sin `*`, sin AccessKey); scripts/test/night-tasks.test.ts (el hijo solo ve `[night-loop]`).
+- Revisar si: hacen falta más servicios en las pruebas, o se pasa a credenciales temporales (rol asumido) para evitar la llave larga.

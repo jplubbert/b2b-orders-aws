@@ -182,7 +182,9 @@
       "kind": "tooling",
       "description": "scripts/night-loop.sh: elige la primera tarea ready con dependencias en done; lanza el implementador (claude -p, permisos acotados al repo, sin AWS ni push); si la tarea queda verified_auto lanza un revisor con contexto limpio (codex exec, o claude -p si no hay codex) con el prompt de sdd.md §7.5 sobre el diff y los REQ/DEC de la tarea, y registra el veredicto en TASKS.json y LOG.md; se detiene ante blocked, dos fallos, 2 h o 3 tareas por noche y deja un resumen en LOG.md. Nunca hace push, nunca despliega a AWS ni marca accepted. Sin REQ de producto: sus commits llevan Req: N/A (admitido por check:spec solo en tareas tooling).",
       "reqs": [],
-      "decisions": [],
+      "decisions": [
+        "DEC-010"
+      ],
       "depends_on": [
         "T-02"
       ],
@@ -206,7 +208,7 @@
         "date": "2026-10-17"
       },
       "blocked_by": null,
-      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed. Revisión independiente approved (codex gpt-6.1-sol) → reviewed; verify ajustado según su salvedad. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted.",
+      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed. Revisión independiente approved (codex gpt-6.1-sol) → reviewed; verify ajustado según su salvedad. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted. 2026-10-17 23:10: cambios pedidos por el usuario: (1) el implementador recibe solo el perfil AWS `night-loop` (usuario IAM night-loop-tests, DEC-010) para `npm run test:acceptance` y `npm run smoke`; deploy/bootstrap/seed/cdk/aws siguen denegados y `default` no existe para los hijos; (2) `reviewed` cierra dependencias (reemplaza el supuesto done/accepted/delivered), para encadenar sin esperar accepted; (3) progreso en vivo: stream-json → líneas legibles (scripts/lib/night-stream.mjs) en la terminal y en .night-loop/<corrida>/live.log.",
       "acceptance": {
         "by": "José Pedro Lübbert",
         "date": "2026-10-17"

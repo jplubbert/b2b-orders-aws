@@ -3,6 +3,7 @@ import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-
 import * as appsync from 'aws-cdk-lib/aws-appsync';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -10,6 +11,17 @@ import type { Construct } from 'constructs';
 import { SCHEMA_PATH, rootFields } from './contract.js';
 
 export const CUSTOMER_GROUP = 'almaceneros';
+export const TEST_RUNNER_USER = 'night-loop-tests';
+
+/** DEC-010: lo mínimo que usan las fixtures de aceptación (y el script order:set-status de DEC-009). */
+export const TEST_RUNNER_TABLE_ACTIONS = [
+  'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:PutItem',
+  'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:BatchWriteItem',
+];
+export const TEST_RUNNER_USER_POOL_ACTIONS = [
+  'cognito-idp:AdminCreateUser', 'cognito-idp:AdminSetUserPassword', 'cognito-idp:AdminAddUserToGroup',
+  'cognito-idp:AdminDeleteUser', 'cognito-idp:ListUsers',
+];
 
 export interface PedidosStackProps extends StackProps {
   stage: string;
@@ -83,6 +95,14 @@ export class PedidosStack extends Stack {
     const source = api.addLambdaDataSource('api', apiFn);
     for (const [typeName, fieldName] of rootFields()) {
       source.createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
+    }
+
+    // DEC-010: identidad del orquestador nocturno para aceptación y humo, solo sobre esta tabla y este user pool.
+    // Sin llaves en la plantilla: se crean aparte (`aws iam create-access-key`) y viven en el perfil `night-loop`.
+    if (props.stage === 'dev') {
+      const testRunner = new iam.User(this, 'NightLoopTestsUser', { userName: TEST_RUNNER_USER });
+      table.grant(testRunner, ...TEST_RUNNER_TABLE_ACTIONS);
+      userPool.grant(testRunner, ...TEST_RUNNER_USER_POOL_ACTIONS);
     }
 
     new CfnOutput(this, 'Region', { value: this.region });
