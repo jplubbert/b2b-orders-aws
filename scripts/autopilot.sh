@@ -49,7 +49,7 @@
 # Variables: AUTOPILOT_MAX_TASKS (10), AUTOPILOT_BUDGET_SECONDS (21600), AUTOPILOT_MAX_FAILURES (2, por tarea), AUTOPILOT_REVIEWER (auto|codex|claude),
 #            AUTOPILOT_IMPL_MODEL, AUTOPILOT_REVIEW_MODEL, AUTOPILOT_MAX_USD (tope por invocación de claude, opcional),
 #            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials),
-#            NTFY_TOPIC (sin valor: no se avisa), NTFY_URL (https://ntfy.sh), AUTOPILOT_NTFY_MAX (3000, largo del aviso).
+#            NTFY_TOPIC (sin valor: no se avisa), NTFY_URL (https://ntfy.sh), AUTOPILOT_NTFY_MAX (3000, largo del aviso; mínimo 1000).
 # Configuración local: AUTOPILOT_CONFIG (por defecto ~/.config/autopilot/autopilot.config.sh, fuera del repo porque el
 # tema de ntfy es secreto: quien lo conoce lee los avisos). Es un script de bash que puede fijar cualquiera de las
 # variables anteriores, p. ej. `NTFY_TOPIC=autopilot-xxxxxxxx`. Las variables no se pasan a los procesos hijos.
@@ -148,23 +148,22 @@ short_list() { # lista de tareas acotada para el aviso: las 5 primeras y "… (+
   local n=$#
   if [ "$n" -le 5 ]; then printf '%s' "$*"; else printf '%s … (+%s más)' "${*:1:5}" "$((n - 5))"; fi
 }
-ntfy_body() { # $1 = motivo, $2 = próxima acción. Nunca pasa de AUTOPILOT_NTFY_MAX caracteres (3000; ntfy admite 4096
-  # bytes): la próxima acción va al final y se conserva; lo anterior (detalle, corrida, hechas/fallidas, motivo) se
-  # recorta desde el final.
+ntfy_body() { # $1 = motivo, $2 = próxima acción. Campos fijos completos y primero; solo el detalle se recorta (DEC-016).
+  # Los campos fijos están acotados de origen (listas con short_list, motivo y próxima acción sin texto libre largo:
+  # ver STOP_REASON), así que siempre caben en el mínimo de 1000 caracteres; ntfy admite 4096 bytes por mensaje.
   local max=${AUTOPILOT_NTFY_MAX:-3000}
+  [ "$max" -ge 1000 ] 2>/dev/null || max=1000
   local fallidas="${FAILURES} fallo(s)"
   [ "${#ABANDONED[@]}" -gt 0 ] && fallidas+="; abandonadas: $(short_list "${ABANDONED[@]}")"
   [ "${#REJECTED[@]}" -gt 0 ] && fallidas+="; rechazadas por el revisor: $(short_list "${REJECTED[@]}")"
-  local detail; detail=$(printf '%s; ' "${SUMMARY[@]:-nada}"); detail=${detail%; }
-  local next="Próxima acción: $2"
-  [ "${#next}" -gt "$max" ] && next="${next:0:$((max - 1))}…"
-  local rest
-  rest=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s) · Fallidas: %s\nCorrida %s (registros en .autopilot/%s/)\nDetalle: %s' \
-    "$1" "$TASKS_DONE" "$fallidas" "$RUN_ID" "$RUN_ID" "$detail")
-  local room=$((max - ${#next} - 1))
-  if [ "$room" -le 1 ]; then printf '%s' "$next"; return 0; fi
-  [ "${#rest}" -gt "$room" ] && rest="${rest:0:$((room - 1))}…"
-  printf '%s\n%s' "$rest" "$next"
+  local fixed detail room
+  fixed=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s) · Fallidas: %s\nPróxima acción: %s\nCorrida %s (registros en .autopilot/%s/)' \
+    "$1" "$TASKS_DONE" "$fallidas" "$2" "$RUN_ID" "$RUN_ID")
+  detail=$(printf '%s; ' "${SUMMARY[@]:-nada}"); detail=${detail%; }
+  room=$((max - ${#fixed} - 10))   # 10 = "\nDetalle: "
+  if [ "$room" -le 1 ]; then printf '%s' "$fixed"; return 0; fi
+  [ "${#detail}" -gt "$room" ] && detail="${detail:0:$((room - 1))}…"
+  printf '%s\nDetalle: %s' "$fixed" "$detail"
 }
 notify_stop() { # aviso de la parada normal (tras write_summary)
   local repo intervention=0 next
@@ -485,7 +484,9 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   fi
   case "$status" in
     blocked)
-      STOP_REASON="$id quedó blocked ($(node -e 'console.log(require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]).blocked_by)' "$ROOT/spec/TASKS.json" "$id"))"
+      # blocked_by debería ser un id (check:spec), pero este camino no corre check:spec y el hook se puede saltar:
+      # el motivo lleva un extracto de 200 caracteres como máximo (completo en TASKS.json)
+      STOP_REASON="$id quedó blocked ($(node -e 'const b=String(require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]).blocked_by);console.log(b.length>200?b.slice(0,199)+"…":b)' "$ROOT/spec/TASKS.json" "$id"))"
       SUMMARY+=("$id bloqueada por el implementador"); ABNORMAL=1
       return 2 ;;
     verified_auto|done)
@@ -555,7 +556,7 @@ while :; do
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
   else pick=$(tasks pick --exclude "$SKIPPED"); fi
-  if [ "$pick" = null ]; then STOP_REASON="no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas${SKIPPED:+ (saltadas en esta corrida: ${SKIPPED%,})}"; break; fi
+  if [ "$pick" = null ]; then STOP_REASON="no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas${SKIPPED:+ (saltadas en esta corrida: $(IFS=,; short_list ${SKIPPED%,}))}"; break; fi
   ID=$(node -e 'console.log(JSON.parse(process.argv[1]).id)' "$pick")
   TITLE=$(node -e 'console.log(JSON.parse(process.argv[1]).title)' "$pick")
 

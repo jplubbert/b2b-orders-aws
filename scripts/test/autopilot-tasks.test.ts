@@ -577,43 +577,48 @@ describe('autopilot.sh', () => {
         expect(body(c!)).toContain('Próxima acción: atender los hallazgos del revisor (review de T-03');
       });
 
-      it('si el detalle no cabe, se recorta solo el detalle: motivo, hechas/fallidas y próxima acción siempre van', () => {
-        const r = autopilot({ ...approved, ...ntfy, AUTOPILOT_NTFY_MAX: '360' }, '--max-tasks', '1');
-        expect(r.status).toBe(0);
-        const b = body(curlCalls()[0]!);
-        expect(b.length <= 360).toBe(true);
-        for (const f of ['Motivo de parada: ', 'Hechas: 1 tarea(s) · Fallidas: 0 fallo(s)', 'Próxima acción: ', 'Corrida ', 'Detalle: ']) expect(b).toContain(f);
-        expect(b.split('\n').find((l) => l.startsWith('Detalle: '))?.endsWith('…')).toBe(true);
-        expect(b.split('\n').at(-1)).toMatch(/^Próxima acción: /);
-      });
-
-      it('con un límite menor que los campos fijos respeta el largo y conserva la próxima acción completa', () => {
+      it('un AUTOPILOT_NTFY_MAX menor que 1000 se toma como 1000: los campos fijos van completos', () => {
         const r = autopilot({ ...ntfy, STUB_MODE: 'fail', AUTOPILOT_NTFY_MAX: '110' });
         expect(r.status).toBe(1);
         const b = body(curlCalls()[0]!);
-        expect(b.length <= 110).toBe(true);
-        expect(b.split('\n').at(-1)).toMatch(/^Próxima acción: revisar los fallos de T-03 en \.autopilot\/[0-9_-]+\/ y relanzar$/);
-        expect(b.startsWith('Motivo de parada: ')).toBe(true);
+        expect(b.length <= 1000).toBe(true);
+        const lines = b.split('\n');
+        expect(lines[0]).toBe('Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-03)');
+        expect(lines[1]).toBe('Hechas: 0 tarea(s) · Fallidas: 2 fallo(s); abandonadas: T-03');
+        expect(lines[2]).toMatch(/^Próxima acción: revisar los fallos de T-03 en \.autopilot\/[0-9_-]+\/ y relanzar$/);
+        expect(lines[3]).toMatch(/^Corrida [0-9_-]+ \(registros en \.autopilot\/[0-9_-]+\/\)$/);
+        expect(lines[4]).toMatch(/^Detalle: /);
       });
 
-      it('si ni la próxima acción cabe, se recorta ella sola hasta el límite', () => {
-        const r = autopilot({ ...ntfy, STUB_MODE: 'fail', AUTOPILOT_NTFY_MAX: '40' });
+      it('con muchas tareas: las listas se acortan (5 y "(+N más)") y solo el detalle se recorta al límite', () => {
+        // 7 de la fixture + 20 nuevas en verified_auto: el revisor las rechaza todas antes de elegir tarea nueva.
+        editTasks((ts) => {
+          for (const id of ['T-02', 'T-03', 'T-04', 'T-05', 'T-06', 'T-07', 'T-08']) { task(ts, id).status = 'verified_auto'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; }
+          for (let i = 9; i <= 28; i++) ts.push({ ...task(ts, 'T-08'), id: `T-${String(i).padStart(2, '0')}`, depends_on: [] });
+        });
+        git('commit', '-q', '-am', 'veintisiete por revisar\n\nTask: none\nReq: none');
+        const r = autopilot({ ...ntfy, AUTOPILOT_NTFY_MAX: '1000', STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: x"],"notes":"n"}' });
+        expect(r.stdout).toContain('veredicto sobre T-28: rejected');
+        const b = body(curlCalls()[0]!);
+        expect(b.length <= 1000).toBe(true);
+        const lines = b.split('\n');
+        expect(lines[1]).toBe('Hechas: 0 tarea(s) · Fallidas: 0 fallo(s); rechazadas por el revisor: T-02 T-03 T-04 T-05 T-06 … (+22 más)');
+        expect(lines[2]).toBe('Próxima acción: atender los hallazgos del revisor (review de T-02 T-03 T-04 T-05 T-06 … (+22 más) en spec/TASKS.json)');
+        expect(lines[3]).toMatch(/^Corrida /);
+        expect(lines[4]).toMatch(/^Detalle: T-02 revisada por /);
+        expect(lines[4]!.endsWith('…')).toBe(true);
+      });
+
+      it('una tarea bloqueada con blocked_by largo: el motivo lleva un extracto de 200 caracteres y el aviso cabe', () => {
+        const r = autopilot({ ...ntfy, STUB_MODE: 'blocked', STUB_BLOCKED_BY: 'x'.repeat(5000) });
         expect(r.status).toBe(1);
-        const b = body(curlCalls()[0]!);
-        expect(b.length <= 40).toBe(true);
-        expect(b.startsWith('Próxima acción: revisar')).toBe(true);
-        expect(b.endsWith('…')).toBe(true);
-      });
-
-      it('las listas de tareas de los campos fijos se acortan: 5 y "(+N más)"', () => {
-        // Siete tareas verified_auto: el revisor las rechaza todas antes de elegir tarea nueva.
-        editTasks((ts) => { for (const id of ['T-02', 'T-03', 'T-04', 'T-05', 'T-06', 'T-07', 'T-08']) { task(ts, id).status = 'verified_auto'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; } });
-        git('commit', '-q', '-am', 'siete por revisar\n\nTask: none\nReq: none');
-        const r = autopilot({ ...ntfy, STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: x"],"notes":"n"}' });
-        const b = body(curlCalls()[0]!);
-        expect(b).toContain('rechazadas por el revisor: T-02 T-03 T-04 T-05 T-06 … (+2 más)');
-        expect(b).toContain('Próxima acción: atender los hallazgos del revisor (review de T-02 T-03 T-04 T-05 T-06 … (+2 más) en spec/TASKS.json)');
-        expect(r.stdout).toContain('veredicto sobre T-08: rejected');
+        const [c] = curlCalls();
+        expect(header(c!, 'Priority')).toBe('high');
+        const b = body(c!);
+        expect(b.length <= 3000).toBe(true);
+        const lines = b.split('\n');
+        expect(lines[0]).toBe(`Motivo de parada: T-03 quedó blocked (${'x'.repeat(199)}…)`);
+        expect(lines[2]).toMatch(/^Próxima acción: resolver el bloqueo \(T-03 quedó blocked \(x+…\)\) y relanzar el autopilot$/);
       });
 
       it('si ntfy falla, la corrida no cambia su resultado y el resumen se confirma igual', () => {
