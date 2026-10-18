@@ -27,6 +27,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - Pruebas: `npm test` | Aceptación: `npm run test:acceptance` | Lint/tipos: `npm run lint && npm run typecheck`
 - Validar protocolo: `npm run check:spec` (hook `commit-msg` en `.githooks/`, lo activa `npm ci` vía `prepare`)
 - Orquestador nocturno (T-08): `scripts/night-loop.sh [--dry-run]` (nunca push, despliegue ni `accepted`; AWS solo con el perfil `night-loop` para `test:acceptance`/`smoke`, DEC-010; progreso en `.night-loop/<corrida>/live.log`; tareas `"kind": "tooling"` usan `Req: N/A`)
+  En el loop la tarea que necesita desplegar queda `in_progress` con una línea `- Pendiente deploy:` en LOG.md (qué desplegar y qué correr después); el loop sigue con la siguiente.
 - App: `npm run app` (Expo)
 
 ## Autoridad

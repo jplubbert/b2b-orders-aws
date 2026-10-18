@@ -58,7 +58,8 @@ describe('night-tasks manual-pending (DEC-011)', () => {
 
 describe('night-tasks pick', () => {
   it('no elige nada si ninguna elegible tiene sus dependencias cerradas', () => {
-    // En la fixture T-03..T-07 (approved_for_impl) esperan a T-01 (in_progress); T-08 está in_progress.
+    // T-03..T-07 (approved_for_impl) esperan a T-01 (verified_auto: abierta); T-08 (in_progress) espera a T-02.
+    editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; });
     expect(run('pick')).toMatchObject({ code: 0, out: 'null\n' });
   });
 
@@ -67,6 +68,11 @@ describe('night-tasks pick', () => {
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'approved_for_impl', kind: 'spec' });
     editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; }); // T-04 y T-07 (approved_for_impl) quedan elegibles: la primera
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', status: 'approved_for_impl' });
+  });
+
+  it('retoma una tarea in_progress con sus dependencias cerradas', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; task(ts, 'T-03').status = 'in_progress'; });
+    expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'in_progress' });
   });
 
   it('--exclude salta las tareas indicadas y elige la siguiente elegible', () => {
@@ -105,7 +111,7 @@ describe('night-tasks pick', () => {
   });
 
   it('salta una ready cuya dependencia sigue abierta', () => {
-    editTasks((ts) => { task(ts, 'T-03').status = 'ready'; }); // T-01 in_progress
+    editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; task(ts, 'T-03').status = 'ready'; });
     expect(run('pick').out).toBe('null\n');
   });
 
@@ -253,8 +259,11 @@ describe('night-loop.sh', () => {
     expect(r.stdout).toContain('--disallowedTools');
     expect(r.stdout).toContain('Bash\\(git\\ push\\*\\)');
     expect(r.stdout).toContain('Bash\\(npm\\ run\\ deploy\\*\\)');
-    expect(r.stdout).not.toContain('npm\\ run\\ smoke'); // humo permitido (DEC-010)
+    expect(r.stdout).not.toContain('Bash\\(npm\\ run\\ smoke'); // humo permitido (DEC-010)
     expect(r.stdout).toContain('--output-format stream-json --verbose');
+    expect(r.stdout).toContain('sin\\ prefijos\\ de\\ entorno');
+    expect(r.stdout).toContain('sin\\ \\`\\&\\&\\`\\ ni\\ \\`cd\\`');
+    expect(r.stdout).toContain('Pendiente\\ deploy:');
     expect(r.stdout).toContain('AWS_PROFILE=night-loop (llave AKIANIGHTLOOPFAKE');
     expect(r.stdout).not.toContain('secreto');
     expect(r.stdout).toContain('Entrada que se anotaría en spec/LOG.md');
@@ -281,7 +290,7 @@ describe('night-loop.sh', () => {
       git('init', '-q');
       git('config', 'core.hooksPath', '.githooks');
       editTasks((ts) => {
-        for (const id of ['T-01', 'T-02']) { task(ts, id).status = 'done'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; }
+        for (const id of ['T-01', 'T-02', 'T-08']) { task(ts, id).status = 'done'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; }
         task(ts, 'T-03').status = 'ready';
       });
       git('add', '-A');
@@ -339,7 +348,7 @@ describe('night-loop.sh', () => {
       expect(count(r.stdout, 'veredicto sobre T-02: rejected')).toBe(1);
       expect(count(r.stdout, 'veredicto sobre T-03: rejected')).toBe(1);
       expect(task(readTasks(), 'T-02')).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected' } });
-      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
     });
 
     it('el implementador solo ve el perfil night-loop; el progreso sale legible en la terminal y en live.log', () => {
@@ -380,7 +389,7 @@ describe('night-loop.sh', () => {
       const r = loop({});
       expect(r.status).toBe(0);
       expect(t03()).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected', findings: [expect.stringContaining('REQ-001')] } });
-      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
     });
 
     it('se detiene con exit 1 si el implementador otorga accepted', () => {
@@ -409,10 +418,42 @@ describe('night-loop.sh', () => {
       expect(r.stdout).not.toContain('fallo 1/');
       expect(r.stdout).not.toContain('intento 2');
       expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
-      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
+      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
       expect(t03().status).toBe('ready');
       const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
       expect(log).toContain('T-03: el implementador la dejó sin cambios (estado ready); se salta en esta corrida');
+      expect(log).toContain('0 fallo(s)');
+    });
+
+    const t08Ready = () => { // tarea independiente de T-03 (depende solo de T-02, done)
+      editTasks((ts) => { task(ts, 'T-08').status = 'ready'; });
+      git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
+    };
+
+    it('los fallos se cuentan por tarea: dos en T-03 la abandonan y la corrida sigue con T-08', () => {
+      t08Ready();
+      const r = loop({ STUB_FAIL: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      expect(r.status).toBe(1); // un abandono requiere intervención
+      expect(r.stdout).toContain('fallo 1/2 en T-03');
+      expect(r.stdout).toContain('fallo 2/2 en T-03');
+      expect(r.stdout).toContain('implementador sobre T-08 (intento 1');
+      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(t03().status).toBe('ready');
+      const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
+      expect(log).toContain('T-03 abandonada en esta corrida tras 2 fallos (tope por tarea 2)');
+      expect(log).toContain('1 tarea(s) completada(s), 2 fallo(s)');
+    });
+
+    it('una tarea que necesita desplegar queda in_progress con Pendiente deploy: no es fallo y sigue la siguiente', () => {
+      t08Ready();
+      const r = loop({ STUB_DEPLOY: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('T-03 espera un despliegue (Pendiente deploy): no cuenta como fallo');
+      expect(r.stdout).not.toContain('fallo 1/');
+      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(t03().status).toBe('in_progress');
+      const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
+      expect(log).toContain('- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-03.');
       expect(log).toContain('0 fallo(s)');
     });
 
@@ -422,11 +463,12 @@ describe('night-loop.sh', () => {
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.');
     });
 
-    it('con dos fallos del implementador se detiene (exit 1) tras reintentar la misma tarea', () => {
+    it('con dos fallos del implementador abandona la tarea (exit 1) tras reintentar la misma', () => {
       const r = loop({ STUB_MODE: 'fail' });
       expect(r.status).toBe(1);
       expect(r.stdout).toContain('intento 2');
-      expect(r.stdout).toContain('parada: 2 fallos (tope 2)');
+      expect(r.stdout).toContain('T-03 llegó al tope de 2 fallos: se abandona en esta corrida');
+      expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-03)');
       expect(r.stdout).toContain('tokens de T-03 en la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000 (2 invocaciones)');
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('total de la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000.');
       expect(t03().status).toBe('ready');

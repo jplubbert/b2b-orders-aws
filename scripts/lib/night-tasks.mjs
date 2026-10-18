@@ -4,7 +4,7 @@
 //   node scripts/lib/night-tasks.mjs [--root DIR] <orden> [args]
 //
 //   pick [--task T-NN] [--exclude T-NN,…]
-//                           primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas
+//                           primera tarea elegible (in_progress/ready/approved_for_impl) con todas sus dependencias cerradas
 //                           (done/reviewed/accepted/delivered) y fuera de --exclude, o la forzada → JSON | null
 //   pending-reviews         ids de las tareas en verified_auto (esperan revisión independiente) → JSON
 //   manual-pending          verificaciones manuales diferidas a la aceptación en lote (DEC-011) → JSON ["T-NN: …"]
@@ -18,8 +18,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Estados desde los que el orquestador puede tomar una tarea. */
-export const ELIGIBLE_STATES = ['ready', 'approved_for_impl'];
+/** Estados desde los que el orquestador puede tomar una tarea; `in_progress` para retomar una a medias. */
+export const ELIGIBLE_STATES = ['in_progress', 'ready', 'approved_for_impl'];
 /** Estados que cierran una dependencia. `reviewed` incluido para encadenar tareas sin esperar la aceptación del usuario. */
 export const DONE_STATES = ['done', 'reviewed', 'accepted', 'delivered'];
 /** Estados que solo otorgan el revisor o el usuario (AGENTS.md §Autoridad). El ejecutor nunca los escribe. */
@@ -67,7 +67,7 @@ export const MANUAL_PENDING_STATES = ['verified_auto', 'reviewed'];
 export function manualPending(data) {
   return data.tasks
     .filter((t) => MANUAL_PENDING_STATES.includes(t.status) && typeof t.evidence?.manual_pending === 'string' && t.evidence.manual_pending.trim())
-    .map((t) => `${t.id}: ${t.evidence.manual_pending.trim()}`);
+    .map((t) => `${t.id}: ${t.evidence.manual_pending.trim().replace(/\.$/, '')}`);
 }
 
 export function snapshot(data) {

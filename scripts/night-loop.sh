@@ -7,10 +7,12 @@
 #   0. Antes de elegir tarea nueva, revisa cada tarea en verified_auto (p. ej. implementada en una sesión interactiva)
 #      con el mismo revisor y mecanismo del paso 3; cada una se revisa una sola vez por corrida (un rechazo la deja
 #      en verified_auto y no se repite hasta la próxima corrida).
-#   1. Elige la primera tarea "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas
+#   1. Elige la primera tarea "in_progress" (la retoma), "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas
 #      (done/accepted/delivered, o reviewed: así encadena tareas sin esperar la aceptación del usuario).
 #      Si no hay, anota en spec/LOG.md y termina.
-#   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad."`
+#   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad. …"`
+#      (el prompt pide además `npm run test:acceptance` sin prefijos de entorno, comandos simples sin && ni cd, y
+#      "Pendiente deploy" en vez de desplegar; ver IMPL_PROMPT)
 #      con permisos acotados al repositorio (sin red, sin push, sin instalar nada fuera de npm; AWS solo con el perfil
 #      `night-loop` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
 #      en la terminal y en .night-loop/<corrida>/live.log (`tail -f` desde otra terminal). Tokens de cada invocación
@@ -19,11 +21,15 @@
 #   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
 #      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
 #      TASKS.json (`review`; approved → reviewed) y a LOG.md.
-#      Si el implementador termina bien (código 0) sin cambios (mismo HEAD y mismo estado), no es un fallo ni se
-#      reintenta: la tarea se salta en esta corrida y se elige la siguiente independiente.
+#      Si el implementador termina bien (código 0) sin cambios (mismo HEAD y mismo estado), o deja la tarea
+#      in_progress con una línea "- Pendiente deploy:" nueva en LOG.md, no es un fallo ni se reintenta: la tarea se
+#      salta en esta corrida y se elige la siguiente independiente.
 #      Si lo único pendiente es una verificación manual en el teléfono, el implementador deja la tarea verified_auto
 #      con `evidence.manual_pending` (DEC-011); el resumen de LOG.md lista esas verificaciones en "Pendiente manual".
-#   4. Se detiene si la tarea queda blocked, si hay dos fallos, si vence el presupuesto (6 h) o si completa 10 tareas.
+#      Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (NIGHT_MAX_FAILURES) se
+#      abandona en esta corrida y se sigue con la siguiente independiente (la corrida termina con código 1).
+#   4. Se detiene si la tarea queda blocked, si vence el presupuesto (6 h), si completa 10 tareas o si no quedan
+#      tareas elegibles.
 #      Siempre deja un resumen en LOG.md (y lo confirma con Task: T-08 / Req: N/A, salvo que el árbol quede sucio).
 #      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
 #   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
@@ -34,7 +40,7 @@
 # todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
 # y comprobación tras cada tarea de que el ejecutor no otorgó estados reservados (reviewed/accepted/…).
 #
-# Variables: NIGHT_MAX_TASKS (10), NIGHT_BUDGET_SECONDS (21600), NIGHT_MAX_FAILURES (2), NIGHT_REVIEWER (auto|codex|claude),
+# Variables: NIGHT_MAX_TASKS (10), NIGHT_BUDGET_SECONDS (21600), NIGHT_MAX_FAILURES (2, por tarea), NIGHT_REVIEWER (auto|codex|claude),
 #            NIGHT_IMPL_MODEL, NIGHT_REVIEW_MODEL, NIGHT_MAX_USD (tope por invocación de claude, opcional),
 #            NIGHT_AWS_PROFILE (night-loop), NIGHT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
 # Registros de cada corrida: .night-loop/<fecha>/ (fuera de git).
@@ -77,7 +83,9 @@ VERIFIED=()       # líneas "Verificado y cómo"
 STOP_REASON=""
 ABNORMAL=0       # 1 = parada que requiere intervención (blocked, fallos, violación, árbol sucio, sin veredicto)
 TASKS_DONE=0
-FAILURES=0
+FAILURES=0        # total de la corrida (para el resumen); el tope se aplica por tarea (FAILS)
+declare -A FAILS=()
+DEPLOY_PENDING=() # tareas que esperan un despliegue del usuario
 REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces)
 SKIPPED=""        # tareas que el implementador dejó sin cambios (separadas por comas; no se vuelven a elegir)
 
@@ -153,8 +161,10 @@ REVIEW_ALLOWED=(
 )
 REVIEW_DENIED=(Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent "Bash(git push*)" "Bash(git commit*)" "Bash(git add*)")
 
+IMPL_PROMPT='Lee AGENTS.md y ejecuta %s. Detente según las reglas de autoridad. Corre `npm run test:acceptance` y `npm run smoke` sin prefijos de entorno: el orquestador ya fija el perfil AWS. Usa comandos simples, uno por llamada: sin `&&` ni `cd`. Si la tarea necesita desplegar, no lo intentes: déjala in_progress, anota en tu entrada de spec/LOG.md una línea `- Pendiente deploy:` con qué desplegar y qué correr después, y confirma.'
 impl_cmd() { # $1 = ID
-  local cmd=(claude -p "Lee AGENTS.md y ejecuta $1. Detente según las reglas de autoridad."
+  # shellcheck disable=SC2059
+  local cmd=(claude -p "$(printf "$IMPL_PROMPT" "$1")"
     --permission-mode dontAsk --output-format stream-json --verbose
     --allowedTools "${IMPL_ALLOWED[@]}" --disallowedTools "${IMPL_DENIED[@]}")
   [ -n "${NIGHT_IMPL_MODEL:-}" ] && cmd+=(--model "$NIGHT_IMPL_MODEL")
@@ -247,8 +257,10 @@ write_summary() {
   local hecho verificado
   hecho=$(printf '%s; ' "${SUMMARY[@]:-nada}"); hecho=${hecho%; }
   verificado=$(printf '%s; ' "${VERIFIED[@]:-sin comandos ejecutados}"); verificado=${verificado%; }
+  local deploy
+  deploy=$(printf '%s, ' "${DEPLOY_PENDING[@]:-ninguna}"); deploy=${deploy%, }
   local manual
-  manual=$(tasks manual-pending | node -e 'const l=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(l.length?l.join("; ").replace(/\.$/,""):"ninguna")')
+  manual=$(tasks manual-pending | node -e 'const l=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(l.length?l.join("; "):"ninguna")')
   local tokens
   tokens=$(tokens_summary | paste -sd ';' | sed 's/;/; /g')
   log "tokens (implementador): $tokens"
@@ -257,6 +269,7 @@ write_summary() {
 - Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .night-loop/${RUN_ID}/.
 - Tokens (implementador, campo usage del evento result): ${tokens}.
 - Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ${manual}.
+- Pendiente deploy (el usuario corre \`npm run deploy:dev\`; el orquestador no despliega): ${deploy}.
 - Verificado y cómo: ${verificado}.
 - En curso / roto: $(git status --porcelain | grep -q . && echo "árbol de trabajo sucio (ver git status)" || echo "árbol limpio en $(git_head)").
 - Bloqueos nuevos: $(node -e 'const d=require(process.argv[1]);const b=d.tasks.filter(t=>t.status==="blocked").map(t=>`${t.id} (${t.blocked_by})`);console.log(b.length?b.join(", "):"ninguno")' "$ROOT/spec/TASKS.json").
@@ -327,7 +340,8 @@ EOF
 }
 
 # ---------- Implementación ----------
-run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si falló, 2 si hay que detenerse, 3 si quedó sin cambios
+run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si falló, 2 si hay que detenerse,
+             # 3 si quedó sin cambios, 4 si espera un despliegue
   local id=$1 attempt=$2 head_before rc=0 status before status_before
   before=$RUN_DIR/$id-before-$attempt.json
   tasks snapshot >"$before"
@@ -360,6 +374,10 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   if ! tasks check-authority "$before"; then
     STOP_REASON="el implementador otorgó un estado reservado en $id (violación de autoridad; revisar a mano)"; ABNORMAL=1
     return 2
+  fi
+  if [ "$status" = in_progress ] && git diff "$head_before" HEAD -- spec/LOG.md | grep -q '^+- Pendiente deploy'; then
+    SUMMARY+=("$id: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida")
+    return 4
   fi
   if [ "$rc" -eq 0 ] && [ "$(git_head)" = "$head_before" ] && [ "$status" = "$status_before" ]; then
     SUMMARY+=("$id: el implementador la dejó sin cambios (estado $status); se salta en esta corrida")
@@ -411,7 +429,7 @@ flock -n 9 || die "otra corrida nocturna está en marcha (.night-loop/lock)"
 mkdir -p "$RUN_DIR"
 
 [ -n "$AWS_KEY_ID" ] || echo "night-loop: aviso: sin perfil [$NIGHT_AWS_PROFILE] en $AWS_SOURCE; aceptación y humo fallarán por credenciales" >&2
-log "inicio en $(git_head) (rama $(git rev-parse --abbrev-ref HEAD)); presupuesto ${BUDGET}s, máx. ${MAX_TASKS} tareas, máx. ${MAX_FAILURES} fallos; revisor: $REVIEWER_KIND"
+log "inicio en $(git_head) (rama $(git rev-parse --abbrev-ref HEAD)); presupuesto ${BUDGET}s, máx. ${MAX_TASKS} tareas, máx. ${MAX_FAILURES} fallos por tarea; revisor: $REVIEWER_KIND"
 if [ "$DRY_RUN" = 1 ]; then
   echo
   echo "== Ensayo (--dry-run): no se lanza claude/codex, no se escribe LOG.md ni se hacen commits =="
@@ -425,7 +443,6 @@ RETRY=""
 while :; do
   if [ "$(remaining)" -lt 600 ]; then STOP_REASON="presupuesto de tiempo agotado (${BUDGET}s; quedan $(remaining)s, menos de 10 min)"; break; fi
   if [ "$TASKS_DONE" -ge "$MAX_TASKS" ]; then STOP_REASON="presupuesto de tareas alcanzado ($MAX_TASKS)"; break; fi
-  if [ "$FAILURES" -ge "$MAX_FAILURES" ]; then STOP_REASON="$FAILURES fallos (tope $MAX_FAILURES)"; ABNORMAL=1; break; fi
 
   if [ "$DRY_RUN" = 1 ]; then
     pending=$(tasks pending-reviews | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).join(" "))')
@@ -438,7 +455,7 @@ while :; do
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
   else pick=$(tasks pick --exclude "$SKIPPED"); fi
-  if [ "$pick" = null ]; then STOP_REASON="no hay tareas ready/approved_for_impl con dependencias cerradas"; break; fi
+  if [ "$pick" = null ]; then STOP_REASON="no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas${SKIPPED:+ (saltadas en esta corrida: ${SKIPPED%,})}"; break; fi
   ID=$(node -e 'console.log(JSON.parse(process.argv[1]).id)' "$pick")
   TITLE=$(node -e 'console.log(JSON.parse(process.argv[1]).title)' "$pick")
 
@@ -456,21 +473,27 @@ while :; do
     break
   fi
 
-  if run_task "$ID" $((FAILURES + 1)); then
+  if run_task "$ID" $((${FAILS[$ID]:-0} + 1)); then
     TASKS_DONE=$((TASKS_DONE + 1))
     REVIEWED_IDS="$REVIEWED_IDS$ID "
     review_task "$ID" || break
   else
     rc=$?
     [ "$rc" -eq 2 ] && break
-    if [ "$rc" -eq 3 ]; then
+    if [ "$rc" -eq 3 ] || [ "$rc" -eq 4 ]; then
       SKIPPED="$SKIPPED$ID,"
-      log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"
+      if [ "$rc" -eq 4 ]; then DEPLOY_PENDING+=("$ID"); log "$ID espera un despliegue (Pendiente deploy): no cuenta como fallo; se pasa a la siguiente tarea independiente"
+      else log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"; fi
       continue
     fi
-    FAILURES=$((FAILURES + 1))
-    log "fallo $FAILURES/$MAX_FAILURES en $ID"
-    [ "$FAILURES" -lt "$MAX_FAILURES" ] && RETRY=$ID
+    FAILS[$ID]=$((${FAILS[$ID]:-0} + 1)); FAILURES=$((FAILURES + 1))
+    log "fallo ${FAILS[$ID]}/$MAX_FAILURES en $ID"
+    if [ "${FAILS[$ID]}" -lt "$MAX_FAILURES" ]; then RETRY=$ID
+    else
+      SKIPPED="$SKIPPED$ID,"; ABNORMAL=1
+      SUMMARY+=("$ID abandonada en esta corrida tras ${FAILS[$ID]} fallos (tope por tarea $MAX_FAILURES)")
+      log "$ID llegó al tope de $MAX_FAILURES fallos: se abandona en esta corrida; se pasa a la siguiente tarea independiente"
+    fi
   fi
 done
 

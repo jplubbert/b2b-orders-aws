@@ -242,3 +242,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-05 (diff e99ec0d, REQ-003, DEC-004/005/006/009) y T-07 (diff e228c2f, REQ-001, REQ-005, DEC-003/004), la hace el orquestador en su próxima corrida; luego T-06.
+
+## 2026-10-18 00:10 · Claude (claude-opus-5-5)
+- Hecho (T-08, pedido del usuario; Req: N/A): (1) el loop retoma tareas `in_progress`, además de `ready` y `approved_for_impl`. (2) Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (`NIGHT_MAX_FAILURES`) se abandona en la corrida, se sigue con la siguiente independiente y la corrida termina con código 1; el resumen sigue dando el total de fallos. (3) El prompt del implementador pide `npm run test:acceptance` y `npm run smoke` sin prefijos de entorno (el loop ya fija el perfil) y comandos simples, sin `&&` ni `cd`. (4) Si una tarea necesita desplegar, el implementador la deja `in_progress` con una línea `- Pendiente deploy:` en su entrada de LOG.md; el loop lo detecta en el diff de LOG.md, no lo cuenta como fallo, salta la tarea en la corrida y lista la línea "Pendiente deploy" en el resumen. Regla también en AGENTS.md (orquestador).
+- Detalle interno: una tarea `in_progress` que espera un despliegue vuelve a elegirse en la corrida siguiente; si el implementador no tiene nada que hacer, queda sin cambios y se salta (no es fallo).
+- Pruebas (`scripts/test/night-tasks.test.ts`): `pick` retoma `in_progress`; dos fallos en T-03 la abandonan y la corrida implementa T-08; T-03 con Pendiente deploy queda `in_progress`, 0 fallos y se implementa T-08; el prompt del ensayo trae las instrucciones nuevas. En el ciclo, T-08 de la fixture pasa a `done` (en `in_progress` ahora sería elegible) y dos casos de `pick` ponen T-01 en `verified_auto` por lo mismo.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 127/127 + jest 10/10; `npm run check:spec` ok; `scripts/night-loop.sh --dry-run` → revisiones pendientes T-05 y T-07; sin tarea elegible hasta que se revisen (T-06 depende de T-05).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: correr `scripts/night-loop.sh` (revisa T-05 y T-07, luego T-06); el usuario decide `accepted` de T-03 y, al aceptar en lote, hace las verificaciones de "Pendiente manual" (T-04, T-05, T-07).
