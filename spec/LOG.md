@@ -506,3 +506,8 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-13).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Aprobación (T-13, tarea de spec): **José Pedro Lübbert**, 2026-10-18 — "Apruebo el diff de tests/acceptance/ (5916ae7) y esas interpretaciones". T-13 → `verified_auto` (`evidence.user_approval`). Pendiente: revisión independiente (la hace el autopilot).
+- Verificado y cómo: `npm run check:spec`.
+- Próxima acción autorizada: T-17 (tooling, encargo del usuario) y relanzar `scripts/autopilot.sh`: revisa T-13 y sigue con T-14.
