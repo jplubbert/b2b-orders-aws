@@ -102,3 +102,12 @@
 - En curso / roto: T-01 `verified_auto` (evidencia actualizada, commit 8a6dbc7), pendiente de nueva revisión.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: (1) nueva revisión independiente de T-01 con contexto limpio (diff dec433c..8a6dbc7, REQ-001, REQ-002, DEC-001..008) → `reviewed`; (2) aceptación del usuario.
+
+## 2026-10-17 22:30 · Claude (claude-opus-5-5)
+- Hecho: registro de la segunda revisión independiente y la aceptación de T-01 (solo spec/TASKS.json y esta bitácora; sin código).
+- Revisión independiente (Codex, sesión nueva, contexto limpio), según lo transcrito por el usuario: **approved**. 64/64 pruebas, sin cambios fuera de alcance, DEC-002 cumplida. Guardado en `review` de T-01 (el rechazo anterior queda anotado en `review.notes`) → `reviewed`.
+- Aceptación: **José Pedro Lübbert**, 2026-10-17 — acepta T-01 → `accepted` (campo `acceptance` en TASKS.json).
+- Verificado y cómo: `npm run check:spec` → ok.
+- En curso / roto: nada. T-01, T-02 y T-08 `accepted`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: T-03 (tarea `"kind": "spec"`, `approved_for_impl`) queda elegible ahora que su dependencia T-01 está cerrada; puede tomarla una sesión interactiva o el orquestador nocturno (`scripts/night-loop.sh`).
