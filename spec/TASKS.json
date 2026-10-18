@@ -198,12 +198,17 @@
         "T-01",
         "T-03"
       ],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "npm test (componentes jest-expo) && npm run test:acceptance -- req_001 + recorrido manual REQ-001 E1–E3 y REQ-005 E1–E2 registrado en LOG",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_001 req_005 (perfil de DEC-010, contra PedidosB2B-dev desplegado)",
+        "result": "npm test vitest 124/124 + jest 10/10 (app/test/session.test.tsx: REQ-001 E1–E3, REQ-005 E1–E2); req_001_login 2/2; req_005 no tiene archivo de aceptación (manual en corte 1, DEC-007), queda en manual_pending.",
+        "commit": "e228c2f",
+        "manual_pending": "REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → \"Correo o contraseña incorrectos\"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, \"Cerrar sesión\" → inicio y carrito vacío; reabrir → pide credenciales."
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011)."
+      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: req_001 2/2 contra dev desplegado → evidencia + manual_pending (DEC-011) → verified_auto."
     },
     {
       "id": "T-08",
