@@ -674,7 +674,7 @@
         "DEC-015"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test && npm run deploy:dev (fase A con ambos usuarios, fase B sin el viejo) && aws sts get-caller-identity --profile autopilot && AWS_PROFILE=autopilot npm run smoke && scripts/autopilot.sh --dry-run && npm run check:spec",
       "blocked_by": null,
       "notes": "2026-10-18: DEC-010 está accepted y no se edita: los nombres nuevos van en DEC-015 (proposed, la supersede en los nombres). Fase A (no commiteada): deploy con NightLoopTestsUser y AutopilotTestsUser; llave nueva [REDACTED_ACCESS_KEY_ID_3] en [autopilot] (sale [night-loop] de ~/.aws/credentials y [profile night-loop] de ~/.aws/config); vieja [REDACTED_ACCESS_KEY_ID_4] → Inactive; verificación ok. Fase B: delete-access-key de la vieja + deploy final → night-loop-tests NoSuchEntity. sdd-base no tiene referencias a night-loop (ya renombrado en 4b77f0c): nada que portar. Las entradas anteriores de LOG.md/TASKS.json no se reescriben.",
@@ -682,6 +682,13 @@
         "command": "npm run lint && npm run typecheck && npm test && npm run deploy:dev && aws sts get-caller-identity --profile autopilot && AWS_PROFILE=autopilot npm run smoke && scripts/autopilot.sh --dry-run && npm run deploy:dev && aws iam get-user --user-name night-loop-tests && npm run check:spec",
         "result": "lint ok; typecheck ok; vitest 164/164 + jest 137/137; deploy fase A ok; autopilot → arn:aws:iam::[REDACTED_AWS_ACCOUNT_DEMO]:user/autopilot-tests; dynamodb list-tables/s3 ls/iam get-user-policy → AccessDenied; smoke 2/2; --dry-run ok (AWS_PROFILE=autopilot, llave [REDACTED_ACCESS_KEY_ID_3]); llave vieja borrada; deploy fase B ok; night-loop-tests → NoSuchEntity; smoke con autopilot 2/2 tras la fase B; check:spec ok.",
         "commit": "01375d7"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Controles locales aprobados: Vitest 164/164, Jest 137/137, lint, typecheck y check:spec. No se verificaron independientemente los despliegues, identidad y denegaciones AWS, rotación y borrado de credenciales/usuario, smoke real, push ni estado de sdd-base; las declaraciones del implementador no se consideran confirmación. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
       }
     }
   ]
