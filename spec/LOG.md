@@ -913,3 +913,14 @@
 - Hecho: revisión independiente de T-22 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-22); salida íntegra en .autopilot/2026-10-18_163653/T-22-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 16:39 · autopilot (scripts/autopilot.sh)
+- Hecho: T-22 revisada por codex: approved → reviewed (commit 11dc3b3). Corrida 2026-10-18_163653 (2 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_163653/.
+- Tokens (implementador, campo usage del evento result): total de la corrida: sin invocaciones del implementador.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 11dc3b3.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
