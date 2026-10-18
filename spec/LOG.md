@@ -138,3 +138,11 @@
 - Riesgo: REQ-002 E3 desactiva todo el catálogo de `dev` unos segundos; si la corrida se corta justo ahí, `npm run seed` lo restaura.
 - Bloqueos nuevos: ninguno de spec. Falta acceso AWS en la sesión del agente.
 - Próxima acción autorizada: (1) el usuario corre `npm run test:acceptance` con el perfil `default` y confirma que fallan por la razón esperada (arriba); con eso, evidencia de T-03 → `verified_auto`; (2) el usuario revisa y aprueba el diff de `tests/acceptance/` (lo exige T-03), DEC-009 y S-12..S-14; (3) revisión independiente de T-03; luego T-04.
+
+## 2026-10-17 21:53 · night-loop (scripts/night-loop.sh)
+- Hecho: T-03: el implementador terminó en in_progress (código 0); T-03: el implementador terminó en in_progress (código 0). Corrida 2026-10-17_214535 (7 min, 0 tarea(s) completada(s), 2 fallo(s)); registros en .night-loop/2026-10-17_214535/.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en b3864e7.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: 2 fallos (tope 2).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
