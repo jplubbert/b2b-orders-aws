@@ -87,7 +87,7 @@
       "depends_on": [
         "T-01"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run test:acceptance ejecuta un caso por ejemplo de API (REQ-001 E4, REQ-002 E1–E3, REQ-003 E1–E7, REQ-004 E1–E5) y los no implementados fallan por la razón esperada",
       "evidence": {
         "command": "AWS_PROFILE=night-loop npm run test:acceptance (perfil acotado de DEC-010, contra PedidosB2B-dev)",
@@ -102,7 +102,11 @@
         "date": "2026-10-17"
       },
       "blocked_by": null,
-      "notes": "2026-10-17: pruebas escritas en tests/acceptance/ (req_001..004 + support/fixtures.ts), 25 casos. Forma de la API de pedidos en DEC-009 (proposed); supuestos S-12..S-14 en SPEC.md. lint y typecheck ok. Corrida parcial: req_001 2/2 pasa; req_002..004 no corrieron porque la sesión del agente no tiene credenciales AWS (CredentialsProviderError). Pendiente: el usuario corre `npm run test:acceptance` con el perfil default, aprueba el diff de tests/acceptance/ y DEC-009. 2026-10-17 23:20: usuario José Pedro Lübbert aprueba el diff de tests/acceptance/, DEC-009 (→ accepted) y S-12..S-14. test:acceptance corrido con el perfil night-loop (DEC-010): 6 pasan, 19 fallan por la razón esperada → evidencia registrada → verified_auto. Pendiente: revisión independiente. 2026-10-17 23:40: revisión independiente (codex, sesión nueva, contexto limpio) approved sin hallazgos → reviewed (registrada por pedido de José Pedro Lübbert)."
+      "notes": "2026-10-17: pruebas escritas en tests/acceptance/ (req_001..004 + support/fixtures.ts), 25 casos. Forma de la API de pedidos en DEC-009 (proposed); supuestos S-12..S-14 en SPEC.md. lint y typecheck ok. Corrida parcial: req_001 2/2 pasa; req_002..004 no corrieron porque la sesión del agente no tiene credenciales AWS (CredentialsProviderError). Pendiente: el usuario corre `npm run test:acceptance` con el perfil default, aprueba el diff de tests/acceptance/ y DEC-009. 2026-10-17 23:20: usuario José Pedro Lübbert aprueba el diff de tests/acceptance/, DEC-009 (→ accepted) y S-12..S-14. test:acceptance corrido con el perfil night-loop (DEC-010): 6 pasan, 19 fallan por la razón esperada → evidencia registrada → verified_auto. Pendiente: revisión independiente. 2026-10-17 23:40: revisión independiente (codex, sesión nueva, contexto limpio) approved sin hallazgos → reviewed (registrada por pedido de José Pedro Lübbert). 2026-10-18: aceptada por José Pedro Lübbert (Pepe) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-04",

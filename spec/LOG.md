@@ -725,3 +725,13 @@
 - En curso / roto: nada. T-03 (tarea de spec del corte 1) sigue `reviewed`: no se mencionó.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` de T-03 o propone el siguiente corte. Sin push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto T-03 (aprobador: Pepe). Haz commit y push."
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-03 → `accepted` (campo `acceptance` en TASKS.json). Solo spec/TASKS.json y esta bitácora; sin código.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente manual: ninguno.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. Todas las tareas (T-01..T-20) están `accepted`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte.
