@@ -1,7 +1,7 @@
-// Preparación de datos para la aceptación contra `dev` (DEC-007). El distribuidor no tiene API en el
-// corte 1, así que los productos de prueba se escriben directo en la tabla (claves de DEC-006) y los
-// clientes desechables se crean en Cognito como lo hace el seed. Todo lleva el prefijo `acept-` y se
-// borra al terminar; `sweep*` limpia restos de corridas interrumpidas.
+// Preparación de datos para la aceptación contra `dev` (DEC-007). No hay API de catálogo, así que los
+// productos de prueba se escriben directo en la tabla (claves de DEC-006) y los usuarios desechables
+// (clientes, distribuidores y sin grupo) se crean en Cognito como lo hace el seed. Todo lleva el
+// prefijo `acept-` y se borra al terminar; `sweep*` limpia restos de corridas interrumpidas.
 import { spawnSync } from 'node:child_process';
 import {
   AdminAddUserToGroupCommand,
@@ -27,6 +27,7 @@ import { gql, login } from '../../lib/api.ts';
 
 export const PREFIX = 'acept-';
 const CUSTOMER_GROUP = 'almaceneros';
+const DISTRIBUTOR_GROUP = 'distribuidores'; // DEC-013
 
 const clients = (env: StageEnv) => ({
   doc: DynamoDBDocumentClient.from(new DynamoDBClient({ region: env.AWS_REGION })),
@@ -111,48 +112,82 @@ export async function sweepProducts(env: StageEnv): Promise<void> {
   await deleteProducts(env, leftovers);
 }
 
-// --- Clientes desechables -------------------------------------------------------------------
+// --- Usuarios desechables -------------------------------------------------------------------
 
-export interface TempCustomer {
+export interface TempUser {
   email: string;
-  customerId: string;
   token: string;
 }
 
-/** Usuario nuevo del grupo `almaceneros` con su propio `custom:customerId` (DEC-004), sin pedidos. */
-export async function createCustomer(env: StageEnv): Promise<TempCustomer> {
+export interface TempCustomer extends TempUser {
+  customerId: string;
+}
+
+/** Crea el usuario con la contraseña de demo; si `group` no existe, lo borra y relanza el error. */
+async function createUser(
+  env: StageEnv,
+  email: string,
+  attributes: Array<{ Name: string; Value: string }>,
+  group?: string,
+): Promise<TempUser> {
   const { idp } = clients(env);
-  const id = rand();
-  const email = `${PREFIX}${id}@demo.test`;
-  const customerId = `C-ACEPT-${id.toUpperCase()}`;
   await idp.send(
     new AdminCreateUserCommand({
       UserPoolId: env.USER_POOL_ID,
       Username: email,
       MessageAction: 'SUPPRESS',
-      UserAttributes: [
-        { Name: 'email', Value: email },
-        { Name: 'email_verified', Value: 'true' },
-        { Name: 'custom:customerId', Value: customerId },
-      ],
+      UserAttributes: [{ Name: 'email', Value: email }, { Name: 'email_verified', Value: 'true' }, ...attributes],
     }),
   );
-  await idp.send(
-    new AdminSetUserPasswordCommand({
-      UserPoolId: env.USER_POOL_ID,
-      Username: email,
-      Password: env.DEMO_PASSWORD,
-      Permanent: true,
-    }),
-  );
-  await idp.send(new AdminAddUserToGroupCommand({ UserPoolId: env.USER_POOL_ID, Username: email, GroupName: CUSTOMER_GROUP }));
-  return { email, customerId, token: await login(env, email) };
+  try {
+    await idp.send(
+      new AdminSetUserPasswordCommand({
+        UserPoolId: env.USER_POOL_ID,
+        Username: email,
+        Password: env.DEMO_PASSWORD,
+        Permanent: true,
+      }),
+    );
+    if (group) {
+      await idp.send(new AdminAddUserToGroupCommand({ UserPoolId: env.USER_POOL_ID, Username: email, GroupName: group }));
+    }
+  } catch (err) {
+    await idp.send(new AdminDeleteUserCommand({ UserPoolId: env.USER_POOL_ID, Username: email }));
+    throw err;
+  }
+  return { email, token: await login(env, email) };
 }
 
-export async function deleteCustomers(env: StageEnv, customers: TempCustomer[]): Promise<void> {
+/** Usuario nuevo del grupo `almaceneros` con su propio `custom:customerId` (DEC-004), sin pedidos. */
+export async function createCustomer(env: StageEnv): Promise<TempCustomer> {
+  const id = rand();
+  const customerId = `C-ACEPT-${id.toUpperCase()}`;
+  const user = await createUser(
+    env,
+    `${PREFIX}${id}@demo.test`,
+    [{ Name: 'custom:customerId', Value: customerId }],
+    CUSTOMER_GROUP,
+  );
+  return { ...user, customerId };
+}
+
+/** Usuario nuevo del grupo `distribuidores`, sin `custom:customerId` (S-22, DEC-013). */
+export async function createDistributor(env: StageEnv): Promise<TempUser> {
+  return createUser(env, `${PREFIX}dist-${rand()}@demo.test`, [], DISTRIBUTOR_GROUP);
+}
+
+/** Usuario válido sin grupo; tiene `custom:customerId` para que lo único que falte sea el grupo. */
+export async function createUngrouped(env: StageEnv): Promise<TempUser> {
+  const id = rand();
+  return createUser(env, `${PREFIX}nogrp-${id}@demo.test`, [
+    { Name: 'custom:customerId', Value: `C-ACEPT-${id.toUpperCase()}` },
+  ]);
+}
+
+export async function deleteCustomers(env: StageEnv, users: TempUser[]): Promise<void> {
   const { idp } = clients(env);
-  for (const c of customers) {
-    await idp.send(new AdminDeleteUserCommand({ UserPoolId: env.USER_POOL_ID, Username: c.email }));
+  for (const u of users) {
+    await idp.send(new AdminDeleteUserCommand({ UserPoolId: env.USER_POOL_ID, Username: u.email }));
   }
 }
 
@@ -219,6 +254,41 @@ export async function placeOrder(env: StageEnv, token: string, lines: LineInput[
   const res = await createOrder(env, token, lines);
   if (res.errors?.length || !res.data?.createOrder) throw new Error(`createOrder falló: ${JSON.stringify(res.errors)}`);
   return res.data.createOrder;
+}
+
+// --- API del distribuidor (forma según DEC-013) ---------------------------------------------
+// Campos aparte de ORDER_FIELDS: `customerId` no existe antes de T-14 y req_003/004 deben seguir pasando.
+
+const DIST_ORDER_FIELDS = `customerId ${ORDER_FIELDS}`;
+
+export const ALL_ORDERS = /* GraphQL */ `
+  query AllOrders($status: OrderStatus) { allOrders(status: $status) { ${DIST_ORDER_FIELDS} } }
+`;
+export const SET_ORDER_STATUS = /* GraphQL */ `
+  mutation SetOrderStatus($customerId: ID!, $id: ID!, $status: OrderStatus!) {
+    setOrderStatus(customerId: $customerId, id: $id, status: $status) { ${DIST_ORDER_FIELDS} }
+  }
+`;
+
+export type DistOrder = Order & { customerId: string };
+
+export function allOrders(env: StageEnv, token: string, status?: string) {
+  return gql<{ allOrders: DistOrder[] | null }>(env, ALL_ORDERS, status ? { status } : {}, token);
+}
+
+/** `allOrders` del distribuidor; falla la prueba si la API responde con errores. */
+export async function listAllOrders(env: StageEnv, token: string, status?: string): Promise<DistOrder[]> {
+  const res = await allOrders(env, token, status);
+  if (res.errors?.length || !res.data?.allOrders) throw new Error(`allOrders falló: ${JSON.stringify(res.errors)}`);
+  return res.data.allOrders;
+}
+
+export function changeOrderStatus(
+  env: StageEnv,
+  token: string,
+  target: { customerId: string; id: string; status: string },
+) {
+  return gql<{ setOrderStatus: DistOrder | null }>(env, SET_ORDER_STATUS, target, token);
 }
 
 // --- Script del distribuidor ----------------------------------------------------------------
