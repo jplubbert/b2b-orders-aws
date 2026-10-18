@@ -19,7 +19,11 @@
 #   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
 #      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
 #      TASKS.json (`review`; approved → reviewed) y a LOG.md.
-#   4. Se detiene si la tarea queda blocked, si hay dos fallos, si vence el presupuesto (2 h) o si completa 3 tareas.
+#      Si el implementador termina bien (código 0) sin cambios (mismo HEAD y mismo estado), no es un fallo ni se
+#      reintenta: la tarea se salta en esta corrida y se elige la siguiente independiente.
+#      Si lo único pendiente es una verificación manual en el teléfono, el implementador deja la tarea verified_auto
+#      con `evidence.manual_pending` (DEC-011); el resumen de LOG.md lista esas verificaciones en "Pendiente manual".
+#   4. Se detiene si la tarea queda blocked, si hay dos fallos, si vence el presupuesto (6 h) o si completa 10 tareas.
 #      Siempre deja un resumen en LOG.md (y lo confirma con Task: T-08 / Req: N/A, salvo que el árbol quede sucio).
 #      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
 #   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
@@ -30,7 +34,7 @@
 # todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
 # y comprobación tras cada tarea de que el ejecutor no otorgó estados reservados (reviewed/accepted/…).
 #
-# Variables: NIGHT_MAX_TASKS (3), NIGHT_BUDGET_SECONDS (7200), NIGHT_MAX_FAILURES (2), NIGHT_REVIEWER (auto|codex|claude),
+# Variables: NIGHT_MAX_TASKS (10), NIGHT_BUDGET_SECONDS (21600), NIGHT_MAX_FAILURES (2), NIGHT_REVIEWER (auto|codex|claude),
 #            NIGHT_IMPL_MODEL, NIGHT_REVIEW_MODEL, NIGHT_MAX_USD (tope por invocación de claude, opcional),
 #            NIGHT_AWS_PROFILE (night-loop), NIGHT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
 # Registros de cada corrida: .night-loop/<fecha>/ (fuera de git).
@@ -39,8 +43,8 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
-MAX_TASKS=${NIGHT_MAX_TASKS:-3}
-BUDGET=${NIGHT_BUDGET_SECONDS:-7200}
+MAX_TASKS=${NIGHT_MAX_TASKS:-10}
+BUDGET=${NIGHT_BUDGET_SECONDS:-21600}
 MAX_FAILURES=${NIGHT_MAX_FAILURES:-2}
 REVIEWER=${NIGHT_REVIEWER:-auto}
 DRY_RUN=0
@@ -75,6 +79,7 @@ ABNORMAL=0       # 1 = parada que requiere intervención (blocked, fallos, viola
 TASKS_DONE=0
 FAILURES=0
 REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces)
+SKIPPED=""        # tareas que el implementador dejó sin cambios (separadas por comas; no se vuelven a elegir)
 
 log() { # a la terminal y, en una corrida real, a live.log
   local line; line=$(printf '%s night-loop: %s' "$(date '+%H:%M:%S')" "$*")
@@ -242,6 +247,8 @@ write_summary() {
   local hecho verificado
   hecho=$(printf '%s; ' "${SUMMARY[@]:-nada}"); hecho=${hecho%; }
   verificado=$(printf '%s; ' "${VERIFIED[@]:-sin comandos ejecutados}"); verificado=${verificado%; }
+  local manual
+  manual=$(tasks manual-pending | node -e 'const l=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(l.length?l.join("; ").replace(/\.$/,""):"ninguna")')
   local tokens
   tokens=$(tokens_summary | paste -sd ';' | sed 's/;/; /g')
   log "tokens (implementador): $tokens"
@@ -249,6 +256,7 @@ write_summary() {
   body=$(cat <<EOF
 - Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .night-loop/${RUN_ID}/.
 - Tokens (implementador, campo usage del evento result): ${tokens}.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ${manual}.
 - Verificado y cómo: ${verificado}.
 - En curso / roto: $(git status --porcelain | grep -q . && echo "árbol de trabajo sucio (ver git status)" || echo "árbol limpio en $(git_head)").
 - Bloqueos nuevos: $(node -e 'const d=require(process.argv[1]);const b=d.tasks.filter(t=>t.status==="blocked").map(t=>`${t.id} (${t.blocked_by})`);console.log(b.length?b.join(", "):"ninguno")' "$ROOT/spec/TASKS.json").
@@ -319,11 +327,12 @@ EOF
 }
 
 # ---------- Implementación ----------
-run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si falló, 2 si hay que detenerse
-  local id=$1 attempt=$2 head_before rc=0 status before
+run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si falló, 2 si hay que detenerse, 3 si quedó sin cambios
+  local id=$1 attempt=$2 head_before rc=0 status before status_before
   before=$RUN_DIR/$id-before-$attempt.json
   tasks snapshot >"$before"
   head_before=$(git_head)
+  status_before=$(tasks status "$id")
   log "implementador sobre $id (intento $attempt, $(remaining) s restantes)"
   # Flujo stream-json → líneas legibles en la terminal y live.log; copia íntegra en .jsonl, evento final en .json.
   set +e
@@ -351,6 +360,10 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   if ! tasks check-authority "$before"; then
     STOP_REASON="el implementador otorgó un estado reservado en $id (violación de autoridad; revisar a mano)"; ABNORMAL=1
     return 2
+  fi
+  if [ "$rc" -eq 0 ] && [ "$(git_head)" = "$head_before" ] && [ "$status" = "$status_before" ]; then
+    SUMMARY+=("$id: el implementador la dejó sin cambios (estado $status); se salta en esta corrida")
+    return 3
   fi
   case "$status" in
     blocked)
@@ -424,7 +437,7 @@ while :; do
 
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
-  else pick=$(tasks pick); fi
+  else pick=$(tasks pick --exclude "$SKIPPED"); fi
   if [ "$pick" = null ]; then STOP_REASON="no hay tareas ready/approved_for_impl con dependencias cerradas"; break; fi
   ID=$(node -e 'console.log(JSON.parse(process.argv[1]).id)' "$pick")
   TITLE=$(node -e 'console.log(JSON.parse(process.argv[1]).title)' "$pick")
@@ -450,6 +463,11 @@ while :; do
   else
     rc=$?
     [ "$rc" -eq 2 ] && break
+    if [ "$rc" -eq 3 ]; then
+      SKIPPED="$SKIPPED$ID,"
+      log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"
+      continue
+    fi
     FAILURES=$((FAILURES + 1))
     log "fallo $FAILURES/$MAX_FAILURES en $ID"
     [ "$FAILURES" -lt "$MAX_FAILURES" ] && RETRY=$ID

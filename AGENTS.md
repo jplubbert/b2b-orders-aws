@@ -33,6 +33,9 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - PUEDES decidir: detalles internos dentro del diseño aprobado (anótalos en el commit).
 - PUEDES decidir y registrar sin preguntar: decisiones técnicas dentro del stack R-01
   (delegación del usuario, R-03). Las globales van como DEC en spec/DECISIONS.md.
+- PUEDES pasar a `verified_auto` una tarea cuyo único pendiente es una verificación manual en el teléfono:
+  evidencia automática + `evidence.manual_pending` (qué y cómo) y línea `- Pendiente manual:` en LOG.md;
+  la hace el usuario al aceptar en lote (DEC-011).
 - DEBES registrar: toda interpretación de un requisito ambiguo (supuesto en SPEC.md).
 - DEBES DETENERTE Y ESCALAR: cambio de requisito, alcance o regla de negocio;
   edición de tests/acceptance/ fuera de su tarea de spec; servicio o proveedor fuera de R-01;

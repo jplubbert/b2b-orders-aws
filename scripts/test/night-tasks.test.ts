@@ -39,6 +39,23 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
+describe('night-tasks manual-pending (DEC-011)', () => {
+  it('lista evidence.manual_pending de las tareas verified_auto o reviewed; no las aceptadas', () => {
+    expect(JSON.parse(run('manual-pending').out)).toEqual([]);
+    editTasks((ts) => {
+      task(ts, 'T-04').status = 'verified_auto';
+      task(ts, 'T-04').evidence = { command: 'x', result: 'y', commit: 'z', manual_pending: ' REQ-002 E3 en el teléfono ' };
+      task(ts, 'T-05').status = 'reviewed';
+      task(ts, 'T-05').evidence = { command: 'x', result: 'y', commit: 'z', manual_pending: 'REQ-003 E5' };
+      task(ts, 'T-06').status = 'accepted';
+      task(ts, 'T-06').evidence = { command: 'x', result: 'y', commit: 'z', manual_pending: 'ya hecha' };
+      task(ts, 'T-07').status = 'verified_auto';
+      task(ts, 'T-07').evidence = { command: 'x', result: 'y', commit: 'z' };
+    });
+    expect(JSON.parse(run('manual-pending').out)).toEqual(['T-04: REQ-002 E3 en el teléfono', 'T-05: REQ-003 E5']);
+  });
+});
+
 describe('night-tasks pick', () => {
   it('no elige nada si ninguna elegible tiene sus dependencias cerradas', () => {
     // En la fixture T-03..T-07 (approved_for_impl) esperan a T-01 (in_progress); T-08 está in_progress.
@@ -50,6 +67,13 @@ describe('night-tasks pick', () => {
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-03', status: 'approved_for_impl', kind: 'spec' });
     editTasks((ts) => { task(ts, 'T-03').status = 'accepted'; }); // T-04 y T-07 (approved_for_impl) quedan elegibles: la primera
     expect(JSON.parse(run('pick').out)).toMatchObject({ id: 'T-04', status: 'approved_for_impl' });
+  });
+
+  it('--exclude salta las tareas indicadas y elige la siguiente elegible', () => {
+    editTasks((ts) => { task(ts, 'T-01').status = 'accepted'; task(ts, 'T-03').status = 'accepted'; });
+    expect(JSON.parse(run('pick', '--exclude', 'T-04,').out)).toMatchObject({ id: 'T-07' });
+    expect(run('pick', '--exclude', 'T-04,T-07')).toMatchObject({ code: 0, out: 'null\n' });
+    expect(JSON.parse(run('pick', '--exclude', '').out)).toMatchObject({ id: 'T-04' });
   });
 
   it('no elige tareas en otros estados aunque sus dependencias estén cerradas', () => {
@@ -374,6 +398,28 @@ describe('night-loop.sh', () => {
       expect(r.stdout).toContain('SIN commit');
       expect(git('rev-parse', 'HEAD')).toBe(head);
       expect(git('status', '--porcelain')).toContain('spec/LOG.md');
+    });
+
+    it('una tarea que queda sin cambios no es fallo: se salta y se toma la siguiente independiente', () => {
+      editTasks((ts) => { task(ts, 'T-08').status = 'ready'; }); // depende solo de T-02 (done): independiente de T-03
+      git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
+      const r = loop({ STUB_NOOP: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('T-03 quedó sin cambios: no cuenta como fallo');
+      expect(r.stdout).not.toContain('fallo 1/');
+      expect(r.stdout).not.toContain('intento 2');
+      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
+      expect(t03().status).toBe('ready');
+      const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
+      expect(log).toContain('T-03: el implementador la dejó sin cambios (estado ready); se salta en esta corrida');
+      expect(log).toContain('0 fallo(s)');
+    });
+
+    it('el resumen lista las verificaciones manuales pendientes (DEC-011)', () => {
+      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      expect(r.status).toBe(0);
+      expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.');
     });
 
     it('con dos fallos del implementador se detiene (exit 1) tras reintentar la misma tarea', () => {

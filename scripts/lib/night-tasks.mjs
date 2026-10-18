@@ -3,9 +3,11 @@
 //
 //   node scripts/lib/night-tasks.mjs [--root DIR] <orden> [args]
 //
-//   pick [--task T-NN]      primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas
-//                           (done/reviewed/accepted/delivered), o la forzada → JSON | null
+//   pick [--task T-NN] [--exclude T-NN,…]
+//                           primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas
+//                           (done/reviewed/accepted/delivered) y fuera de --exclude, o la forzada → JSON | null
 //   pending-reviews         ids de las tareas en verified_auto (esperan revisión independiente) → JSON
+//   manual-pending          verificaciones manuales diferidas a la aceptación en lote (DEC-011) → JSON ["T-NN: …"]
 //   snapshot                mapa id → status de todas las tareas → JSON
 //   check-authority FILE    compara con el snapshot FILE; falla si el ejecutor otorgó un estado reservado
 //   status T-NN             imprime el estado de la tarea
@@ -40,13 +42,14 @@ function findTask(data, id) {
   return t;
 }
 
-export function pick(data, forced) {
+export function pick(data, forced, exclude = []) {
   if (forced) return findTask(data, forced);
   const byId = new Map(data.tasks.map((t) => [t.id, t]));
   return (
     data.tasks.find(
       (t) =>
         ELIGIBLE_STATES.includes(t.status) &&
+        !exclude.includes(t.id) &&
         (t.depends_on ?? []).every((d) => DONE_STATES.includes(byId.get(d)?.status)),
     ) ?? null
   );
@@ -55,6 +58,16 @@ export function pick(data, forced) {
 /** Tareas que esperan revisión independiente: el orquestador las revisa antes de elegir tarea nueva. */
 export function pendingReviews(data) {
   return data.tasks.filter((t) => t.status === 'verified_auto').map((t) => t.id);
+}
+
+/** Estados en que una verificación manual sigue pendiente: la tarea aún no fue aceptada por el usuario. */
+export const MANUAL_PENDING_STATES = ['verified_auto', 'reviewed'];
+
+/** Verificaciones manuales diferidas (DEC-011): `evidence.manual_pending` de las tareas aún sin aceptar. */
+export function manualPending(data) {
+  return data.tasks
+    .filter((t) => MANUAL_PENDING_STATES.includes(t.status) && typeof t.evidence?.manual_pending === 'string' && t.evidence.manual_pending.trim())
+    .map((t) => `${t.id}: ${t.evidence.manual_pending.trim()}`);
 }
 
 export function snapshot(data) {
@@ -177,13 +190,17 @@ function main(argv) {
 
   switch (cmd) {
     case 'pick': {
-      const forced = args[0] === '--task' ? args[1] : undefined;
-      const t = pick(readTasks(root), forced);
+      const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
+      const exclude = (opt('--exclude') ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+      const t = pick(readTasks(root), opt('--task'), exclude);
       out(t ? { id: t.id, title: t.title, kind: t.kind ?? 'impl', status: t.status, reqs: t.reqs ?? [], decisions: t.decisions ?? [] } : null);
       return 0;
     }
     case 'pending-reviews':
       out(pendingReviews(readTasks(root)));
+      return 0;
+    case 'manual-pending':
+      out(manualPending(readTasks(root)));
       return 0;
     case 'snapshot':
       out(snapshot(readTasks(root)));

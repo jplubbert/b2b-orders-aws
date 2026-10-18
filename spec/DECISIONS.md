@@ -183,3 +183,20 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: `npm run deploy:dev` 2026-10-17 (usuario creado); con el perfil `night-loop`, `sts get-caller-identity` → `user/night-loop-tests`; `dynamodb list-tables`, `s3 ls` e `iam get-user-policy` → AccessDenied.
 - Confirmación: infra/test/stack.test.ts (acciones exactas, sin `*`, sin AccessKey); scripts/test/night-tasks.test.ts (el hijo solo ve `[night-loop]`).
 - Revisar si: hacen falta más servicios en las pruebas, o se pasa a credenciales temporales (rol asumido) para evitar la llave larga.
+
+## DEC-011 Verificación manual en el teléfono diferida a la aceptación en lote
+- Estado: accepted
+- Alcance: global
+- Fecha: 2026-10-17 · Aprobador: José Pedro Lübbert (decisión del usuario en sesión) · Confianza: alta
+- Problema: DEC-007 deja manual la aceptación de UI (REQ-002 E3, REQ-003 E5, REQ-004 E4, REQ-005…). Si una tarea solo espera esa verificación, queda `in_progress`: el orquestador nocturno (T-08) no la revisa, sus dependientes no avanzan y el implementador la repite sin cambios (corrida 2026-10-17_230411, T-04).
+- Impulsores: DEC-007, T-04, T-08
+- Alternativas consideradas:
+  1. Pasar la tarea a `verified_auto` con la evidencia automática y diferir la verificación manual a la aceptación — a favor: la noche avanza y el usuario verifica varias tareas de una vez en el teléfono; en contra: `reviewed` ya no implica que la UI se vio funcionar.
+  2. Dejarla `in_progress` hasta la verificación — a favor: el estado dice exactamente qué se probó; en contra: bloquea la cadena de tareas cada vez que hay UI.
+- Decisión: Usaremos la alternativa 1. Cuando lo único pendiente del `verify` de una tarea es una verificación manual en el teléfono, el implementador registra la evidencia automática (`command`, `result`, `commit`) más `evidence.manual_pending` (qué verificar y cómo), pasa la tarea a `verified_auto` y anota la verificación en una línea `- Pendiente manual:` de su entrada de LOG.md. El resumen de cada corrida nocturna lista las pendientes de las tareas aún no aceptadas. El usuario las hace al aceptar en lote y registra el resultado en LOG.md; una tarea con verificación manual pendiente no pasa a `accepted` sin ese registro.
+  No usaremos la alternativa 2, porque la verificación manual es del usuario y no debe frenar el trabajo automático.
+- Consecuencias: buenas: la cadena de tareas no se detiene por la UI. Malas: un defecto visible solo en el teléfono se detecta al aceptar, quizá tras haber construido encima. Neutrales: la revisión independiente juzga solo lo automático.
+- Dependencias: depende de DEC-007 · afecta a T-04..T-07, T-08 (scripts/night-loop.sh, scripts/lib/night-tasks.mjs)
+- Evidencia: corrida nocturna 2026-10-17_230411 (dos intentos sobre T-04 sin cambios, ambos contados como fallo).
+- Confirmación: scripts/test/night-tasks.test.ts (`manual-pending`; el resumen lista las pendientes).
+- Revisar si: un defecto de UI aparece al aceptar y obliga a rehacer tareas dependientes.

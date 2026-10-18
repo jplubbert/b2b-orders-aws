@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Doble de `claude` para las pruebas de scripts/night-loop.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail.
+# Doble de `claude` para las pruebas de scripts/night-loop.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail;
+# STUB_NOOP: lista de tareas que terminan bien sin cambios.
 # El implementador emite stream-json (como `--output-format stream-json --verbose`) y deja en stub-env.txt lo que ve de AWS.
 [ "$1" = "--version" ] && { echo "claude-stub 0.0"; exit 0; }
 [ "$1" = "-p" ] || exit 3
@@ -8,10 +9,12 @@ if [ -z "$id" ]; then # revisor por stdin
   cat >/dev/null; printf 'Revisado.\n```json\n{"verdict":"approved","findings":[],"notes":"stub claude"}\n```\n'; exit 0
 fi
 mode=${STUB_MODE:-ok}
+case ",${STUB_NOOP:-}," in *",$id,"*) mode=noop ;; esac   # STUB_NOOP=T-03,…: termina bien sin tocar nada
 { echo "AWS_PROFILE=$AWS_PROFILE"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".night-loop/stub-env-$id.txt"
 echo '{"type":"system","subtype":"init","model":"stub","session_id":"s1"}'
 echo '{"type":"assistant","message":{"content":[{"type":"text","text":"Empiezo la tarea"},{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"npm run test:acceptance"}}]}}'
 echo '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"u1","content":"Tests 25 passed"}]}}'
+[ "$mode" = noop ] && { echo '{"type":"result","subtype":"success","result":"ya estaba hecho","num_turns":2,"is_error":false}'; exit 0; }
 [ "$mode" = fail ] && { echo '{"type":"result","subtype":"error_during_execution","result":"no pude","num_turns":1,"total_cost_usd":0.01,"usage":{"input_tokens":3,"output_tokens":100,"cache_read_input_tokens":2000,"cache_creation_input_tokens":500},"is_error":true}'; exit 1; }
 status=verified_auto; [ "$mode" = accepted ] && status=accepted
 node -e '
