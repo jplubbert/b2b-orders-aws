@@ -692,3 +692,14 @@
 - Hecho: revisión independiente de T-20 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-20); salida íntegra en .autopilot/2026-10-18_133849/T-20-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 13:42 · autopilot (scripts/autopilot.sh)
+- Hecho: T-18 revisada por codex: approved → reviewed (commit 6710f7d); T-19 revisada por codex: approved → reviewed (commit fe7c444); T-20 revisada por codex: approved → reviewed (commit 236cd89). Corrida 2026-10-18_133849 (3 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_133849/.
+- Tokens (implementador, campo usage del evento result): total de la corrida: sin invocaciones del implementador.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-04: REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → "No hay productos disponibles"; npm run seed y deslizar → vuelven; T-05: REQ-003 E5 y subtotal por línea en el teléfono: npm run app, login almacen1; con el carrito vacío "Confirmar pedido" está deshabilitado; agregar 2 Arroz y 1 Yerba → Carrito muestra subtotal por línea ($2.600 y $4.500) y total $7.100; confirmar → carrito vacío y "Pedido confirmado N° …"; T-06: REQ-004 E4 en el teléfono (no incluido en el informe de la demo): login almacen2 (sin pedidos) → Mis pedidos → "Todavía no hiciste pedidos"; T-07: REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → "Correo o contraseña incorrectos"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, "Cerrar sesión" → inicio y carrito vacío; reabrir → pide credenciales.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 236cd89.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
