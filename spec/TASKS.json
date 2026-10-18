@@ -118,13 +118,13 @@
         "T-01",
         "T-03"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm test && npm run test:acceptance -- req_002 + REQ-002 E3 manual registrado en LOG",
       "evidence": {
         "command": "npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_002 (perfil acotado de DEC-010, contra PedidosB2B-dev)",
         "result": "npm test 87/87 (incluye backend/test/catalogRepo.test.ts); req_002_catalogo 4/4: E1 Arroz 1 kg y luego Yerba 1 kg con presentación y precio unitario, E1 (borde) lista completa ordenada por nombre, E2 inactivo excluido, E3 sin productos activos → lista vacía. Antes: lint, typecheck y expo export --platform android ok (LOG 2026-10-17 23:10).",
         "commit": "6303d58",
-        "manual_pending": "REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → \"No hay productos disponibles\"; npm run seed y deslizar → vuelven."
+        "manual_result": "2026-10-18, José Pedro Lübbert (Pepe), en el teléfono: \"checklist manual de T-04 a T-07 OK\" — cubre la verificación pendiente: REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → \"No hay productos disponibles\"; npm run seed y deslizar → vuelven."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
@@ -134,7 +134,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto. 2026-10-17 23:35: por DEC-011 (decisión del usuario) la verificación manual de E3 se difiere a la aceptación en lote: evidencia automática registrada (npm test 87/87, req_002 4/4) + evidence.manual_pending → verified_auto. Pendiente: revisión independiente y, al aceptar, E3 en el teléfono."
+      "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto. 2026-10-17 23:35: por DEC-011 (decisión del usuario) la verificación manual de E3 se difiere a la aceptación en lote: evidencia automática registrada (npm test 87/87, req_002 4/4) + evidence.manual_pending → verified_auto. Pendiente: revisión independiente y, al aceptar, E3 en el teléfono. 2026-10-18: checklist manual OK (usuario) y aceptada por José Pedro Lübbert (Pepe) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-05",
@@ -151,13 +155,13 @@
       "depends_on": [
         "T-04"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm test && npm run test:acceptance -- req_003 + REQ-003 E5 y subtotal por línea manual registrado en LOG",
       "evidence": {
         "command": "npm run deploy:dev (perfil default, us-east-1) && npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_003 (perfil de DEC-010, contra PedidosB2B-dev)",
         "result": "deploy:dev ok (PedidosB2B-dev actualizado con createOrder/myOrders, .env.dev escrito, seed ok); npm test vitest 124/124 + jest 10/10; req_003_pedido 13/13 (E1–E7 con bordes); smoke 2/2.",
         "commit": "e99ec0d",
-        "manual_pending": "REQ-003 E5 y subtotal por línea en el teléfono: npm run app, login almacen1; con el carrito vacío \"Confirmar pedido\" está deshabilitado; agregar 2 Arroz y 1 Yerba → Carrito muestra subtotal por línea ($2.600 y $4.500) y total $7.100; confirmar → carrito vacío y \"Pedido confirmado N° …\"."
+        "manual_result": "2026-10-18, José Pedro Lübbert (Pepe), en el teléfono: \"checklist manual de T-04 a T-07 OK\" — cubre la verificación pendiente: REQ-003 E5 y subtotal por línea en el teléfono: npm run app, login almacen1; con el carrito vacío \"Confirmar pedido\" está deshabilitado; agregar 2 Arroz y 1 Yerba → Carrito muestra subtotal por línea ($2.600 y $4.500) y total $7.100; confirmar → carrito vacío y \"Pedido confirmado N° …\"."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
@@ -167,7 +171,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-17 23:45: implementada y verificada en local. Contrato: OrderStatus, Order, OrderLine, CreateOrderInput (sin precio, S-12), Mutation.createOrder y Query.myOrders (DEC-009). Query.myOrders se adelanta desde T-06 porque req_003 lo usa para comprobar que un rechazo no persiste nada; T-06 sigue con order(id), order:set-status y las pantallas de Mis pedidos. Backend: dominio puro buildOrder (fusiona, luego valida EMPTY_ORDER, TOO_MANY_LINES, INVALID_QUANTITY, PRODUCT_UNAVAILABLE con el productId en el mensaje; precios del catálogo), ULID propio (sin dependencia nueva), orderRepo en CUSTOMER#/ORDER# con escritura condicional. App: carrito en memoria (S-09) con − / + en el catálogo, pantalla Carrito con subtotal por línea, total, Confirmar deshabilitado si está vacío, motivo del rechazo y número del pedido. lint, typecheck, npm test 124/124, check:spec y expo export android ok. Pendiente: `npm run deploy:dev` (denegado por permisos en esta sesión) y `npm run test:acceptance -- req_003` contra dev; luego evidencia → verified_auto con REQ-003 E5 y subtotal en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: deploy:dev y req_003 13/13 → evidencia + manual_pending (DEC-011) → verified_auto."
+      "notes": "2026-10-17 23:45: implementada y verificada en local. Contrato: OrderStatus, Order, OrderLine, CreateOrderInput (sin precio, S-12), Mutation.createOrder y Query.myOrders (DEC-009). Query.myOrders se adelanta desde T-06 porque req_003 lo usa para comprobar que un rechazo no persiste nada; T-06 sigue con order(id), order:set-status y las pantallas de Mis pedidos. Backend: dominio puro buildOrder (fusiona, luego valida EMPTY_ORDER, TOO_MANY_LINES, INVALID_QUANTITY, PRODUCT_UNAVAILABLE con el productId en el mensaje; precios del catálogo), ULID propio (sin dependencia nueva), orderRepo en CUSTOMER#/ORDER# con escritura condicional. App: carrito en memoria (S-09) con − / + en el catálogo, pantalla Carrito con subtotal por línea, total, Confirmar deshabilitado si está vacío, motivo del rechazo y número del pedido. lint, typecheck, npm test 124/124, check:spec y expo export android ok. Pendiente: `npm run deploy:dev` (denegado por permisos en esta sesión) y `npm run test:acceptance -- req_003` contra dev; luego evidencia → verified_auto con REQ-003 E5 y subtotal en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: deploy:dev y req_003 13/13 → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: checklist manual OK (usuario) y aceptada por José Pedro Lübbert (Pepe) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-06",
@@ -183,14 +191,13 @@
       "depends_on": [
         "T-05"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm test && npm run test:acceptance -- req_004 + recorrido manual en teléfono del criterio de éxito (login → pedido ≥2 productos → RECIBIDO → order:set-status ENVIADO → refrescar → ENVIADO), y REQ-004 E4, registrado en LOG",
       "evidence": {
         "command": "npm run deploy:dev (perfil default, us-east-1) && npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_004 && AWS_PROFILE=night-loop npm run smoke (perfil de DEC-010, contra PedidosB2B-dev)",
         "result": "deploy:dev ok (resolver Query.order desplegado, .env.dev escrito, seed ok); npm test vitest 137/137 + jest 18/18; req_004_mis_pedidos 6/6 (E1–E5 y E2 borde; antes del despliegue 2/6, solo por falta de order); smoke 2/2.",
         "commit": "fd7e0c4",
-        "manual_pending": "REQ-004 E4 en el teléfono (no incluido en el informe de la demo): login almacen2 (sin pedidos) → Mis pedidos → \"Todavía no hiciste pedidos\"",
-        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono: \"Demo completa OK en el teléfono: pedido NQBRC7CV pasó de RECIBIDO a ENVIADO\" (recorrido del criterio de éxito; id 01M56K2CFYJKVTEYBWNQBRC7CV, cambio con npm run order:set-status -- 01M56K2CFYJKVTEYBWNQBRC7CV ENVIADO)."
+        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono: \"Demo completa OK en el teléfono: pedido NQBRC7CV pasó de RECIBIDO a ENVIADO\" (recorrido del criterio de éxito; id 01M56K2CFYJKVTEYBWNQBRC7CV, cambio con npm run order:set-status -- 01M56K2CFYJKVTEYBWNQBRC7CV ENVIADO). · 2026-10-18, José Pedro Lübbert (Pepe), en el teléfono: \"checklist manual de T-04 a T-07 OK\" — cubre la verificación pendiente: REQ-004 E4 en el teléfono (no incluido en el informe de la demo): login almacen2 (sin pedidos) → Mis pedidos → \"Todavía no hiciste pedidos\""
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
@@ -200,7 +207,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-18 00:20: implementada y verificada en local. Contrato: Query.order(id: ID!): Order (DEC-009; el contrato ya coincide con la forma completa). Backend: orderRepo.getOrder con GetItem en CUSTOMER#<customerId del token>/ORDER#<id> (un pedido ajeno da null igual que uno inexistente, REQ-004 E3) y resolver Query.order. Script `npm run order:set-status -- <id> <estado>` (scripts/order-set-status.ts + scripts/lib/order-status.ts): valida el estado contra S-04 antes de tocar la tabla, busca el pedido por id con Scan paginado sobre CUSTOMER#* (consecuencia aceptada en DEC-009), cambia solo `status` con UpdateItem condicional; código 1 si el estado es inválido o el pedido no existe, 2 sin argumentos. App: pantallas Mis pedidos (número, fecha es-CL, total, estado; \"Todavía no hiciste pedidos\" si está vacía, E4) y Detalle de pedido (líneas con precio congelado, subtotal, total y estado; null → \"Pedido no encontrado\"); ambas recargan al ganar el foco y al deslizar (S-06); enlace \"Mis pedidos\" en la cabecera del catálogo. El estado se muestra con el valor del enum (RECIBIDO, ENVIADO…), como ya hace Carrito y como lo nombra el criterio de éxito. lint, typecheck, npm test (vitest 137/137, jest 18/18), smoke 2/2 y expo export android ok. req_004 contra el dev actual: 2/6 (E1, E4); E2, E2 borde, E3 y E5 fallan solo por \"Field 'order' in type 'Query' is undefined\" (falta desplegar); el script real sí pasó el pedido a ENVIADO (myOrders lo mostró) y rechazó PERDIDO con código ≠ 0. Pendiente: `npm run deploy:dev` y luego req_004 (esperado 6/6); evidencia → verified_auto con el recorrido del criterio de éxito y REQ-004 E4 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:30: deploy:dev, req_004 6/6 → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: el usuario informa la demo completa OK en el teléfono (NQBRC7CV RECIBIDO → ENVIADO); queda pendiente manual solo REQ-004 E4."
+      "notes": "2026-10-18 00:20: implementada y verificada en local. Contrato: Query.order(id: ID!): Order (DEC-009; el contrato ya coincide con la forma completa). Backend: orderRepo.getOrder con GetItem en CUSTOMER#<customerId del token>/ORDER#<id> (un pedido ajeno da null igual que uno inexistente, REQ-004 E3) y resolver Query.order. Script `npm run order:set-status -- <id> <estado>` (scripts/order-set-status.ts + scripts/lib/order-status.ts): valida el estado contra S-04 antes de tocar la tabla, busca el pedido por id con Scan paginado sobre CUSTOMER#* (consecuencia aceptada en DEC-009), cambia solo `status` con UpdateItem condicional; código 1 si el estado es inválido o el pedido no existe, 2 sin argumentos. App: pantallas Mis pedidos (número, fecha es-CL, total, estado; \"Todavía no hiciste pedidos\" si está vacía, E4) y Detalle de pedido (líneas con precio congelado, subtotal, total y estado; null → \"Pedido no encontrado\"); ambas recargan al ganar el foco y al deslizar (S-06); enlace \"Mis pedidos\" en la cabecera del catálogo. El estado se muestra con el valor del enum (RECIBIDO, ENVIADO…), como ya hace Carrito y como lo nombra el criterio de éxito. lint, typecheck, npm test (vitest 137/137, jest 18/18), smoke 2/2 y expo export android ok. req_004 contra el dev actual: 2/6 (E1, E4); E2, E2 borde, E3 y E5 fallan solo por \"Field 'order' in type 'Query' is undefined\" (falta desplegar); el script real sí pasó el pedido a ENVIADO (myOrders lo mostró) y rechazó PERDIDO con código ≠ 0. Pendiente: `npm run deploy:dev` y luego req_004 (esperado 6/6); evidencia → verified_auto con el recorrido del criterio de éxito y REQ-004 E4 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:30: deploy:dev, req_004 6/6 → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: el usuario informa la demo completa OK en el teléfono (NQBRC7CV RECIBIDO → ENVIADO); queda pendiente manual solo REQ-004 E4. 2026-10-18: checklist manual OK (usuario) y aceptada por José Pedro Lübbert (Pepe) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-07",
@@ -217,14 +228,13 @@
         "T-01",
         "T-03"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm test (componentes jest-expo) && npm run test:acceptance -- req_001 + recorrido manual REQ-001 E1–E3 y REQ-005 E1–E2 registrado en LOG",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android && git show --stat 775954c",
         "result": "lint ok; typecheck ok; vitest 137/137 + jest 105/105 (session.test.tsx E3: Inicio con sesión vigente renderiza <Redirect href=\"/catalog\"> y no llama a router.replace al arrancar, falla con el código anterior; startup.test.tsx: router real de expo-router con URL inicial asíncrona, con sesión → /catalog y sin sesión → / pidiendo credenciales, ambos sin console.error); expo export android ok. Solo app/src/app/index.tsx y app/test; sin backend/, infra/, spec/contracts/ ni tests/acceptance/ (req_001 de aceptación no aplica a este cambio: es del backend). La advertencia del teléfono no se reproduce en jest: queda en manual_pending.",
         "commit": "775954c",
-        "manual_pending": "REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → \"Correo o contraseña incorrectos\"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, \"Cerrar sesión\" → inicio y carrito vacío; reabrir → pide credenciales.",
-        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono, tras 775954c: \"Ya no aparece el error al abrir la app en el teléfono\" (aviso \"Can't perform a React state update on a component that hasn't mounted yet\", ExpoRoot/ContextNavigator)."
+        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono, tras 775954c: \"Ya no aparece el error al abrir la app en el teléfono\" (aviso \"Can't perform a React state update on a component that hasn't mounted yet\", ExpoRoot/ContextNavigator). · 2026-10-18, José Pedro Lübbert (Pepe), en el teléfono: \"checklist manual de T-04 a T-07 OK\" — cubre la verificación pendiente: REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → \"Correo o contraseña incorrectos\"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, \"Cerrar sesión\" → inicio y carrito vacío; reabrir → pide credenciales."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
@@ -234,7 +244,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: req_001 2/2 contra dev desplegado → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: hallazgo en el teléfono (informado al verificar T-12): al abrir con sesión, aviso \"Can't perform a React state update on a component that hasn't mounted yet\" (ExpoRoot, ContextNavigator). Causa probable: router.replace desde el efecto de comprobación de sesión antes de que el navegador raíz esté montado. Corrección en 775954c: <Redirect href=\"/catalog\"> en vez de router.replace en el arranque (onSubmit sin cambios). reviewed → verified_auto para nueva revisión independiente; la revisión anterior (sobre e228c2f) queda en review hasta que se reemplace. Evidencia anterior: commit e228c2f, req_001_login 2/2."
+      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: req_001 2/2 contra dev desplegado → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: hallazgo en el teléfono (informado al verificar T-12): al abrir con sesión, aviso \"Can't perform a React state update on a component that hasn't mounted yet\" (ExpoRoot, ContextNavigator). Causa probable: router.replace desde el efecto de comprobación de sesión antes de que el navegador raíz esté montado. Corrección en 775954c: <Redirect href=\"/catalog\"> en vez de router.replace en el arranque (onSubmit sin cambios). reviewed → verified_auto para nueva revisión independiente; la revisión anterior (sobre e228c2f) queda en review hasta que se reemplace. Evidencia anterior: commit e228c2f, req_001_login 2/2. 2026-10-18: checklist manual OK (usuario) y aceptada por José Pedro Lübbert (Pepe) → accepted.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-08",

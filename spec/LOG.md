@@ -714,3 +714,14 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte o cierra las verificaciones manuales pendientes de T-04..T-07.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "checklist manual de T-04 a T-07 OK, las acepto (aprobador: Pepe)"
+- Verificación manual (DEC-011): José Pedro Lübbert (Pepe), 2026-10-18, en el teléfono: checklist manual de T-04, T-05, T-06 y T-07 OK. Registrada en `evidence.manual_result` de cada una (con el texto de lo que cubría); sale `manual_pending`.
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-04, T-05, T-06 y T-07 → `accepted` (campo `acceptance` en TASKS.json). Solo spec/TASKS.json y esta bitácora; sin código.
+- Verificado y cómo: `npm run check:spec` ok; `autopilot-tasks manual-pending` → sin pendientes.
+- Pendiente manual: ninguno.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. T-03 (tarea de spec del corte 1) sigue `reviewed`: no se mencionó.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de T-03 o propone el siguiente corte. Sin push.
