@@ -647,3 +647,13 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-18 (la hace el autopilot); el usuario decide `accepted` de T-18. Siguen pendientes las verificaciones manuales de T-04..T-07.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "En [REDACTED_AWS_ACCOUNT_DEMO] el distribuidor ve pedidos creados por las pruebas de aceptación. Bórralos (deja solo los de almacen1 y almacen2) y haz que las pruebas limpien lo que crean al terminar, sin editar tests/acceptance/ si eso rompe la regla del protocolo: si hace falta, abre una tarea y pídeme aprobación."
+- Hecho (T-19, tooling): `scripts/lib/acceptance-cleanup.ts` (Scan de `PK` `CUSTOMER#C-ACEPT-…` / `SK` `ORDER#…` y DeleteItem de cada uno, con guarda de prefijo) + `scripts/acceptance-cleanup.ts`, que es el `globalSetup` de vitest.acceptance.config.ts (`teardown` al terminar, pasen o fallen las pruebas) y el CLI `npm run acceptance:cleanup`. No hizo falta editar tests/acceptance/ ni pedir aprobación de una tarea de spec.
+- Datos de dev ([REDACTED_AWS_ACCOUNT_DEMO]): `npm run acceptance:cleanup` borró 23 pedidos de clientes desechables; quedan 1 pedido de almacen1, 1 de almacen2 y los 2 productos.
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 164/164 + jest 137/137; `AWS_PROFILE=night-loop npm run test:acceptance` 41/41 y su teardown borró los 23 pedidos que creó (la tabla queda igual que antes); `npm run check:spec` ok. T-19 → `verified_auto`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-18 y T-19 (la hace el autopilot); el usuario decide `accepted`.

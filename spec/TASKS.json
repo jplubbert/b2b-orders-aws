@@ -626,6 +626,27 @@
         "result": "pedidos-demo → assumed-role/OrganizationAccountAccessRole en [REDACTED_AWS_ACCOUNT_DEMO]; bootstrap ok; deploy:dev ok (PedidosB2B-dev + seed); smoke 2/2; aceptación 41/41; night-loop → user/night-loop-tests en [REDACTED_AWS_ACCOUNT_DEMO], dynamodb list-tables/s3 ls/iam get-user-policy AccessDenied; llave anterior de [REDACTED_AWS_ACCOUNT_MAIN] Inactive; smoke con night-loop 2/2; autopilot --dry-run ok (llave de la cuenta nueva); check:spec ok. Pila de [REDACTED_AWS_ACCOUNT_MAIN] intacta.",
         "commit": "7a6897c"
       }
+    },
+    {
+      "id": "T-19",
+      "kind": "tooling",
+      "title": "La aceptación borra al terminar los pedidos de sus clientes desechables (C-ACEPT-…)",
+      "description": "Pedido del usuario 2026-10-18: en [REDACTED_AWS_ACCOUNT_DEMO] el distribuidor veía en el panel los pedidos que dejan las pruebas de aceptación. Borrar los existentes (quedan solo los de almacen1 y almacen2) y que `npm run test:acceptance` limpie lo que crea al terminar, sin editar tests/acceptance/: `globalSetup` en vitest.acceptance.config.ts con un `teardown` que borra los pedidos de clientes `C-ACEPT-…` (los usuarios ya los borra cada archivo). También `npm run acceptance:cleanup` para corridas interrumpidas.",
+      "reqs": [],
+      "decisions": [
+        "DEC-007",
+        "DEC-010"
+      ],
+      "depends_on": [],
+      "status": "verified_auto",
+      "verify": "npm run lint && npm run typecheck && npm test (scripts/test/acceptance-cleanup.test.ts) && npm run acceptance:cleanup && AWS_PROFILE=night-loop npm run test:acceptance (tras la corrida, en la tabla solo CATALOG, C-ALMACEN1 y C-ALMACEN2) && npm run check:spec",
+      "blocked_by": null,
+      "notes": "2026-10-18: sin cambios en tests/acceptance/ (no hace falta tarea de spec). `npm run acceptance:cleanup` borró 23 pedidos C-ACEPT-… de [REDACTED_AWS_ACCOUNT_DEMO]; quedan 1 de C-ALMACEN1, 1 de C-ALMACEN2 y los 2 productos. Doble guarda: el filtro del Scan y una comprobación del prefijo antes de cada DeleteItem. El perfil night-loop ya tiene Scan y DeleteItem sobre la tabla (DEC-010). verified_auto; pendiente revisión independiente.",
+      "evidence": {
+        "command": "npm run lint && npm run typecheck && npm test && npm run acceptance:cleanup && AWS_PROFILE=night-loop npm run test:acceptance && npm run check:spec",
+        "result": "lint ok; typecheck ok; vitest 164/164 (2 nuevos en acceptance-cleanup.test.ts) + jest 137/137; acceptance:cleanup → 23 pedidos borrados; aceptación con night-loop 41/41 y el teardown borró los 23 pedidos que creó; tabla después: CATALOG 2, C-ALMACEN1 1, C-ALMACEN2 1; usuarios: almacen1, almacen2, distribuidor; check:spec ok.",
+        "commit": "(este commit)"
+      }
     }
   ]
 }

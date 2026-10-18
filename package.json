@@ -21,6 +21,7 @@
     "bootstrap:dev": "AWS_PROFILE=pedidos-demo npm run bootstrap -w infra -- --context stage=dev --context region=us-east-1",
     "deploy:dev": "AWS_PROFILE=pedidos-demo npm run deploy -w infra -- --context stage=dev --context region=us-east-1 && tsx scripts/write-env.ts dev && AWS_PROFILE=pedidos-demo npm run seed",
     "seed": "AWS_PROFILE=${AWS_PROFILE:-pedidos-demo} tsx scripts/seed.ts",
+    "acceptance:cleanup": "AWS_PROFILE=${AWS_PROFILE:-pedidos-demo} tsx scripts/acceptance-cleanup.ts",
     "order:set-status": "AWS_PROFILE=${AWS_PROFILE:-pedidos-demo} tsx scripts/order-set-status.ts",
     "app": "npm run start -w app",
     "check:spec": "node scripts/check-spec.mjs",
