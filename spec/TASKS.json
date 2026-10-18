@@ -531,7 +531,7 @@
         "DEC-011"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test (autopilot-tasks: casos nuevos de \"Pendiente deploy: ninguno\" en tarea de spec y de implementación) && npm run check:spec && scripts/autopilot.sh --dry-run",
       "blocked_by": null,
       "notes": "Pedida por José Pedro Lübbert el 2026-10-18 como tarea de tooling. 2026-10-18: implementada en 85082f4 → verified_auto; pendiente revisión independiente (la hace el autopilot).",
@@ -539,6 +539,13 @@
         "command": "npm run lint && npm run typecheck && npm test && npm run check:spec && scripts/autopilot.sh --dry-run",
         "result": "lint ok; typecheck ok; vitest 139/139 (autopilot-tasks 41/41, con 2 casos nuevos: tarea de spec con \"Pendiente deploy: ninguno\" → \"espera que el usuario apruebe el diff\", sin fallo, resumen con Pendiente deploy \"ninguna\"; tarea tooling con la misma línea → fallo 1/2, no despliegue) + jest 105/105; los 2 casos nuevos fallan con el scripts/autopilot.sh anterior (HEAD 4b6ca3f); check:spec ok; --dry-run ok (revisaría T-13).",
         "commit": "85082f4"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Sin hallazgos bloqueantes. Pasaron lint, typecheck, check:spec, 139 pruebas Vitest y 105 Jest. Los cinco valores vacíos pedidos fueron comprobados contra el filtro. --dry-run no pudo verificarse por la restricción de escritura en /tmp. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
       }
     }
   ]

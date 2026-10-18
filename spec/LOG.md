@@ -525,3 +525,8 @@
 - Hecho: revisión independiente de T-13 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-13); salida íntegra en .autopilot/2026-10-18_040235/T-13-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 04:04 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-17 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-17); salida íntegra en .autopilot/2026-10-18_040235/T-17-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
