@@ -299,3 +299,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario confirma qué pasos de la checklist (T-04, T-05, T-07, T-06 E4) hizo; con eso se registran y el usuario decide `accepted` en lote (T-03..T-07). Revisión independiente de T-06 en la próxima corrida del orquestador.
+
+## 2026-10-18 01:12 · revisor independiente (codex exec codex-cli 0.162.0) vía night-loop
+- Hecho: revisión independiente de T-06 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-06); salida íntegra en .night-loop/2026-10-18_011153/T-06-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.

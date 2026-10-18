@@ -183,7 +183,7 @@
       "depends_on": [
         "T-05"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm test && npm run test:acceptance -- req_004 + recorrido manual en teléfono del criterio de éxito (login → pedido ≥2 productos → RECIBIDO → order:set-status ENVIADO → refrescar → ENVIADO), y REQ-004 E4, registrado en LOG",
       "evidence": {
         "command": "npm run deploy:dev (perfil default, us-east-1) && npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_004 && AWS_PROFILE=night-loop npm run smoke (perfil de DEC-010, contra PedidosB2B-dev)",
@@ -192,7 +192,13 @@
         "manual_pending": "REQ-004 E4 en el teléfono (no incluido en el informe de la demo): login almacen2 (sin pedidos) → Mis pedidos → \"Todavía no hiciste pedidos\"",
         "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono: \"Demo completa OK en el teléfono: pedido NQBRC7CV pasó de RECIBIDO a ENVIADO\" (recorrido del criterio de éxito; id 01M56K2CFYJKVTEYBWNQBRC7CV, cambio con npm run order:set-status -- 01M56K2CFYJKVTEYBWNQBRC7CV ENVIADO)."
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Pruebas locales: Vitest 137/137, Jest 18/18; lint, typecheck y check:spec OK. No se reprodujeron aceptación contra AWS ni recorrido en teléfono. REQ-004 E4 manual sigue pendiente según el diff. Sin cambios fuera de alcance ni violaciones detectadas de las decisiones citadas. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
       "blocked_by": null,
       "notes": "2026-10-18 00:20: implementada y verificada en local. Contrato: Query.order(id: ID!): Order (DEC-009; el contrato ya coincide con la forma completa). Backend: orderRepo.getOrder con GetItem en CUSTOMER#<customerId del token>/ORDER#<id> (un pedido ajeno da null igual que uno inexistente, REQ-004 E3) y resolver Query.order. Script `npm run order:set-status -- <id> <estado>` (scripts/order-set-status.ts + scripts/lib/order-status.ts): valida el estado contra S-04 antes de tocar la tabla, busca el pedido por id con Scan paginado sobre CUSTOMER#* (consecuencia aceptada en DEC-009), cambia solo `status` con UpdateItem condicional; código 1 si el estado es inválido o el pedido no existe, 2 sin argumentos. App: pantallas Mis pedidos (número, fecha es-CL, total, estado; \"Todavía no hiciste pedidos\" si está vacía, E4) y Detalle de pedido (líneas con precio congelado, subtotal, total y estado; null → \"Pedido no encontrado\"); ambas recargan al ganar el foco y al deslizar (S-06); enlace \"Mis pedidos\" en la cabecera del catálogo. El estado se muestra con el valor del enum (RECIBIDO, ENVIADO…), como ya hace Carrito y como lo nombra el criterio de éxito. lint, typecheck, npm test (vitest 137/137, jest 18/18), smoke 2/2 y expo export android ok. req_004 contra el dev actual: 2/6 (E1, E4); E2, E2 borde, E3 y E5 fallan solo por \"Field 'order' in type 'Query' is undefined\" (falta desplegar); el script real sí pasó el pedido a ENVIADO (myOrders lo mostró) y rechazó PERDIDO con código ≠ 0. Pendiente: `npm run deploy:dev` y luego req_004 (esperado 6/6); evidencia → verified_auto con el recorrido del criterio de éxito y REQ-004 E4 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:30: deploy:dev, req_004 6/6 → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: el usuario informa la demo completa OK en el teléfono (NQBRC7CV RECIBIDO → ENVIADO); queda pendiente manual solo REQ-004 E4."
     },
