@@ -234,3 +234,11 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: 2 fallos (tope 2).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 00:05 · Claude (claude-opus-5-5)
+- Hecho (pedido del usuario): `npm run deploy:dev` (perfil default, us-east-1): PedidosB2B-dev con `createOrder`/`myOrders` (T-05), `.env.dev` escrito, seed ok. Evidencia registrada: T-05 (REQ-003) y T-07 (REQ-001, REQ-005) → `verified_auto` con `manual_pending` (DEC-011).
+- Verificado y cómo: `npm test` vitest 124/124 + jest 10/10; `AWS_PROFILE=night-loop npm run test:acceptance -- req_003` 13/13; `AWS_PROFILE=night-loop npm run test:acceptance -- req_001 req_005` 2/2 (req_005 no tiene archivo: es manual en el corte 1, DEC-007); `AWS_PROFILE=night-loop npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente manual: T-05 (REQ-003 E5 y subtotal por línea): carrito vacío → "Confirmar pedido" deshabilitado; 2 Arroz + 1 Yerba → subtotales $2.600 y $4.500, total $7.100; confirmar → carrito vacío y "Pedido confirmado N° …". T-07 (REQ-001 E1–E3, REQ-005 E1–E2): contraseña errónea → "Correo o contraseña incorrectos"; login correcto → catálogo; reabrir Expo Go → catálogo sin credenciales; "Cerrar sesión" → inicio y carrito vacío; reabrir → pide credenciales.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-05 (diff e99ec0d, REQ-003, DEC-004/005/006/009) y T-07 (diff e228c2f, REQ-001, REQ-005, DEC-003/004), la hace el orquestador en su próxima corrida; luego T-06.
