@@ -118,11 +118,12 @@
         "T-01",
         "T-03"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "verify": "npm test && npm run test:acceptance -- req_002 + REQ-002 E3 manual registrado en LOG",
       "evidence": null,
       "review": null,
-      "blocked_by": null
+      "blocked_by": null,
+      "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto."
     },
     {
       "id": "T-05",

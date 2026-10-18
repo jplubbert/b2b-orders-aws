@@ -170,3 +170,11 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` de T-03; correr `scripts/night-loop.sh` para T-04 (o sesión interactiva); revisión independiente de este cambio de T-08 si el usuario la quiere.
+
+## 2026-10-17 23:10 · Claude (claude-opus-5-5)
+- Hecho (T-04 → `in_progress`, REQ-002): el backend no cambia: T-01 ya filtra activos, ordena por nombre y recorre todas las páginas de `CATALOG`. App (`app/src/app/catalog.tsx`): si la lista viene vacía muestra "No hay productos disponibles" (REQ-002 E3, pendiente desde T-01); deslizar hacia abajo vuelve a pedir el catálogo; un error se muestra arriba de la lista y se puede reintentar deslizando (antes reemplazaba la pantalla). Prueba nueva `backend/test/catalogRepo.test.ts` (Confirmación de DEC-006: Query a `PK=CATALOG`/`PRODUCT#`, paginación con `ExclusiveStartKey`, mapeo y `active` solo si es `true`); pasa con el código actual, que ya estaba bien.
+- Detalle interno: deslizar para recargar no es búsqueda ni filtro (excluidos); sirve para ver E3 sin reiniciar la app (la sesión no persiste hasta T-07).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 82/82; `npm run check:spec` ok; `npm run test:acceptance -- req_002` 4/4 contra `dev` (sin despliegue: el backend no cambió); `expo export --platform android` ok.
+- En curso / roto: falta la parte manual del `verify` de T-04: REQ-002 E3 en el teléfono. No se hizo: requiere el teléfono y desactivar el catálogo de `dev`, fuera del alcance de esta sesión.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario verifica E3 en el teléfono: `npm run app`, login almacen1 → ve Arroz y Yerba con presentación y `$1.300`/`$4.500`; desactivar ambos productos (`active=false` en la tabla de `dev`), deslizar hacia abajo → "No hay productos disponibles"; `npm run seed` y deslizar → vuelven. Con el resultado registrado en LOG, evidencia de T-04 → `verified_auto` y revisión independiente (diff del commit `Task: T-04`, REQ-002, DEC-005, DEC-006).
