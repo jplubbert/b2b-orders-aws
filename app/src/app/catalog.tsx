@@ -1,14 +1,15 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { AccountMenu } from '@/components/AccountMenu';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { CartBar } from '@/components/CartBar';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { Screen } from '@/components/Screen';
-import { SignOutButton } from '@/components/SignOutButton';
 import { StateMessage } from '@/components/StateMessage';
 import { formatCLP, listProducts, type Product } from '@/lib/api';
-import { cartUnits, quantityOf } from '@/lib/cart';
+import { quantityOf } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
 import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
@@ -40,25 +41,20 @@ export default function CatalogScreen() {
     setRefreshing(false);
   }
 
-  // La disposición de la barra se rehace en T-10 (REQ-006); aquí solo pasa al tema.
+  // REQ-006: el título "Catálogo" (a la izquierda, desde _layout.tsx); a la derecha "Mis pedidos" y el
+  // botón de cuenta, que lleva "Cerrar sesión" (S-15). El carrito pasa a la barra inferior.
   const header = (
     <Stack.Screen
       options={{
-        headerLeft: () => <SignOutButton />,
         headerRight: () => (
-          <View style={styles.headerLinks}>
+          <View style={styles.headerRight}>
             <Button
               title="Mis pedidos"
               variant="link"
               onPress={() => router.push('/orders')}
               accessibilityLabel="Ver mis pedidos"
             />
-            <Button
-              title={`Carrito (${cartUnits(cart)})`}
-              variant="link"
-              onPress={() => router.push('/cart')}
-              accessibilityLabel="Ver carrito"
-            />
+            <AccountMenu />
           </View>
         ),
       }}
@@ -68,7 +64,11 @@ export default function CatalogScreen() {
   if (!products && !error) {
     return (
       <Screen>
-        <StateMessage kind="loading" />
+        {header}
+        <View style={styles.loading}>
+          <StateMessage kind="loading" />
+        </View>
+        <CartBar />
       </Screen>
     );
   }
@@ -97,6 +97,7 @@ export default function CatalogScreen() {
           </Card>
         )}
       />
+      <CartBar />
     </Screen>
   );
 }
@@ -109,5 +110,6 @@ const styles = StyleSheet.create({
   detail: { fontSize: fontSize.sm, color: colors.textMuted },
   price: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text },
   emptyContainer: { flexGrow: 1, justifyContent: 'center' },
-  headerLinks: { flexDirection: 'row', alignItems: 'center' },
+  loading: { flex: 1, justifyContent: 'center' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
 });

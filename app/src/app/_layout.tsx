@@ -2,14 +2,25 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { configureAmplify } from '@/lib/amplify';
 import { CartProvider } from '@/lib/CartProvider';
+import { colors, fontSize, fontWeight } from '@/theme';
 
 configureAmplify();
+
+// Barra de la pila con el tema (REQ-006, REQ-007): superficie blanca, título a la izquierda, enlaces en azul.
+const screenOptions = {
+  headerStyle: { backgroundColor: colors.surface },
+  headerTintColor: colors.primary,
+  headerTitleStyle: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
+  headerTitleAlign: 'left',
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: colors.background },
+} as const;
 
 export default function RootLayout() {
   return (
     <CartProvider>
       <StatusBar style="dark" />
-      <Stack>
+      <Stack screenOptions={screenOptions}>
         <Stack.Screen name="index" options={{ title: 'Iniciar sesión' }} />
         <Stack.Screen name="catalog" options={{ title: 'Catálogo', headerBackVisible: false }} />
         <Stack.Screen name="cart" options={{ title: 'Carrito' }} />

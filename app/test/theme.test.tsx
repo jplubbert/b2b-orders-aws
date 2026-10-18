@@ -5,8 +5,11 @@ import { render, screen } from '@testing-library/react-native';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { StyleSheet } from 'react-native';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 import CatalogScreen from '@/app/catalog';
+import { AccountMenu } from '@/components/AccountMenu';
 import { Button } from '@/components/Button';
+import { CartBar } from '@/components/CartBar';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { SignOutButton } from '@/components/SignOutButton';
 import { StateMessage } from '@/components/StateMessage';
@@ -16,7 +19,7 @@ import { CartProvider } from '@/lib/CartProvider';
 import type { OrderStatus } from '@/lib/generated/graphql';
 import { colors, contrastPairs, orderStatus, touchTarget } from '@/theme';
 
-jest.mock('aws-amplify/auth', () => ({ signOut: jest.fn() }));
+jest.mock('aws-amplify/auth', () => ({ signOut: jest.fn(), fetchUserAttributes: jest.fn() }));
 jest.mock('aws-amplify/api', () => ({ generateClient: jest.fn() }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
@@ -25,6 +28,7 @@ jest.mock('@/lib/api', () => ({
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), replace: jest.fn() }, Stack: { Screen: () => null } }));
 
 const mockListProducts = jest.mocked(listProducts);
+const mockFetchUserAttributes = jest.mocked(fetchUserAttributes);
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -39,7 +43,11 @@ function sourcesIn(dir: string): string[] {
 }
 
 // Pantallas ya migradas al tema. T-12 amplía la lista a todo app/src/app.
-const MIGRATED = [...sourcesIn(join(SRC, 'components')), join(SRC, 'app', 'catalog.tsx')];
+const MIGRATED = [
+  ...sourcesIn(join(SRC, 'components')),
+  join(SRC, 'app', 'catalog.tsx'),
+  join(SRC, 'app', '_layout.tsx'),
+];
 
 const FORBIDDEN = [
   { name: 'color hexadecimal', re: /['"`]#[0-9a-fA-F]{3,8}['"`]/ },
@@ -74,10 +82,21 @@ const STATUSES: OrderStatus[] = ['RECIBIDO', 'EN_PREPARACION', 'ENVIADO', 'ENTRE
 describe('REQ-007 E1: sin colores literales ni fontSize numérico fuera de theme.ts', () => {
   it('la prueba revisa al menos los componentes base y el catálogo', () => {
     const names = MIGRATED.map((f) => relative(SRC, f));
-    for (const f of ['Screen', 'Button', 'Card', 'StatusBadge', 'StateMessage', 'QuantityStepper', 'SignOutButton']) {
+    for (const f of [
+      'Screen',
+      'Button',
+      'Card',
+      'StatusBadge',
+      'StateMessage',
+      'QuantityStepper',
+      'SignOutButton',
+      'AccountMenu',
+      'CartBar',
+    ]) {
       expect(names).toContain(join('components', `${f}.tsx`));
     }
     expect(names).toContain(join('app', 'catalog.tsx'));
+    expect(names).toContain(join('app', '_layout.tsx'));
   });
 
   it.each(MIGRATED.map((f) => [relative(SRC, f), f]))('%s', (_name, file) => {
@@ -160,6 +179,20 @@ describe('REQ-007 E4: área táctil ≥ 44 × 44 dp', () => {
     const s = StyleSheet.flatten(screen.getByRole('button', { name: 'Cerrar sesión' }).props.style);
     expect(s.minHeight).toBeGreaterThanOrEqual(44);
     expect(s.minWidth).toBeGreaterThanOrEqual(44);
+  });
+
+  it('botón de cuenta y barra del carrito (REQ-006)', async () => {
+    mockFetchUserAttributes.mockResolvedValue({ email: 'almacen1@demo.test' });
+    await render(
+      <CartProvider>
+        <AccountMenu />
+        <CartBar />
+      </CartProvider>,
+    );
+    expect(size('Cuenta').w).toBeGreaterThanOrEqual(44);
+    expect(size('Cuenta').h).toBeGreaterThanOrEqual(44);
+    expect(size('Ver carrito').h).toBeGreaterThanOrEqual(44);
+    expect(await screen.findByText('A')).toBeOnTheScreen();
   });
 });
 

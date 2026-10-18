@@ -15,6 +15,8 @@ export const colors = {
   border: '#E2E8F0',
   danger: '#B91C1C',
   dangerSurface: '#FEF2F2',
+  // Velo detrás del menú de cuenta (REQ-006); no lleva texto encima.
+  backdrop: 'rgba(15, 23, 42, 0.4)',
 } as const;
 
 // S-16: escala 4/8/12/16/24/32.

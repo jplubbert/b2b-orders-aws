@@ -3,18 +3,24 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
-import { fetchAuthSession, signIn, signOut } from 'aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes, signIn, signOut } from 'aws-amplify/auth';
 import { router } from 'expo-router';
 import LoginScreen from '@/app/index';
-import { SignOutButton } from '@/components/SignOutButton';
+import { AccountMenu } from '@/components/AccountMenu';
 import { cartUnits } from '@/lib/cart';
 import { CartProvider, useCart } from '@/lib/CartProvider';
 
-jest.mock('aws-amplify/auth', () => ({ fetchAuthSession: jest.fn(), signIn: jest.fn(), signOut: jest.fn() }));
+jest.mock('aws-amplify/auth', () => ({
+  fetchAuthSession: jest.fn(),
+  fetchUserAttributes: jest.fn(),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}));
 jest.mock('expo-router', () => ({ router: { replace: jest.fn(), push: jest.fn() } }));
 jest.mock('@/lib/amplify', () => ({ isConfigured: true }));
 
 const mockFetchAuthSession = jest.mocked(fetchAuthSession);
+const mockFetchUserAttributes = jest.mocked(fetchUserAttributes);
 const mockSignIn = jest.mocked(signIn);
 const mockSignOut = jest.mocked(signOut);
 const mockReplace = jest.mocked(router.replace);
@@ -119,19 +125,23 @@ function CartProbe() {
   );
 }
 
+// REQ-006 (S-15): "Cerrar sesión" vive en el menú de cuenta del catálogo.
 describe('REQ-005 cerrar sesión', () => {
   async function renderSignedIn() {
+    mockFetchUserAttributes.mockResolvedValue({ email: 'almacen1@demo.test' });
     await render(
       <CartProvider>
         <CartProbe />
-        <SignOutButton />
+        <AccountMenu />
       </CartProvider>,
     );
     await fireEvent.press(screen.getByText('agregar'));
     expect(screen.getByText('unidades: 2')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Cuenta'));
+    expect(await screen.findByText('almacen1@demo.test')).toBeOnTheScreen();
   }
 
-  it('E1: "Cerrar sesión" borra la sesión local, vacía el carrito y vuelve al inicio', async () => {
+  it('E1: menú de cuenta → "Cerrar sesión" borra la sesión local, vacía el carrito y vuelve al inicio', async () => {
     mockSignOut.mockResolvedValue(undefined);
     await renderSignedIn();
     await fireEvent.press(screen.getByText('Cerrar sesión'));
