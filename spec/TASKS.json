@@ -645,7 +645,7 @@
         "DEC-010"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test (scripts/test/acceptance-cleanup.test.ts) && npm run acceptance:cleanup && AWS_PROFILE=night-loop npm run test:acceptance (tras la corrida, en la tabla solo CATALOG, C-ALMACEN1 y C-ALMACEN2) && npm run check:spec",
       "blocked_by": null,
       "notes": "2026-10-18: sin cambios en tests/acceptance/ (no hace falta tarea de spec). `npm run acceptance:cleanup` borró 23 pedidos C-ACEPT-… de [REDACTED_AWS_ACCOUNT_DEMO]; quedan 1 de C-ALMACEN1, 1 de C-ALMACEN2 y los 2 productos. Doble guarda: el filtro del Scan y una comprobación del prefijo antes de cada DeleteItem. El perfil night-loop ya tiene Scan y DeleteItem sobre la tabla (DEC-010). verified_auto; pendiente revisión independiente.",
@@ -653,6 +653,13 @@
         "command": "npm run lint && npm run typecheck && npm test && npm run acceptance:cleanup && AWS_PROFILE=night-loop npm run test:acceptance && npm run check:spec",
         "result": "lint ok; typecheck ok; vitest 164/164 (2 nuevos en acceptance-cleanup.test.ts) + jest 137/137; acceptance:cleanup → 23 pedidos borrados; aceptación con night-loop 41/41 y el teardown borró los 23 pedidos que creó; tabla después: CATALOG 2, C-ALMACEN1 1, C-ALMACEN2 1; usuarios: almacen1, almacen2, distribuidor; check:spec ok.",
         "commit": "be94960"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Comprobaciones locales satisfactorias: Vitest 164/164, Jest 137/137, lint, typecheck y check:spec. No se ejecutaron acceptance:cleanup ni test:acceptance porque modifican datos AWS y la revisión es de solo lectura. La limpieza efectiva en dev y el teardown ante fallos quedan sin confirmación independiente.",
+        "date": "2026-10-18"
       }
     },
     {
