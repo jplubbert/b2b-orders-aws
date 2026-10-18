@@ -9,8 +9,9 @@ import {
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { BatchWriteCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { CATALOG_PK, productSk } from '../backend/src/data/keys.ts';
+import { CUSTOMER_GROUP, DISTRIBUTOR_GROUP } from '../backend/src/domain/identity.ts';
 import { loadStageEnv } from './lib/env.ts';
-import { SEED_PRODUCTS, SEED_USERS } from './lib/seed-data.ts';
+import { SEED_DISTRIBUTORS, SEED_PRODUCTS, SEED_USERS } from './lib/seed-data.ts';
 
 const env = loadStageEnv(process.argv[2] ?? 'dev');
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({ region: env.AWS_REGION }));
@@ -27,18 +28,15 @@ await doc.send(
 );
 console.log(`Productos: ${SEED_PRODUCTS.map((p) => p.name).join(', ')}`);
 
-for (const u of SEED_USERS) {
+/** Crea el usuario si no existe, fija la contraseña de demo y lo agrega al grupo. */
+async function seedUser(email: string, group: string, attributes: Array<{ Name: string; Value: string }> = []) {
   try {
     await idp.send(
       new AdminCreateUserCommand({
         UserPoolId: env.USER_POOL_ID,
-        Username: u.email,
+        Username: email,
         MessageAction: 'SUPPRESS',
-        UserAttributes: [
-          { Name: 'email', Value: u.email },
-          { Name: 'email_verified', Value: 'true' },
-          { Name: 'custom:customerId', Value: u.customerId },
-        ],
+        UserAttributes: [{ Name: 'email', Value: email }, { Name: 'email_verified', Value: 'true' }, ...attributes],
       }),
     );
   } catch (e) {
@@ -47,14 +45,20 @@ for (const u of SEED_USERS) {
   await idp.send(
     new AdminSetUserPasswordCommand({
       UserPoolId: env.USER_POOL_ID,
-      Username: u.email,
+      Username: email,
       Password: env.DEMO_PASSWORD,
       Permanent: true,
     }),
   );
-  await idp.send(
-    new AdminAddUserToGroupCommand({ UserPoolId: env.USER_POOL_ID, Username: u.email, GroupName: 'almaceneros' }),
-  );
+  await idp.send(new AdminAddUserToGroupCommand({ UserPoolId: env.USER_POOL_ID, Username: email, GroupName: group }));
+}
+
+for (const u of SEED_USERS) {
+  await seedUser(u.email, CUSTOMER_GROUP, [{ Name: 'custom:customerId', Value: u.customerId }]);
   console.log(`Usuario: ${u.email} (${u.customerId})`);
+}
+for (const u of SEED_DISTRIBUTORS) {
+  await seedUser(u.email, DISTRIBUTOR_GROUP);
+  console.log(`Usuario: ${u.email} (distribuidor)`);
 }
 console.log('Contraseña de demo: DEMO_PASSWORD en .env.dev');

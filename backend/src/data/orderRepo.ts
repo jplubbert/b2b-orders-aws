@@ -1,5 +1,15 @@
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, type QueryCommandOutput } from '@aws-sdk/lib-dynamodb';
-import type { Order, OrderLine } from '../domain/order.js';
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  UpdateCommand,
+  type QueryCommandOutput,
+  type ScanCommandOutput,
+} from '@aws-sdk/lib-dynamodb';
+import type { Order, OrderLine, OrderStatus } from '../domain/order.js';
 import { ORDER_SK_PREFIX, customerPk, orderSk } from './keys.js';
 
 export interface OrderRepo {
@@ -9,6 +19,10 @@ export interface OrderRepo {
   listOrders(customerId: string): Promise<Order[]>;
   /** Pedido `orderId` dentro de la partición del cliente; `null` si no está (o es de otro cliente). */
   getOrder(customerId: string, orderId: string): Promise<Order | null>;
+  /** Pedidos de todos los clientes, del más reciente al más antiguo; solo los de `status` si se indica (DEC-013). */
+  listAllOrders(status?: OrderStatus | null): Promise<Order[]>;
+  /** Cambia solo `status` del pedido en la partición del cliente; `null` si no está (no crea nada). */
+  setStatus(customerId: string, orderId: string, status: OrderStatus): Promise<Order | null>;
 }
 
 // DEC-006: `PK=CUSTOMER#<customerId>`, `SK=ORDER#<ulid>`, líneas embebidas con nombre y precio congelados.
@@ -18,7 +32,7 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
       await doc.send(
         new PutCommand({
           TableName: tableName,
-          Item: { PK: customerPk(customerId), SK: orderSk(order.id), customerId, ...order },
+          Item: { PK: customerPk(customerId), SK: orderSk(order.id), ...order, customerId },
           ConditionExpression: 'attribute_not_exists(PK)',
         }),
       );
@@ -50,12 +64,58 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
       );
       return Item ? toOrder(Item) : null;
     },
+
+    // DEC-013: Scan paginado de la tabla (S-26: decenas de pedidos); el orden lo da el ULID, no la tabla.
+    async listAllOrders(status) {
+      const orders: Order[] = [];
+      let startKey: ScanCommandOutput['LastEvaluatedKey'];
+      do {
+        const page = await doc.send(
+          new ScanCommand({
+            TableName: tableName,
+            ...(status
+              ? {
+                  FilterExpression: 'begins_with(SK, :sk) AND #status = :status',
+                  ExpressionAttributeNames: { '#status': 'status' },
+                  ExpressionAttributeValues: { ':sk': ORDER_SK_PREFIX, ':status': status },
+                }
+              : { FilterExpression: 'begins_with(SK, :sk)', ExpressionAttributeValues: { ':sk': ORDER_SK_PREFIX } }),
+            ExclusiveStartKey: startKey,
+          }),
+        );
+        for (const item of page.Items ?? []) orders.push(toOrder(item));
+        startKey = page.LastEvaluatedKey;
+      } while (startKey);
+      return orders.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+    },
+
+    // La condición evita que UpdateItem cree un pedido vacío cuando la clave no existe (REQ-011 E5).
+    async setStatus(customerId, orderId, status) {
+      try {
+        const { Attributes } = await doc.send(
+          new UpdateCommand({
+            TableName: tableName,
+            Key: { PK: customerPk(customerId), SK: orderSk(orderId) },
+            UpdateExpression: 'SET #status = :status',
+            ConditionExpression: 'attribute_exists(PK)',
+            ExpressionAttributeNames: { '#status': 'status' },
+            ExpressionAttributeValues: { ':status': status },
+            ReturnValues: 'ALL_NEW',
+          }),
+        );
+        return Attributes ? toOrder(Attributes) : null;
+      } catch (e) {
+        if (e instanceof ConditionalCheckFailedException) return null;
+        throw e;
+      }
+    },
   };
 }
 
 function toOrder(item: Record<string, unknown>): Order {
   return {
     id: String(item.id),
+    customerId: String(item.customerId),
     number: String(item.number),
     createdAt: String(item.createdAt),
     total: Number(item.total),

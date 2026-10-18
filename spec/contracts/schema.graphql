@@ -1,6 +1,8 @@
 # Contrato de la API Pedidos B2B (fuente única; la infra lo carga desde aquí, DEC-005).
-# Autorización: Cognito User Pool; solo el grupo `almaceneros` (DEC-004).
-# Montos: Int en pesos CLP, sin decimales (DEC-006). Forma de pedidos: DEC-009.
+# Autorización: Cognito User Pool, por campo según el grupo (DEC-004, DEC-013): `almaceneros` opera
+# sobre sus pedidos y el catálogo; `distribuidores` ve y cambia el estado de todos los pedidos.
+# Todo campo raíz declara su grupo (infra/test lo exige). Montos: Int en pesos CLP (DEC-006).
+# Forma de pedidos: DEC-009.
 
 type Product @aws_auth(cognito_groups: ["almaceneros"]) {
   productId: ID!
@@ -18,9 +20,11 @@ enum OrderStatus {
   CANCELADO
 }
 
-type Order @aws_auth(cognito_groups: ["almaceneros"]) {
+type Order @aws_auth(cognito_groups: ["almaceneros", "distribuidores"]) {
   "ULID (DEC-006)."
   id: ID!
+  "Almacén dueño del pedido (DEC-004); el panel lo muestra como almacén (S-23)."
+  customerId: ID!
   "Últimos 8 caracteres del ULID en mayúsculas (S-11)."
   number: String!
   createdAt: AWSDateTime!
@@ -30,7 +34,7 @@ type Order @aws_auth(cognito_groups: ["almaceneros"]) {
 }
 
 "Línea con nombre, presentación y precio congelados al confirmar."
-type OrderLine @aws_auth(cognito_groups: ["almaceneros"]) {
+type OrderLine @aws_auth(cognito_groups: ["almaceneros", "distribuidores"]) {
   productId: ID!
   name: String!
   presentation: String!
@@ -49,18 +53,22 @@ input CreateOrderInput {
   lines: [OrderLineInput!]!
 }
 
-type Query @aws_auth(cognito_groups: ["almaceneros"]) {
+type Query {
   "Productos activos ordenados por nombre (REQ-002)."
-  listProducts: [Product!]!
+  listProducts: [Product!]! @aws_auth(cognito_groups: ["almaceneros"])
   "Pedidos del cliente del token, del más reciente al más antiguo (REQ-004)."
-  myOrders: [Order!]!
+  myOrders: [Order!]! @aws_auth(cognito_groups: ["almaceneros"])
   "Pedido del cliente del token; null si no existe o es de otro cliente (REQ-004 E3)."
-  order(id: ID!): Order
+  order(id: ID!): Order @aws_auth(cognito_groups: ["almaceneros"])
+  "Pedidos de todos los almacenes, del más reciente al más antiguo; solo los de `status` si se indica (REQ-010)."
+  allOrders(status: OrderStatus): [Order!]! @aws_auth(cognito_groups: ["distribuidores"])
 }
 
-type Mutation @aws_auth(cognito_groups: ["almaceneros"]) {
+type Mutation {
   "Confirma un pedido en RECIBIDO con precios del catálogo (REQ-003). Errores: INVALID_QUANTITY, PRODUCT_UNAVAILABLE, EMPTY_ORDER, TOO_MANY_LINES."
-  createOrder(input: CreateOrderInput!): Order!
+  createOrder(input: CreateOrderInput!): Order! @aws_auth(cognito_groups: ["almaceneros"])
+  "Cambia solo el estado del pedido `id` del almacén `customerId` (REQ-011). Error: ORDER_NOT_FOUND."
+  setOrderStatus(customerId: ID!, id: ID!, status: OrderStatus!): Order! @aws_auth(cognito_groups: ["distribuidores"])
 }
 
 schema {

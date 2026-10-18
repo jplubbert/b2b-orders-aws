@@ -25,6 +25,14 @@ export class OrderRejectedError extends Error {
   }
 }
 
+/** `setOrderStatus` sobre un pedido que no está en la partición indicada (REQ-011 E5, DEC-013). */
+export class OrderNotFoundError extends Error {
+  constructor(customerId: string, orderId: string) {
+    super(`No existe el pedido ${orderId} del almacén ${customerId}`);
+    this.name = 'ORDER_NOT_FOUND';
+  }
+}
+
 /** Suma las cantidades de las líneas del mismo producto, en el orden de su primera aparición (REQ-003 E6). */
 export function mergeLines(lines: readonly OrderLineInput[]): OrderLineInput[] {
   const merged = new Map<string, number>();
@@ -39,7 +47,7 @@ export function mergeLines(lines: readonly OrderLineInput[]): OrderLineInput[] {
 export function buildOrder(
   input: readonly OrderLineInput[],
   catalog: ReadonlyMap<string, Product>,
-  meta: { id: string; createdAt: string },
+  meta: { id: string; customerId: string; createdAt: string },
 ): Order {
   const merged = mergeLines(input);
   if (merged.length === 0) throw new OrderRejectedError('EMPTY_ORDER', 'El pedido no tiene productos');
@@ -68,6 +76,7 @@ export function buildOrder(
   });
   return {
     id: meta.id,
+    customerId: meta.customerId,
     number: orderNumber(meta.id),
     createdAt: meta.createdAt,
     total: lines.reduce((sum, l) => sum + l.subtotal, 0),

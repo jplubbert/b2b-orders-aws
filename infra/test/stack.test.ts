@@ -1,7 +1,7 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { rootFields } from '../lib/contract.js';
+import { rootFieldGroups, rootFields } from '../lib/contract.js';
 import {
   PedidosStack,
   TEST_RUNNER_TABLE_ACTIONS,
@@ -42,6 +42,29 @@ describe('PedidosStack', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolGroup', { GroupName: 'almaceneros' });
     template.hasResourceProperties('AWS::AppSync::GraphQLApi', { AuthenticationType: 'AMAZON_COGNITO_USER_POOLS' });
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', { WriteAttributes: [] });
+  });
+
+  it('DEC-013: grupo distribuidores y cada campo raíz autorizado solo para su grupo', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolGroup', { GroupName: 'distribuidores' });
+    expect(rootFieldGroups()).toEqual({
+      'Query.listProducts': ['almaceneros'],
+      'Query.myOrders': ['almaceneros'],
+      'Query.order': ['almaceneros'],
+      'Query.allOrders': ['distribuidores'],
+      'Mutation.createOrder': ['almaceneros'],
+      'Mutation.setOrderStatus': ['distribuidores'],
+    });
+  });
+
+  it('DEC-013: la Lambda api puede hacer Scan y UpdateItem sobre la tabla', () => {
+    const fnRole = Object.keys(template.findResources('AWS::IAM::Role')).find((id) => id.startsWith('ApiFunction'));
+    const policies = Object.values(template.findResources('AWS::IAM::Policy')).filter((p) =>
+      JSON.stringify(p.Properties.Roles ?? []).includes(fnRole!),
+    );
+    const actions = policies.flatMap((p) =>
+      (p.Properties.PolicyDocument.Statement as Array<{ Action: string | string[] }>).flatMap((s) => [s.Action].flat()),
+    );
+    expect(actions).toEqual(expect.arrayContaining(['dynamodb:Scan', 'dynamodb:UpdateItem']));
   });
 
   it('DEC-006: tabla única PK/SK on-demand', () => {

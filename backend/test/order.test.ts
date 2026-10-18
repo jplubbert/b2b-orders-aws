@@ -19,7 +19,7 @@ const catalog = new Map(
   ].map((p) => [p.productId, p]),
 );
 
-const meta = { id: '01JAAAAAAAAAAAAAAAAAB7XQ2M9Z', createdAt: '2026-10-17T23:00:00.000Z' };
+const meta = { id: '01JAAAAAAAAAAAAAAAAAB7XQ2M9Z', customerId: 'C-1', createdAt: '2026-10-17T23:00:00.000Z' };
 
 const build = (lines: { productId: string; quantity: number }[]) => buildOrder(lines, catalog, meta);
 
@@ -31,6 +31,7 @@ describe('buildOrder (REQ-003)', () => {
     ]);
     expect(order).toEqual({
       id: meta.id,
+      customerId: 'C-1',
       number: 'B7XQ2M9Z',
       createdAt: meta.createdAt,
       total: 15500,

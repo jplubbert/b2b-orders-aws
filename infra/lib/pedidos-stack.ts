@@ -11,6 +11,7 @@ import type { Construct } from 'constructs';
 import { SCHEMA_PATH, rootFields } from './contract.js';
 
 export const CUSTOMER_GROUP = 'almaceneros';
+export const DISTRIBUTOR_GROUP = 'distribuidores'; // DEC-013
 export const TEST_RUNNER_USER = 'night-loop-tests';
 
 /** DEC-010: lo mínimo que usan las fixtures de aceptación (y el script order:set-status de DEC-009). */
@@ -56,6 +57,11 @@ export class PedidosStack extends Stack {
       userPoolId: userPool.userPoolId,
       groupName: CUSTOMER_GROUP,
     });
+    // DEC-013: el distribuidor ve y cambia el estado de todos los pedidos; sin `custom:customerId` (S-22).
+    new cognito.CfnUserPoolGroup(this, 'DistribuidoresGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: DISTRIBUTOR_GROUP,
+    });
 
     // DEC-006: tabla única on-demand.
     const table = new dynamodb.TableV2(this, 'Table', {
@@ -80,7 +86,7 @@ export class PedidosStack extends Stack {
         removalPolicy,
       }),
     });
-    table.grantReadWriteData(apiFn);
+    table.grantReadWriteData(apiFn); // incluye Scan (allOrders) y UpdateItem (setOrderStatus), DEC-013
 
     const api = new appsync.GraphqlApi(this, 'Api', {
       name: `pedidos-b2b-${props.stage}`,

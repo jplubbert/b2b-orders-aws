@@ -26,6 +26,8 @@ export type CreateOrderInput = {
 export type Mutation = {
   /** Confirma un pedido en RECIBIDO con precios del catálogo (REQ-003). Errores: INVALID_QUANTITY, PRODUCT_UNAVAILABLE, EMPTY_ORDER, TOO_MANY_LINES. */
   createOrder: Order;
+  /** Cambia solo el estado del pedido `id` del almacén `customerId` (REQ-011). Error: ORDER_NOT_FOUND. */
+  setOrderStatus: Order;
 };
 
 
@@ -33,8 +35,17 @@ export type MutationCreateOrderArgs = {
   input: CreateOrderInput;
 };
 
+
+export type MutationSetOrderStatusArgs = {
+  customerId: Scalars['ID']['input'];
+  id: Scalars['ID']['input'];
+  status: OrderStatus;
+};
+
 export type Order = {
   createdAt: Scalars['AWSDateTime']['output'];
+  /** Almacén dueño del pedido (DEC-004); el panel lo muestra como almacén (S-23). */
+  customerId: Scalars['ID']['output'];
   /** ULID (DEC-006). */
   id: Scalars['ID']['output'];
   lines: Array<OrderLine>;
@@ -76,12 +87,19 @@ export type Product = {
 };
 
 export type Query = {
+  /** Pedidos de todos los almacenes, del más reciente al más antiguo; solo los de `status` si se indica (REQ-010). */
+  allOrders: Array<Order>;
   /** Productos activos ordenados por nombre (REQ-002). */
   listProducts: Array<Product>;
   /** Pedidos del cliente del token, del más reciente al más antiguo (REQ-004). */
   myOrders: Array<Order>;
   /** Pedido del cliente del token; null si no existe o es de otro cliente (REQ-004 E3). */
   order: Maybe<Order>;
+};
+
+
+export type QueryAllOrdersArgs = {
+  status: InputMaybe<OrderStatus>;
 };
 
 
