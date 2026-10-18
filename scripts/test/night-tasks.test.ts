@@ -91,6 +91,14 @@ describe('night-tasks pick', () => {
   });
 });
 
+describe('night-tasks pending-reviews', () => {
+  it('lista las tareas en verified_auto, en orden', () => {
+    expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-02']); // la fixture deja T-02 en verified_auto
+    editTasks((ts) => { task(ts, 'T-05').status = 'verified_auto'; task(ts, 'T-02').status = 'reviewed'; });
+    expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-05']);
+  });
+});
+
 describe('night-tasks check-authority', () => {
   it('detecta estados reservados otorgados por el ejecutor', () => {
     const snap = join(root, 'before.json');
@@ -215,6 +223,7 @@ describe('night-loop.sh', () => {
     });
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
+    expect(r.stdout).toContain('Revisiones pendientes antes de elegir tarea (verified_auto, revisor claude): T-02');
     expect(r.stdout).toContain('Tarea elegida: T-03');
     expect(r.stdout).toContain('claude -p Lee\\ AGENTS.md\\ y\\ ejecuta\\ T-03');
     expect(r.stdout).toContain('--disallowedTools');
@@ -247,7 +256,10 @@ describe('night-loop.sh', () => {
         execFileSync('git', ['-C', root, '-c', 'user.name=T', '-c', 'user.email=t@example.com', ...a], { encoding: 'utf8' });
       git('init', '-q');
       git('config', 'core.hooksPath', '.githooks');
-      editTasks((ts) => { task(ts, 'T-01').status = 'done'; task(ts, 'T-01').evidence = { command: 'x', result: 'y', commit: 'z' }; task(ts, 'T-03').status = 'ready'; });
+      editTasks((ts) => {
+        for (const id of ['T-01', 'T-02']) { task(ts, id).status = 'done'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; }
+        task(ts, 'T-03').status = 'ready';
+      });
       git('add', '-A');
       git('commit', '-q', '-m', 'base\n\nTask: none\nReq: none');
       bin = join(root, '..', `night-stubs-${Date.now()}`);
@@ -273,6 +285,37 @@ describe('night-loop.sh', () => {
       expect(prompt).toContain('## DEC-007');
       expect(prompt).toContain('stub change for T-03');
       expect(prompt).not.toContain('## DEC-001');
+    });
+
+    const pendingT02 = () => { // T-02 implementada fuera del orquestador, esperando revisión
+      editTasks((ts) => { task(ts, 'T-02').status = 'verified_auto'; });
+      git('commit', '-q', '-am', 'T-02: hecho a mano\n\nTask: T-02\nReq: none');
+    };
+    const count = (s: string, sub: string) => s.split(sub).length - 1;
+
+    it('antes de elegir tarea revisa las verified_auto pendientes (approved → reviewed) sin contarlas como tareas', () => {
+      pendingT02();
+      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      expect(r.status).toBe(0);
+      const reviewed = r.stdout.indexOf('veredicto sobre T-02: approved → estado reviewed');
+      expect(reviewed).toBeGreaterThan(-1);
+      expect(reviewed).toBeLessThan(r.stdout.indexOf('T-03 › Empiezo la tarea'));
+      expect(r.stdout).toContain('veredicto sobre T-03: approved → estado reviewed');
+      expect(r.stdout).toContain('parada: presupuesto de tareas alcanzado (1)');
+      expect(task(readTasks(), 'T-02')).toMatchObject({ status: 'reviewed', review: { verdict: 'approved', reviewer: expect.stringContaining('codex') } });
+      expect(git('log', '--format=%s')).toContain('T-02: revisión independiente (approved)');
+      expect(git('log', '-1', '--format=%b', '--grep=^T-02: revisión')).toContain('Task: T-02\nReq: none');
+      expect(git('status', '--porcelain')).toBe('');
+    });
+
+    it('una pendiente rechazada queda verified_auto y no se revisa otra vez en la misma corrida', () => {
+      pendingT02();
+      const r = loop({}); // el doble de codex rechaza por defecto
+      expect(r.status).toBe(0);
+      expect(count(r.stdout, 'veredicto sobre T-02: rejected')).toBe(1);
+      expect(count(r.stdout, 'veredicto sobre T-03: rejected')).toBe(1);
+      expect(task(readTasks(), 'T-02')).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected' } });
+      expect(r.stdout).toContain('parada: no hay tareas ready/approved_for_impl con dependencias cerradas');
     });
 
     it('el implementador solo ve el perfil night-loop; el progreso sale legible en la terminal y en live.log', () => {

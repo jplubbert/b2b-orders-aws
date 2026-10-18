@@ -4,6 +4,9 @@
 #   scripts/night-loop.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
 # Ciclo:
+#   0. Antes de elegir tarea nueva, revisa cada tarea en verified_auto (p. ej. implementada en una sesión interactiva)
+#      con el mismo revisor y mecanismo del paso 3; cada una se revisa una sola vez por corrida (un rechazo la deja
+#      en verified_auto y no se repite hasta la próxima corrida).
 #   1. Elige la primera tarea "ready" o "approved_for_impl" de spec/TASKS.json con todas sus dependencias cerradas
 #      (done/accepted/delivered, o reviewed: así encadena tareas sin esperar la aceptación del usuario).
 #      Si no hay, anota en spec/LOG.md y termina.
@@ -68,6 +71,7 @@ STOP_REASON=""
 ABNORMAL=0       # 1 = parada que requiere intervención (blocked, fallos, violación, árbol sucio, sin veredicto)
 TASKS_DONE=0
 FAILURES=0
+REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces)
 
 log() { # a la terminal y, en una corrida real, a live.log
   local line; line=$(printf '%s night-loop: %s' "$(date '+%H:%M:%S')" "$*")
@@ -358,6 +362,18 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   esac
 }
 
+review_pending() { # revisa las tareas en verified_auto aún no revisadas en esta corrida; 1 = detenerse
+  local id
+  for id in $(tasks pending-reviews | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).join(" "))'); do
+    case "$REVIEWED_IDS" in *" $id "*) continue ;; esac
+    if [ "$(remaining)" -lt 600 ]; then STOP_REASON="presupuesto de tiempo agotado antes de revisar $id (quedan $(remaining)s)"; return 1; fi
+    REVIEWED_IDS="$REVIEWED_IDS$id "
+    log "$id espera revisión independiente (verified_auto): se revisa antes de elegir tarea nueva"
+    review_task "$id" || return 1
+  done
+  return 0
+}
+
 # ---------- Precondiciones ----------
 command -v claude >/dev/null || die "claude no está en PATH"
 command -v timeout >/dev/null || die "falta coreutils timeout"
@@ -388,6 +404,14 @@ while :; do
   if [ "$TASKS_DONE" -ge "$MAX_TASKS" ]; then STOP_REASON="presupuesto de tareas alcanzado ($MAX_TASKS)"; break; fi
   if [ "$FAILURES" -ge "$MAX_FAILURES" ]; then STOP_REASON="$FAILURES fallos (tope $MAX_FAILURES)"; ABNORMAL=1; break; fi
 
+  if [ "$DRY_RUN" = 1 ]; then
+    pending=$(tasks pending-reviews | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).join(" "))')
+    echo "Revisiones pendientes antes de elegir tarea (verified_auto, revisor $REVIEWER_KIND): ${pending:-ninguna}"
+    for id in $pending; do SUMMARY+=("(ensayo) $id se habría revisado"); done
+  else
+    review_pending || break
+  fi
+
   if [ -n "$RETRY" ]; then pick=$(tasks pick --task "$RETRY"); RETRY=""
   elif [ -n "$FORCED_TASK" ]; then pick=$(tasks pick --task "$FORCED_TASK"); FORCED_TASK=""
   else pick=$(tasks pick); fi
@@ -411,6 +435,7 @@ while :; do
 
   if run_task "$ID" $((FAILURES + 1)); then
     TASKS_DONE=$((TASKS_DONE + 1))
+    REVIEWED_IDS="$REVIEWED_IDS$ID "
     review_task "$ID" || break
   else
     rc=$?

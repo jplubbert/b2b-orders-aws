@@ -162,3 +162,11 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` de T-03; T-04 ya es elegible (T-01 accepted, T-03 reviewed).
+
+## 2026-10-17 23:55 · Claude (claude-opus-5-5)
+- Hecho (T-08, pedido del usuario; Task: T-08, Req: N/A): antes de elegir tarea nueva, `scripts/night-loop.sh` revisa cada tarea en `verified_auto` (p. ej. implementada en una sesión interactiva) con el mismo `review_task` que usa para las que implementa: codex (o claude si no hay), contexto limpio, prompt §7.5 con el diff de los commits `Task: <ID>` y sus REQ/DEC; approved → `reviewed`, rejected la deja en `verified_auto`; veredicto en TASKS.json, LOG.md y un commit por revisión. Cada tarea se revisa una sola vez por corrida (así un rechazo no se repite en bucle); estas revisiones no cuentan para el tope de 3 tareas, pero sí respetan el presupuesto de tiempo. Nueva orden `pending-reviews` en `scripts/lib/night-tasks.mjs`; `--dry-run` lista las revisiones pendientes.
+- Pruebas (`scripts/test/night-tasks.test.ts`): `pending-reviews`; ciclo con T-02 pendiente → revisada (approved → reviewed) antes de implementar T-03 y sin contar como tarea; T-02 pendiente rechazada → queda `verified_auto`, revisada una sola vez; `--dry-run` muestra la pendiente. Las 4 fallan con el código anterior. En el `beforeEach` del ciclo T-02 pasa a `done` para que los casos existentes no cambien.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 79/79; `npm run check:spec` ok; `scripts/night-loop.sh --dry-run` en el repo real → "Revisiones pendientes …: ninguna" (T-03 ya está reviewed), "Tarea elegida: T-04".
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de T-03; correr `scripts/night-loop.sh` para T-04 (o sesión interactiva); revisión independiente de este cambio de T-08 si el usuario la quiere.

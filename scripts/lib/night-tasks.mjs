@@ -5,6 +5,7 @@
 //
 //   pick [--task T-NN]      primera tarea elegible (ready/approved_for_impl) con todas sus dependencias cerradas
 //                           (done/reviewed/accepted/delivered), o la forzada → JSON | null
+//   pending-reviews         ids de las tareas en verified_auto (esperan revisión independiente) → JSON
 //   snapshot                mapa id → status de todas las tareas → JSON
 //   check-authority FILE    compara con el snapshot FILE; falla si el ejecutor otorgó un estado reservado
 //   status T-NN             imprime el estado de la tarea
@@ -49,6 +50,11 @@ export function pick(data, forced) {
         (t.depends_on ?? []).every((d) => DONE_STATES.includes(byId.get(d)?.status)),
     ) ?? null
   );
+}
+
+/** Tareas que esperan revisión independiente: el orquestador las revisa antes de elegir tarea nueva. */
+export function pendingReviews(data) {
+  return data.tasks.filter((t) => t.status === 'verified_auto').map((t) => t.id);
 }
 
 export function snapshot(data) {
@@ -176,6 +182,9 @@ function main(argv) {
       out(t ? { id: t.id, title: t.title, kind: t.kind ?? 'impl', status: t.status, reqs: t.reqs ?? [], decisions: t.decisions ?? [] } : null);
       return 0;
     }
+    case 'pending-reviews':
+      out(pendingReviews(readTasks(root)));
+      return 0;
     case 'snapshot':
       out(snapshot(readTasks(root)));
       return 0;
