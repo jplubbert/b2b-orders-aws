@@ -285,3 +285,20 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Dependencias: depende de DEC-010 (guardas de los hijos) · afecta a scripts/autopilot.sh, scripts/test/autopilot-tasks.test.ts, AGENTS.md, .gitignore, T-21
 - Confirmación: scripts/test/autopilot-tasks.test.ts (`aviso ntfy al detenerse (T-21)`, con doble de curl; ninguna prueba lee la configuración real).
 - Revisar si: los avisos necesitan más detalle, o se quiere un servidor ntfy propio o autenticado.
+
+## DEC-017 Acceso humano a AWS con IAM Identity Center (supersede el mecanismo de DEC-014)
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (plan pedido y aprobado por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Problema: DEC-014 da acceso a [REDACTED_AWS_ACCOUNT_DEMO] asumiendo `OrganizationAccountAccessRole` desde `default`, que es el usuario IAM `[REDACTED_IAM_USER]` con `AdministratorAccess`, sin MFA y con una llave de larga duración en ~/.aws/credentials: quien lea ese archivo es administrador de la organización. El usuario pidió reemplazarla por credenciales temporales.
+- Impulsores: R-04, DEC-014
+- Alternativas consideradas:
+  1. IAM Identity Center (instancia de organización en us-east-1, directorio propio), usuario con MFA, permission set `AdministratorAccess` de 8 h asignado a las dos cuentas; perfiles `principal` y `pedidos-demo` con un `sso-session` común — a favor: sin llaves largas; MFA en cada login; un acceso para las dos cuentas; en contra: `aws sso login` cada 8 h.
+  2. Mantener `[REDACTED_IAM_USER]` con MFA obligatorio para asumir el rol (`aws sts get-session-token`) — a favor: sin servicio nuevo; en contra: la llave larga sigue en disco.
+- Decisión: Usaremos la alternativa 1. `pedidos-demo` conserva el nombre (los scripts no cambian) pero entra por SSO directo a [REDACTED_AWS_ACCOUNT_DEMO], sin `source_profile` ni `OrganizationAccountAccessRole`; `principal` es la cuenta de administración. `[default]` queda sin credenciales cuando se retire la llave de `[REDACTED_IAM_USER]`. No cambia el perfil `autopilot` (DEC-010/DEC-015). La llave de `[REDACTED_IAM_USER]` se desactiva primero y solo se borra, con el usuario, tras un período de prueba y confirmación aparte.
+  No usaremos la 2 porque deja la llave larga en disco.
+- Consecuencias: buenas: ninguna credencial de administrador de larga duración en la máquina; MFA obligatorio. Malas: hay que repetir `aws sso login --sso-session pepe` al vencer la sesión (8 h) para desplegar o administrar. Neutrales: acceso de emergencia por el root de [REDACTED_AWS_ACCOUNT_MAIN] (con MFA), que no puede asumir roles.
+- Dependencias: supersede el mecanismo de acceso de DEC-014 (la cuenta y la región siguen) · depende de DEC-014 · afecta a R-04, ~/.aws/config y ~/.aws/credentials (fuera de git), T-22
+- Evidencia: 2026-10-18, `sts get-caller-identity --profile principal` → `arn:aws:sts::[REDACTED_AWS_ACCOUNT_MAIN]:assumed-role/AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe`; `--profile pedidos-demo` → `arn:aws:sts::[REDACTED_AWS_ACCOUNT_DEMO]:assumed-role/AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe`; `cdk diff` con `pedidos-demo`: sin diferencias; `npm run smoke` 2/2; `npm run seed` ok.
+- Confirmación: los mismos comandos con la llave de `[REDACTED_IAM_USER]` inactiva.
+- Revisar si: se agregan personas (grupos y permission sets acotados) o se quiere un permission set de menos privilegio para el día a día.

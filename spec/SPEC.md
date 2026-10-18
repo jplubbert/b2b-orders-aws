@@ -39,7 +39,7 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
 - R-01 Stack: AWS Cognito, AppSync, Lambda, DynamoDB; cliente React Native — fuente: usuario
 - R-02 Es una demo: un entorno `dev`, sin recursos de costo fijo (todo serverless/on-demand) — fuente: usuario (demo) · DEC-001, DEC-006
 - R-03 Las decisiones técnicas las toma el agente y las registra sin preguntar — fuente: usuario, LOG 2026-10-17
-- R-04 Despliegue `dev` con el perfil AWS `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], rol `OrganizationAccountAccessRole` asumido desde `default`) en `us-east-1` — fuente: usuario, LOG 2026-10-18 (antes: perfil `default`, cuenta [REDACTED_AWS_ACCOUNT_MAIN] — Q-01, LOG 2026-10-17; DEC-014)
+- R-04 Despliegue `dev` con el perfil AWS `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], credenciales temporales de IAM Identity Center: `aws sso login --sso-session pepe`, permission set `AdministratorAccess`) en `us-east-1` — fuente: usuario, LOG 2026-10-18 (antes: rol `OrganizationAccountAccessRole` asumido desde `default` — DEC-014; y antes, perfil `default` en [REDACTED_AWS_ACCOUNT_MAIN] — Q-01, LOG 2026-10-17; DEC-017)
 
 ## Glosario
 - Almacenero: dueño o encargado de un almacén; cliente B2B del distribuidor; actor de la app (grupo `almaceneros`).

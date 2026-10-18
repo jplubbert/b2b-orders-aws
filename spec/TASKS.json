@@ -752,6 +752,22 @@
         "by": "José Pedro Lübbert (Pepe)",
         "date": "2026-10-18"
       }
+    },
+    {
+      "id": "T-22",
+      "kind": "tooling",
+      "title": "Credenciales temporales con IAM Identity Center en lugar de la llave de administrador de `default`",
+      "description": "Pedido del usuario 2026-10-18: sacar las llaves de administrador de ~/.aws/credentials (perfil default, usuario IAM [REDACTED_IAM_USER]) y usar `aws sso login`, manteniendo acceso a [REDACTED_AWS_ACCOUNT_MAIN] y [REDACTED_AWS_ACCOUNT_DEMO]. Plan en tres pasos aprobado por el usuario: (1) el usuario activa Identity Center, crea su usuario con MFA, el permission set AdministratorAccess de 8 h y lo asigna a las dos cuentas; (2) perfiles SSO `principal` y `pedidos-demo` y verificación; (3) desactivar la llave de [REDACTED_IAM_USER], período de prueba y, con confirmación aparte, borrar la llave y el usuario.",
+      "reqs": [],
+      "decisions": [
+        "DEC-014",
+        "DEC-017"
+      ],
+      "depends_on": [],
+      "status": "in_progress",
+      "verify": "aws sts get-caller-identity --profile principal y --profile pedidos-demo (AWSReservedSSO_AdministratorAccess en cada cuenta) && cdk diff con pedidos-demo sin diferencias && npm run smoke && npm run seed; luego llave de [REDACTED_IAM_USER] Inactive y los mismos comandos sin ella",
+      "blocked_by": null,
+      "notes": "2026-10-18: paso 1 hecho por el usuario en la consola (instancia ssoins-7223fd44129b674d, identity store [REDACTED_SSO_DIRECTORY_ID], portal [REDACTED_SSO_START_URL]; las asignaciones de cuentas faltaban y el usuario las completó tras el primer intento). Paso 2: ~/.aws/config con [sso-session pepe], [profile principal] ([REDACTED_AWS_ACCOUNT_MAIN]) y [profile pedidos-demo] ([REDACTED_AWS_ACCOUNT_DEMO]) por SSO; respaldo en ~/.aws/config.bak-2026-10-18-pre-sso; [default] y [autopilot] sin cambios. Verificado: principal → assumed-role/AWSReservedSSO_AdministratorAccess_…/pepe en [REDACTED_AWS_ACCOUNT_MAIN]; pedidos-demo → idem en [REDACTED_AWS_ACCOUNT_DEMO]; cdk diff sin diferencias; smoke 2/2; seed ok. Pendiente: paso 3 (desactivar la llave de [REDACTED_IAM_USER]), a la espera del usuario."
     }
   ]
 }

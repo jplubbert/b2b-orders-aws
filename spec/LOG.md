@@ -888,3 +888,12 @@
 - En curso / roto: nada. Todas las tareas (T-01..T-21) están `accepted`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Quiero sacar las llaves de administrador de ~/.aws/credentials (perfil default) y usar credenciales temporales con IAM Identity Center (aws sso login), manteniendo acceso a la cuenta principal y a [REDACTED_AWS_ACCOUNT_DEMO]. Dame el plan paso a paso, qué hago yo en la consola y cómo revertir. No cambies nada todavía." Luego: "Paso 1 listo. Portal: [REDACTED_SSO_START_URL] (us-east-1), usuario pepe con AdministratorAccess de 8 h en ambas cuentas. Autorizo el paso 2."
+- Hecho (T-22, DEC-017 proposed; R-04 cambiada por el usuario): plan en tres pasos con reversión. Paso 1 (usuario, consola): Identity Center, usuario `pepe` con MFA, permission set `AdministratorAccess` (8 h). Paso 2 (sesión): `~/.aws/config` con `[sso-session pepe]`, `[profile principal]` y `[profile pedidos-demo]` por SSO (respaldo `~/.aws/config.bak-2026-10-18-pre-sso`, sin secretos); `[default]` y `[autopilot]` sin cambios. El primer intento dio "No access": faltaban las asignaciones de cuentas (comprobado con `sso-admin list-account-assignments`, solo lectura); el usuario las completó en la consola.
+- Verificado y cómo: `sts get-caller-identity` → `AWSReservedSSO_AdministratorAccess_…/pepe` en [REDACTED_AWS_ACCOUNT_MAIN] (`principal`) y en [REDACTED_AWS_ACCOUNT_DEMO] (`pedidos-demo`); `cdk diff` con `pedidos-demo`: sin diferencias (publicó la plantilla en el bucket de bootstrap y creó un change set de solo lectura); `npm run smoke` 2/2; `npm run seed` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: T-22 `in_progress`: falta el paso 3. La llave de `[REDACTED_IAM_USER]` sigue activa en `[default]`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario autoriza el paso 3 (desactivar la llave de `[REDACTED_IAM_USER]` con `principal` y quitarla de ~/.aws/credentials) y decide `accepted` de DEC-017. Borrar la llave y el usuario requiere confirmación aparte.
