@@ -579,3 +579,13 @@
 - Hecho: revisión independiente de T-15 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-15); salida íntegra en .autopilot/2026-10-18_041822/T-15-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Hecho (T-16, REQ-010 E5, REQ-011 E1/E3/E7, commit 7d3b7ca): ruta `dist/order/[id]` "Pedido <número>" con almacén (S-23), fecha, líneas con precio congelado, total y estado desde la lista del panel ya cargada (como S-19); las filas del panel navegan al detalle. "Cambiar estado": 5 botones (el actual marcado) que llaman `setOrderStatus(customerId, id, status)` sin confirmación (S-24); la respuesta reemplaza el pedido en la lista compartida (detalle y panel); error → "No se pudo cambiar el estado" conservando el anterior. README.md nuevo con el guion de demo del corte 3 sin `order:set-status`. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.
+- Detalle interno: lista del panel en `PanelProvider` (en `_layout` junto a `CartProvider`), vaciada al montar el panel; id fuera de la lista → "Pedido no encontrado" + "Volver a Pedidos"; botones deshabilitados mientras se guarda.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok (tras regenerar los tipos de rutas con `expo start --offline`); `npm test` vitest 162/162 + jest 137/137; mutación de `replaceOrder` detectada por 4 casos (revertida); `expo export --platform android` ok; `npm run test:acceptance` 41/41; `npm run smoke` 2/2. T-16 → `verified_auto`.
+- Pendiente manual (DEC-011): T-16: criterio de éxito del corte 3 en el teléfono según el guion de README.md (detalle en `evidence.manual_pending` de T-16).
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-16 (la hace el autopilot); luego el usuario hace en lote las verificaciones manuales (T-04..T-07, T-15, T-16) y decide `accepted`.
