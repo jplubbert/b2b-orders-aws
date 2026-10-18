@@ -1161,3 +1161,14 @@
 - En curso / roto: T-28 `in_progress` a la espera del deploy.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario hace el deploy de T-28 y corre aceptación y humo (línea `Pendiente deploy` de arriba); después T-31 (depende de T-28 desplegada y de T-29).
+
+## 2026-10-18 20:28 · autopilot (scripts/autopilot.sh)
+- Hecho: T-26 revisada por codex: approved → reviewed (commit 7c05f90); T-27 revisada por codex: approved → reviewed (commit b6ce3db); T-28: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida. Corrida 2026-10-18_200835 (19 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_200835/.
+- Tokens (implementador, campo usage del evento result): T-28: entrada 110 · salida 55.524 · caché leída 6.433.129 · caché escrita 159.218; total de la corrida: entrada 110 · salida 55.524 · caché leída 6.433.129 · caché escrita 159.218.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-29: DEC-011, en el teléfono con Expo Go y el dev desplegado, el guion del README sin cambios visibles: (1) almacen1@demo.test inicia sesión → Catálogo; cerrar y reabrir la app entra directo (REQ-001 E3); (2) agregar productos con − / +, abrir un detalle y volver: la barra del carrito suma igual (REQ-003, REQ-008); confirmar el pedido → número y carrito vacío; (3) menú de cuenta muestra el correo; "Cerrar sesión" vuelve al inicio y al reingresar el carrito está vacío (REQ-005); (4) distribuidor@demo.test → panel "Pedidos", filtro, abrir el pedido, cambiar estado y volver: el panel muestra el estado nuevo (REQ-010, REQ-011).
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-28.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 069569c.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-28).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
