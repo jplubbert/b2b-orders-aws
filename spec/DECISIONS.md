@@ -126,9 +126,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: aparecen regresiones de UI no detectadas o se automatiza la demo.
 
 ## DEC-008 Expo SDK 57 mientras Expo Go de la Play Store no soporte SDK 58
-- Estado: proposed
+- Estado: accepted
 - Alcance: global
-- Fecha: 2026-10-17 · Aprobador: pendiente · Confianza: alta
+- Fecha: 2026-10-17 · Aprobador: José Pedro Lübbert · Confianza: alta
 - Problema: el SDK fijado en T-01 (58, el `latest` de npm) no abre en el Expo Go que instala la Play Store del teléfono del usuario: "Project is incompatible with this version of Expo Go". Ese Expo Go soporta SDK 57 (confirmado por el usuario). La versión de Expo Go en las tiendas puede quedar atrás cuando sale un SDK nuevo.
 - Impulsores: DEC-003 (SDK estable fijado en T-01), T-01 (login manual desde el teléfono), REQ-001
 - Alternativas consideradas:

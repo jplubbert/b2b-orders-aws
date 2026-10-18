@@ -87,3 +87,10 @@
 - En curso / roto: `npm test` sigue con las 3 fallas de fixture de `night-tasks.test.ts` (entrada de 20:15), sin relación con este cambio.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: (1) el usuario recarga la app en Expo Go y hace login con almacen1; si falla, transcribe el error que ahora se ve en pantalla; si funciona, se registra aquí como cierre del spike; (2) el usuario aprueba o rechaza DEC-008; (3) arreglo de la fixture de night-tasks.test.ts (pendiente de autorización); (4) evidencia de T-01 → `verified_auto` y revisión independiente.
+
+## 2026-10-17 21:40 · Claude (claude-opus-5-5)
+- Hecho: (1) cierre del spike de T-01: el usuario confirma login de almacen1 en el teléfono con el Expo Go 57 de la Play Store (`USER_PASSWORD_AUTH`, f9124a3); la app muestra Yerba y Arroz. (2) Evidencia de T-01 en TASKS.json → `verified_auto`. (3) DEC-008 → `accepted`, aprobada por José Pedro Lübbert (2026-10-17). (4) Arreglo de las 3 pruebas de `scripts/test/night-tasks.test.ts` (09f1db2, Task: T-08, Req: N/A, autorizado por el usuario): ya no copian `spec/` del repo sino una spec fija en `scripts/test/fixtures/night-spec/` (SPEC, DECISIONS, TASKS y LOG mínimos; T-02 `verified_auto`, T-01 `in_progress`), así el estado vivo del proyecto no las rompe.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 63/63; `npm run check:spec` ok.
+- En curso / roto: nada roto. T-01 `verified_auto`, pendiente de revisión independiente.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: (1) revisión independiente de T-01 con contexto limpio (diff dec433c..f9124a3, REQ-001, REQ-002, DEC-001..008) → `reviewed`; (2) aceptación del usuario; con T-01 cerrada, T-03 (tarea de spec) queda elegible.

@@ -20,12 +20,16 @@
         "DEC-008"
       ],
       "depends_on": [],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "npm ci && npm run lint && npm run typecheck && npm test && npm run deploy:dev && npm run smoke (login almacen1 → listProducts devuelve los 2 productos sembrados; sin token → Unauthorized) + login manual desde teléfono registrado en LOG",
-      "evidence": null,
+      "evidence": {
+        "command": "npm ci && npm run lint && npm run typecheck && npm test && npm run bootstrap:dev && npm run deploy:dev && npm run smoke + login manual desde teléfono (Expo Go 57, Play Store)",
+        "result": "lint ok; typecheck ok; npm test 63/63 (tras 09f1db2); deploy:dev ok (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev, us-east-1, perfil default; seed Yerba 1 kg, Arroz 1 kg; almacen1/almacen2); smoke 2/2 (almacen1 → listProducts con los 2 productos; sin token → Unauthorized; latencia 603 ms primera, 564 ms siguiente); login manual de almacen1 en el teléfono con Expo Go 57 (USER_PASSWORD_AUTH) → muestra Yerba y Arroz (confirmado por el usuario 2026-10-17)",
+        "commit": "f9124a3"
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). 2026-10-17 20:15: bootstrap:dev + deploy:dev (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev) + seed ok; smoke 2/2 (latencia listProducts: primera 603 ms, siguiente 564 ms). Pendiente: login manual desde teléfono (spike Expo Go / dev build) registrado en LOG; luego evidencia y revisión independiente. 2026-10-17 20:50: Expo Go de la Play Store solo soporta SDK 57 → app bajada de SDK 58 a 57 (DEC-008 proposed); Expo Go 57.0.9 en emulador abre la app en Iniciar sesión."
+      "notes": "Despliegue con AWS_PROFILE=default en us-east-1 (R-04). 2026-10-17: código completo y verificado en local (lint, typecheck, test, synth, expo export, expo-doctor). 2026-10-17 20:15: bootstrap:dev + deploy:dev (cuenta [REDACTED_AWS_ACCOUNT_MAIN], pila PedidosB2B-dev) + seed ok; smoke 2/2 (latencia listProducts: primera 603 ms, siguiente 564 ms). Pendiente: login manual desde teléfono (spike Expo Go / dev build) registrado en LOG; luego evidencia y revisión independiente. 2026-10-17 20:50: Expo Go de la Play Store solo soporta SDK 57 → app bajada de SDK 58 a 57 (DEC-008 proposed); Expo Go 57.0.9 en emulador abre la app en Iniciar sesión. 2026-10-17 21:40: login de almacen1 en el teléfono con Expo Go 57 ok (ve Yerba y Arroz); spike cerrado con USER_PASSWORD_AUTH. DEC-008 aceptada. Evidencia registrada → verified_auto; pendiente revisión independiente."
     },
     {
       "id": "T-02",
