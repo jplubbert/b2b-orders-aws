@@ -1,0 +1,155 @@
+{
+  "corte": 1,
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "Esqueleto andante",
+      "reqs": [
+        "REQ-001",
+        "REQ-002"
+      ],
+      "decisions": [
+        "DEC-001",
+        "DEC-002",
+        "DEC-003",
+        "DEC-004",
+        "DEC-005",
+        "DEC-006",
+        "DEC-007"
+      ],
+      "depends_on": [],
+      "status": "in_progress",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-02",
+      "title": "Guardas mecánicas del protocolo",
+      "reqs": [],
+      "decisions": [],
+      "depends_on": [],
+      "status": "verified_auto",
+      "evidence": {
+        "command": "npm test",
+        "result": "ok",
+        "commit": "0000000"
+      },
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-03",
+      "title": "Pruebas de aceptación de REQ-001..004 (tarea de spec)",
+      "reqs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "decisions": [
+        "DEC-007"
+      ],
+      "depends_on": [
+        "T-01"
+      ],
+      "status": "approved_for_impl",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "kind": "spec"
+    },
+    {
+      "id": "T-04",
+      "title": "Catálogo completo",
+      "reqs": [
+        "REQ-002"
+      ],
+      "decisions": [
+        "DEC-005",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-01",
+        "T-03"
+      ],
+      "status": "approved_for_impl",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-05",
+      "title": "Armar carrito y confirmar pedido",
+      "reqs": [
+        "REQ-003"
+      ],
+      "decisions": [
+        "DEC-004",
+        "DEC-005",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-04"
+      ],
+      "status": "approved_for_impl",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-06",
+      "title": "Mis pedidos y estado",
+      "reqs": [
+        "REQ-004"
+      ],
+      "decisions": [
+        "DEC-004",
+        "DEC-006"
+      ],
+      "depends_on": [
+        "T-05"
+      ],
+      "status": "approved_for_impl",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-07",
+      "title": "Sesión persistente y cierre de sesión",
+      "reqs": [
+        "REQ-001",
+        "REQ-005"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-004"
+      ],
+      "depends_on": [
+        "T-01",
+        "T-03"
+      ],
+      "status": "approved_for_impl",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null
+    },
+    {
+      "id": "T-08",
+      "title": "Orquestador nocturno",
+      "reqs": [],
+      "decisions": [],
+      "depends_on": [
+        "T-02"
+      ],
+      "status": "in_progress",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "kind": "tooling",
+      "description": "Orquestador de prueba.",
+      "verify": "npm test"
+    }
+  ]
+}

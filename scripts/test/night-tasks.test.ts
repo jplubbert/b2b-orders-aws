@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Fixtures: copia de spec/ del repo en un directorio temporal, mutada por cada caso.
+// Fixtures: copia de una spec/ fija (scripts/test/fixtures/night-spec) en un directorio temporal, mutada por cada caso.
+// No se usa spec/ del repo: su estado real cambia con el proyecto.
 const REPO = fileURLToPath(new URL('../../', import.meta.url));
+const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/night-spec');
 const SCRIPT = join(REPO, 'scripts/lib/night-tasks.mjs');
 const LOOP = join(REPO, 'scripts/night-loop.sh');
 
@@ -31,13 +33,13 @@ const task = (tasks: Task[], id: string) => tasks.find((t) => t.id === id)!;
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'night-tasks-'));
-  cpSync(join(REPO, 'spec'), join(root, 'spec'), { recursive: true });
+  cpSync(SPEC_FIXTURE, join(root, 'spec'), { recursive: true });
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe('night-tasks pick', () => {
   it('no elige nada si ninguna ready tiene sus dependencias cerradas', () => {
-    // En la spec del repo T-03..T-07 esperan a T-01 (in_progress); T-08 está in_progress.
+    // En la fixture T-03..T-07 esperan a T-01 (in_progress); T-08 está in_progress.
     editTasks((ts) => ts.forEach((t) => { if (t.status === 'ready') t.status = 'approved_for_impl'; }));
     expect(run('pick')).toMatchObject({ code: 0, out: 'null\n' });
   });
@@ -171,8 +173,8 @@ describe('night-loop.sh', () => {
   });
 
   it('--dry-run no lanza nada ni modifica el repo (fixture git limpio)', () => {
-    // Copia mínima del repo: scripts/, spec/, package.json, en un git temporal con árbol limpio.
-    for (const d of ['scripts', 'spec']) cpSync(join(REPO, d), join(root, d), { recursive: true });
+    // Copia mínima del repo: scripts/, package.json y la spec/ fija, en un git temporal con árbol limpio.
+    for (const d of ['scripts']) cpSync(join(REPO, d), join(root, d), { recursive: true });
     cpSync(join(REPO, 'package.json'), join(root, 'package.json'));
     const git = (...a: string[]) =>
       execFileSync('git', ['-C', root, '-c', 'user.name=T', '-c', 'user.email=t@example.com', ...a], { encoding: 'utf8' });
@@ -209,7 +211,7 @@ describe('night-loop.sh', () => {
     const t03 = () => task(readTasks(), 'T-03') as Task & { review?: { verdict: string } };
 
     beforeEach(() => {
-      for (const d of ['scripts', 'spec', '.githooks']) cpSync(join(REPO, d), join(root, d), { recursive: true });
+      for (const d of ['scripts', '.githooks']) cpSync(join(REPO, d), join(root, d), { recursive: true });
       cpSync(join(REPO, 'package.json'), join(root, 'package.json'));
       git = (...a: string[]) =>
         execFileSync('git', ['-C', root, '-c', 'user.name=T', '-c', 'user.email=t@example.com', ...a], { encoding: 'utf8' });
