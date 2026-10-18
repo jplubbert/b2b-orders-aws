@@ -118,12 +118,17 @@
         "T-01",
         "T-03"
       ],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "npm test && npm run test:acceptance -- req_002 + REQ-002 E3 manual registrado en LOG",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_002 (perfil acotado de DEC-010, contra PedidosB2B-dev)",
+        "result": "npm test 87/87 (incluye backend/test/catalogRepo.test.ts); req_002_catalogo 4/4: E1 Arroz 1 kg y luego Yerba 1 kg con presentación y precio unitario, E1 (borde) lista completa ordenada por nombre, E2 inactivo excluido, E3 sin productos activos → lista vacía. Antes: lint, typecheck y expo export --platform android ok (LOG 2026-10-17 23:10).",
+        "commit": "6303d58",
+        "manual_pending": "REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → \"No hay productos disponibles\"; npm run seed y deslizar → vuelven."
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto."
+      "notes": "2026-10-17 23:10: backend sin cambios (T-01 ya filtra, ordena y pagina; req_002 4/4 contra dev). App: estado vacío \"No hay productos disponibles\" (REQ-002 E3), error en cabecera con reintento y deslizar para recargar. Prueba unitaria del repositorio de catálogo (Confirmación de DEC-006). lint, typecheck, npm test 82/82, check:spec y expo export android ok. Pendiente: verificación manual de E3 en el teléfono registrada en LOG; luego evidencia → verified_auto. 2026-10-17 23:35: por DEC-011 (decisión del usuario) la verificación manual de E3 se difiere a la aceptación en lote: evidencia automática registrada (npm test 87/87, req_002 4/4) + evidence.manual_pending → verified_auto. Pendiente: revisión independiente y, al aceptar, E3 en el teléfono."
     },
     {
       "id": "T-05",
@@ -219,7 +224,7 @@
         "date": "2026-10-17"
       },
       "blocked_by": null,
-      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed. Revisión independiente approved (codex gpt-6.1-sol) → reviewed; verify ajustado según su salvedad. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted. 2026-10-17 23:10: cambios pedidos por el usuario: (1) el implementador recibe solo el perfil AWS `night-loop` (usuario IAM night-loop-tests, DEC-010) para `npm run test:acceptance` y `npm run smoke`; deploy/bootstrap/seed/cdk/aws siguen denegados y `default` no existe para los hijos; (2) `reviewed` cierra dependencias (reemplaza el supuesto done/accepted/delivered), para encadenar sin esperar accepted; (3) progreso en vivo: stream-json → líneas legibles (scripts/lib/night-stream.mjs) en la terminal y en .night-loop/<corrida>/live.log.",
+      "notes": "2026-10-17: creada a pedido del usuario. Presupuestos por defecto: 2 h y 3 tareas por noche; 2 fallos sobre la misma tarea detienen el ciclo. Supuestos aprobados por el usuario (2026-10-17): dependencias cerradas = done/accepted/delivered; una tarea que queda done también pasa por el revisor. Pendiente revisión independiente antes de reviewed. Revisión independiente approved (codex gpt-6.1-sol) → reviewed; verify ajustado según su salvedad. Aceptada por José Pedro Lübbert el 2026-10-17 → accepted. 2026-10-17 23:10: cambios pedidos por el usuario: (1) el implementador recibe solo el perfil AWS `night-loop` (usuario IAM night-loop-tests, DEC-010) para `npm run test:acceptance` y `npm run smoke`; deploy/bootstrap/seed/cdk/aws siguen denegados y `default` no existe para los hijos; (2) `reviewed` cierra dependencias (reemplaza el supuesto done/accepted/delivered), para encadenar sin esperar accepted; (3) progreso en vivo: stream-json → líneas legibles (scripts/lib/night-stream.mjs) en la terminal y en .night-loop/<corrida>/live.log. 2026-10-17 23:35 (pedido del usuario): una tarea que el implementador deja sin cambios (código 0, mismo HEAD y estado) no cuenta como fallo: se salta en la corrida y se elige la siguiente independiente; el resumen lista las verificaciones manuales pendientes (DEC-011); límites por corrida: 10 tareas y 6 h.",
       "acceptance": {
         "by": "José Pedro Lübbert",
         "date": "2026-10-17"

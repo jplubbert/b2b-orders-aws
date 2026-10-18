@@ -194,3 +194,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: la misma de la entrada anterior: el usuario verifica REQ-002 E3 de T-04 en el teléfono y decide `accepted` de T-03; revisión independiente de este cambio de T-08 si el usuario la quiere.
+
+## 2026-10-17 23:35 · Claude (claude-opus-5-5)
+- Hecho (T-08, commit 7279b60, pedido del usuario; Req: N/A): (1) DEC-011 accepted (decisión del usuario José Pedro Lübbert): si lo único pendiente de una tarea es una verificación manual en el teléfono, el implementador la pasa a `verified_auto` con la evidencia automática y `evidence.manual_pending`, y la anota en "Pendiente manual" de LOG.md; el usuario la hace al aceptar en lote. Regla en AGENTS.md (Autoridad); `night-tasks.mjs manual-pending`; el resumen de cada corrida lista las pendientes. (2) Una tarea que el implementador deja sin cambios (código 0, mismo HEAD y estado) ya no cuenta como fallo ni se reintenta: se salta en la corrida y el loop toma la siguiente independiente (`pick --exclude`). (3) Límites por corrida: 10 tareas y 6 h.
+- Hecho (T-04, REQ-002): aplicada DEC-011 → `verified_auto` con evidencia automática nueva.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 87/87 (pruebas nuevas: `pick --exclude`, `manual-pending`, ciclo con T-03 sin cambios → se salta sin fallo y se implementa T-08, resumen con "Pendiente manual"); `npm run check:spec` ok; `AWS_PROFILE=night-loop npm run test:acceptance -- req_002` 4/4 contra dev; `scripts/night-loop.sh --dry-run` → presupuesto 21600 s, máx. 10 tareas, revisión pendiente T-04, tarea elegida T-07, Pendiente manual T-04.
+- Pendiente manual: T-04 (REQ-002 E3): `npm run app`, login almacen1 → ve Arroz y Yerba con presentación y `$1.300`/`$4.500`; poner `active=false` en ambos productos de la tabla de `dev`, deslizar hacia abajo → "No hay productos disponibles"; `npm run seed` y deslizar → vuelven.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: correr `scripts/night-loop.sh` (revisa T-04 y sigue con T-07); el usuario decide `accepted` de T-03 y, al aceptar en lote, hace las verificaciones de "Pendiente manual".
