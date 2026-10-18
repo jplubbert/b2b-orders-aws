@@ -377,3 +377,13 @@
 - Hecho: revisión independiente de T-11 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-11); salida íntegra en .night-loop/2026-10-18_014651/T-11-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 02:18 · Claude (claude-opus-5-5)
+- Hecho (T-12, REQ-007, commit 8ff828c): Inicio con marca "Pedidos B2B" (S-16), campos y "Ingresar" del tema en una tarjeta; Carrito con tarjetas por línea, total destacado en pie fijo y "Confirmar pedido" primario, pedido confirmado con `StatusBadge`; Mis pedidos y Detalle de pedido con tarjetas y `StatusBadge` (S-17); carga/vacío/error con `StateMessage` en las cuatro pantallas. `theme.test.tsx` cubre ya todo `app/src/app` y `app/src/components` (E1) y suma E3/E4/E5 de estas pantallas; `orders.test.tsx` solo cambia las etiquetas de estado. T-12 → `verified_auto` con evidencia.
+- Interpretaciones (detalles internos): `Button` con `loading` y el título como `accessibilityLabel` por defecto; `StateMessage` de carga con `label` accesible ("Comprobando sesión"); Inicio en `ScrollView` para tocar "Ingresar" con el teclado abierto; lema "Catálogo y pedidos para tu almacén" bajo la marca (texto nuevo de la demo, no de REQ-001..005); el total sigue siendo un solo texto "Total $X" (S-21); pie del Carrito con `SafeAreaView`.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 + jest 103/103; `npm exec -w app -- expo export --platform android` ok; `npm run test:acceptance` 25/25; `npm run smoke` 2/2; `npm run check:spec` ok (hook). Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.
+- Pendiente manual: T-12: REQ-007 E6 en el teléfono (Android, Expo Go 57): npm run app → Inicio con marca "Pedidos B2B"; contraseña errónea → "Correo o contraseña incorrectos" en recuadro de error; login almacen1 → Catálogo → detalle de "Arroz 1 kg"; 2 Arroz + 1 Yerba → Carrito con tarjetas, subtotales $2.600 y $4.500, "Total $7.100" en el pie (no tapado por la navegación) → Confirmar → "Pedido confirmado", N° y etiqueta "Recibido"; Mis pedidos y su detalle con tarjetas y etiqueta de color. Todas las pantallas del mismo sistema visual.
+- Pendiente deploy: ninguno (solo app).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-12 (diff 8ff828c, REQ-007, DEC-003, DEC-008, DEC-012). Con T-09..T-12 en `reviewed`, el corte 2 queda listo para la aceptación en lote del usuario con las verificaciones manuales en el teléfono (DEC-011).
