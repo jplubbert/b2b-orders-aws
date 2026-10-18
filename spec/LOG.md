@@ -282,3 +282,11 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-06).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 00:30 · Claude (claude-opus-5-5)
+- Hecho (T-06, REQ-004, pedido del usuario): `npm run deploy:dev` (perfil default, us-east-1): resolver `Query.order` desplegado, `.env.dev` escrito, seed ok. Evidencia registrada → `verified_auto` con `manual_pending` (DEC-011).
+- Verificado y cómo: `AWS_PROFILE=night-loop npm run test:acceptance -- req_004` 6/6; `AWS_PROFILE=night-loop npm run smoke` 2/2; `npm test` vitest 137/137 + jest 18/18; `npm run check:spec` ok. almacen1 y almacen2 tienen 0 pedidos en `dev` (Query `CUSTOMER#C-ALMACEN1`/`C-ALMACEN2`), así que almacen2 sirve para REQ-004 E4.
+- Pendiente manual: T-06 (criterio de éxito y REQ-004 E4): almacen2 → Mis pedidos → "Todavía no hiciste pedidos"; almacen1 → pedido 2 Arroz + 1 Yerba → Mis pedidos primero en RECIBIDO → `npm run order:set-status -- <id> ENVIADO` → deslizar → ENVIADO; detalle con $2.600, $4.500 y total $7.100.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-06 (la hace el orquestador en su próxima corrida: diff fd7e0c4, REQ-004, DEC-004, DEC-006, DEC-009); el usuario hace las verificaciones de "Pendiente manual" (T-04..T-07) y decide `accepted` en lote, junto con T-03.
