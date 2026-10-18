@@ -636,3 +636,14 @@
 - En curso / roto: nada. La pila `PedidosB2B-dev`, `CDKToolkit` y el usuario `night-loop-tests` (llave inactiva) siguen en [REDACTED_AWS_ACCOUNT_MAIN].
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-18 (la hace el autopilot); el usuario decide `accepted` de T-18 y cuándo borrar los recursos de [REDACTED_AWS_ACCOUNT_MAIN].
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "El demo funciona en [REDACTED_AWS_ACCOUNT_DEMO], probado en el teléfono. Borra de la cuenta principal (perfil default) la pila PedidosB2B-dev, el CDKToolkit con su bucket y el usuario night-loop-tests con su llave inactiva. Confirma antes que nada apunte a [REDACTED_AWS_ACCOUNT_DEMO]. Anótalo en LOG.md."
+- Verificación manual (usuario, 2026-10-18): el demo funciona en el teléfono contra [REDACTED_AWS_ACCOUNT_DEMO].
+- Comprobado antes de borrar: `.env.dev` y `cdk-outputs.json` apuntan a los recursos de [REDACTED_AWS_ACCOUNT_DEMO] (user pool `[REDACTED_USER_POOL_ID_DEV]`, AppSync `4kmsg6pv…`), distintos de los de la pila vieja (`[REDACTED_USER_POOL_ID_OLD]`, `3w5fmu7t…`); los perfiles `pedidos-demo` y `night-loop` → [REDACTED_AWS_ACCOUNT_DEMO]; sin referencias a [REDACTED_AWS_ACCOUNT_MAIN] ni a sus recursos fuera del historial de spec/. En [REDACTED_AWS_ACCOUNT_MAIN]/us-east-1 solo existían `PedidosB2B-dev` y `CDKToolkit`.
+- Hecho (T-18, DEC-014), en [REDACTED_AWS_ACCOUNT_MAIN] con el perfil `default`: `iam delete-access-key` de [REDACTED_ACCESS_KEY_ID_2] (inactiva); `cloudformation delete-stack PedidosB2B-dev` → DELETE_COMPLETE (con ella el usuario `night-loop-tests`, la tabla, el user pool, AppSync y la Lambda; RemovalPolicy DESTROY); bucket `cdk-hnb659fds-assets-[REDACTED_AWS_ACCOUNT_MAIN]-us-east-1` vaciado (10 versiones) → `delete-stack CDKToolkit` → DELETE_COMPLETE → bucket retenido borrado con `s3api delete-bucket`.
+- Verificado y cómo: `iam get-user night-loop-tests` → NoSuchEntity; `head-bucket` → 404; repositorio ECR → RepositoryNotFoundException; SSM `/cdk-bootstrap/hnb659fds/version` → ParameterNotFound; en us-east-1 sin pilas, tablas DynamoDB, user pools ni log groups `/aws/lambda/PedidosB2B*`. `npm run smoke` 2/2 contra [REDACTED_AWS_ACCOUNT_DEMO] tras el borrado.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-18 (la hace el autopilot); el usuario decide `accepted` de T-18. Siguen pendientes las verificaciones manuales de T-04..T-07.
