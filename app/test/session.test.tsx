@@ -16,7 +16,14 @@ jest.mock('aws-amplify/auth', () => ({
   signIn: jest.fn(),
   signOut: jest.fn(),
 }));
-jest.mock('expo-router', () => ({ router: { replace: jest.fn(), push: jest.fn() } }));
+// `Redirect` registra el destino aparte de `router.replace` para distinguir la redirección declarativa del arranque.
+jest.mock('expo-router', () => ({
+  router: { replace: jest.fn(), push: jest.fn() },
+  Redirect: ({ href }: { href: string }) => {
+    mockRedirect(href);
+    return null;
+  },
+}));
 jest.mock('@/lib/amplify', () => ({ isConfigured: true }));
 
 const mockFetchAuthSession = jest.mocked(fetchAuthSession);
@@ -24,6 +31,7 @@ const mockFetchUserAttributes = jest.mocked(fetchUserAttributes);
 const mockSignIn = jest.mocked(signIn);
 const mockSignOut = jest.mocked(signOut);
 const mockReplace = jest.mocked(router.replace);
+const mockRedirect = jest.fn<(href: string) => void>();
 
 const withSession = { tokens: { idToken: { toString: () => 'id-token' } } } as unknown as Awaited<
   ReturnType<typeof fetchAuthSession>
@@ -88,7 +96,9 @@ describe('REQ-001 inicio de sesión', () => {
   it('E3: al reabrir la app con sesión vigente → catálogo sin pedir credenciales', async () => {
     mockFetchAuthSession.mockResolvedValue(withSession);
     await render(<LoginScreen />);
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/catalog'));
+    await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith('/catalog'));
+    // Con `<Redirect>` y no `router.replace`: al abrir la app el navegador raíz puede no estar montado aún.
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(screen.queryByPlaceholderText('Correo')).toBeNull();
     expect(mockSignIn).not.toHaveBeenCalled();
   });

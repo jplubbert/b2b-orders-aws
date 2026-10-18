@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { signIn } from 'aws-amplify/auth';
@@ -14,6 +14,7 @@ import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/th
 // contraseña y, si son inválidas, muestra "Correo o contraseña incorrectos" sin salir de aquí (E2).
 export default function LoginScreen() {
   const [checking, setChecking] = useState(isConfigured);
+  const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -22,9 +23,12 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!isConfigured) return;
     let active = true;
-    void hasSession().then((signedIn) => {
+    void hasSession().then((found) => {
       if (!active) return;
-      if (signedIn) router.replace('/catalog');
+      // Sin `router.replace` aquí: al abrir la app la sesión puede resolverse antes de que el navegador
+      // raíz esté montado ("Can't perform a React state update on a component that hasn't mounted yet").
+      // `<Redirect>` navega recién cuando esta pantalla tiene foco dentro del navegador.
+      if (found) setSignedIn(true);
       else setChecking(false);
     });
     return () => {
@@ -60,6 +64,8 @@ export default function LoginScreen() {
       </Screen>
     );
   }
+
+  if (signedIn) return <Redirect href="/catalog" />;
 
   if (checking) {
     return (

@@ -42,6 +42,7 @@ jest.mock('@/lib/api', () => ({
 // useFocusEffect corre el efecto al montar, como cuando la pantalla gana el foco.
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+  Redirect: () => null,
   Stack: { Screen: () => null },
   useLocalSearchParams: jest.fn(),
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
