@@ -5,7 +5,8 @@ node_modules/
 
 # Expo
 .expo/
-dist/
+# salida de `expo export`; anclada para no ignorar la ruta src/app/dist (panel del distribuidor)
+/dist/
 web-build/
 expo-env.d.ts
 

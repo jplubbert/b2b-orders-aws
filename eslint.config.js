@@ -3,7 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/cdk.out/**', '**/.expo/**', '**/dist/**', 'app/expo-env.d.ts'] },
+  { ignores: ['**/node_modules/**', '**/cdk.out/**', '**/.expo/**', '**/dist/**', '!app/src/app/dist/**', 'app/expo-env.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

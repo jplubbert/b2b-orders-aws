@@ -7,14 +7,16 @@ import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { isConfigured } from '@/lib/amplify';
-import { hasSession, loginErrorMessage } from '@/lib/session';
+import { currentSession, type Home, loginErrorMessage, NO_ACCESS, rejectSession } from '@/lib/session';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
-// REQ-001: con sesión vigente abre el catálogo sin pedir credenciales (E3); si no, pide correo y
-// contraseña y, si son inválidas, muestra "Correo o contraseña incorrectos" sin salir de aquí (E2).
+// REQ-001: con sesión vigente abre la pantalla del rol sin pedir credenciales (E3, REQ-009 E4); si no,
+// pide correo y contraseña y, si son inválidas, muestra "Correo o contraseña incorrectos" sin salir de
+// aquí (E2). REQ-009: almaceneros → catálogo, distribuidores → panel "Pedidos"; sin grupo → NO_ACCESS,
+// sesión cerrada y sigue en inicio (E3).
 export default function LoginScreen() {
   const [checking, setChecking] = useState(isConfigured);
-  const [signedIn, setSignedIn] = useState(false);
+  const [home, setHome] = useState<Home | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,18 +25,29 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!isConfigured) return;
     let active = true;
-    void hasSession().then((found) => {
+    void (async () => {
+      const session = await currentSession();
+      if (session && !session.home) await rejectSession();
       if (!active) return;
       // Sin `router.replace` aquí: al abrir la app la sesión puede resolverse antes de que el navegador
       // raíz esté montado ("Can't perform a React state update on a component that hasn't mounted yet").
       // `<Redirect>` navega recién cuando esta pantalla tiene foco dentro del navegador.
-      if (found) setSignedIn(true);
-      else setChecking(false);
-    });
+      if (session?.home) return setHome(session.home);
+      if (session) setError(NO_ACCESS);
+      setChecking(false);
+    })();
     return () => {
       active = false;
     };
   }, []);
+
+  // Tras iniciar sesión, el rol sale de los grupos del token recién emitido (REQ-009 E1–E3).
+  async function enter() {
+    const target = (await currentSession())?.home;
+    if (target) return router.replace(target);
+    await rejectSession();
+    setError(NO_ACCESS);
+  }
 
   async function onSubmit() {
     setBusy(true);
@@ -46,11 +59,11 @@ export default function LoginScreen() {
         password,
         options: { authFlowType: 'USER_PASSWORD_AUTH' },
       });
-      if (isSignedIn) router.replace('/catalog');
+      if (isSignedIn) await enter();
       else setError(`Paso pendiente: ${nextStep.signInStep}`);
     } catch (e) {
       // Puede quedar una sesión que la comprobación inicial no vio (p. ej. un token recién renovado).
-      if (e instanceof Error && e.name === 'UserAlreadyAuthenticatedException') router.replace('/catalog');
+      if (e instanceof Error && e.name === 'UserAlreadyAuthenticatedException') await enter();
       else setError(loginErrorMessage(e));
     } finally {
       setBusy(false);
@@ -65,7 +78,7 @@ export default function LoginScreen() {
     );
   }
 
-  if (signedIn) return <Redirect href="/catalog" />;
+  if (home) return <Redirect href={home} />;
 
   if (checking) {
     return (

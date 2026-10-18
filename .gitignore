@@ -4,5 +4,7 @@ cdk.out/
 cdk-outputs*.json
 .expo/
 dist/
+# ruta de Expo Router del panel del distribuidor (T-15), no es salida de compilación
+!app/src/app/dist/
 *.tsbuildinfo
 .autopilot/

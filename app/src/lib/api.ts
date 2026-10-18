@@ -1,5 +1,7 @@
 import { generateClient } from 'aws-amplify/api';
 import type {
+  AllOrdersQuery,
+  AllOrdersQueryVariables,
   CreateOrderMutation,
   CreateOrderMutationVariables,
   ListProductsQuery,
@@ -7,6 +9,7 @@ import type {
   OrderDetailQuery,
   OrderDetailQueryVariables,
   OrderLineInput,
+  OrderStatus,
 } from './generated/graphql';
 
 // Tipos generados desde spec/contracts/schema.graphql (DEC-002): `npm run codegen` tras cambiar el contrato o una consulta.
@@ -14,6 +17,7 @@ export type Product = ListProductsQuery['listProducts'][number];
 export type CreatedOrder = CreateOrderMutation['createOrder'];
 export type OrderSummary = MyOrdersQuery['myOrders'][number];
 export type OrderDetail = NonNullable<OrderDetailQuery['order']>;
+export type PanelOrder = AllOrdersQuery['allOrders'][number];
 
 const LIST_PRODUCTS = /* GraphQL */ `
   query ListProducts {
@@ -69,6 +73,28 @@ const ORDER_DETAIL = /* GraphQL */ `
   }
 `;
 
+// Panel del distribuidor (REQ-010): con líneas, para que el detalle salga del panel ya cargado (S-19).
+const ALL_ORDERS = /* GraphQL */ `
+  query AllOrders($status: OrderStatus) {
+    allOrders(status: $status) {
+      id
+      customerId
+      number
+      createdAt
+      total
+      status
+      lines {
+        productId
+        name
+        presentation
+        quantity
+        unitPrice
+        subtotal
+      }
+    }
+  }
+`;
+
 // El cliente se crea en cada llamada: así siempre es posterior a Amplify.configure (en _layout).
 export async function listProducts(): Promise<Product[]> {
   const res = (await generateClient().graphql({ query: LIST_PRODUCTS })) as { data: ListProductsQuery };
@@ -86,6 +112,13 @@ export async function getOrder(id: string): Promise<OrderDetail | null> {
   const variables: OrderDetailQueryVariables = { id };
   const res = (await generateClient().graphql({ query: ORDER_DETAIL, variables })) as { data: OrderDetailQuery };
   return res.data.order;
+}
+
+/** Pedidos de todos los almacenes, del más reciente al más antiguo (el servidor ordena); solo los de `status` si se indica (REQ-010). */
+export async function allOrders(status: OrderStatus | null): Promise<PanelOrder[]> {
+  const variables: AllOrdersQueryVariables = { status };
+  const res = (await generateClient().graphql({ query: ALL_ORDERS, variables })) as { data: AllOrdersQuery };
+  return res.data.allOrders;
 }
 
 /** Error de GraphQL con su `errorType` (motivos de rechazo de REQ-003, DEC-005). */

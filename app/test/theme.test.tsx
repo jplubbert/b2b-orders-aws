@@ -149,6 +149,7 @@ describe('REQ-007 E1: sin colores literales ni fontSize numérico fuera de theme
       'cart.tsx',
       'orders.tsx',
       join('order', '[id].tsx'),
+      join('dist', 'index.tsx'),
     ]) {
       expect(names).toContain(join('app', f));
     }

@@ -1,15 +1,42 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession, signOut } from 'aws-amplify/auth';
 
 // REQ-001: mismo mensaje para contraseña errónea y usuario inexistente (no revela qué correos existen).
 export const INVALID_CREDENTIALS = 'Correo o contraseña incorrectos';
 const INVALID_CREDENTIALS_ERRORS = new Set(['NotAuthorizedException', 'UserNotFoundException']);
 
-/** REQ-001 E3: Amplify guarda los tokens en AsyncStorage y los renueva con el refresh token. */
-export async function hasSession(): Promise<boolean> {
+// REQ-009 E3: usuario válido que no está en `almaceneros` ni en `distribuidores`.
+export const NO_ACCESS = 'Tu usuario no tiene acceso a la app';
+
+/** Pantalla de inicio de cada rol (REQ-009): catálogo del almacenero o panel del distribuidor. */
+export type Home = '/catalog' | '/dist';
+
+/** Rol según el claim `cognito:groups` del token de id; S-25: en ambos grupos gana el distribuidor. */
+export function homeForGroups(groups: unknown): Home | null {
+  const list = Array.isArray(groups) ? groups : [];
+  if (list.includes('distribuidores')) return '/dist';
+  if (list.includes('almaceneros')) return '/catalog';
+  return null;
+}
+
+/**
+ * REQ-001 E3 / REQ-009 E4: Amplify guarda los tokens en AsyncStorage y los renueva con el refresh token.
+ * Sin sesión → `null`; con sesión → la pantalla de su rol (`home: null` si no tiene acceso, REQ-009 E3).
+ */
+export async function currentSession(): Promise<{ home: Home | null } | null> {
   try {
-    return Boolean((await fetchAuthSession()).tokens?.idToken);
+    const idToken = (await fetchAuthSession()).tokens?.idToken;
+    return idToken ? { home: homeForGroups(idToken.payload['cognito:groups']) } : null;
   } catch {
-    return false;
+    return null;
+  }
+}
+
+/** REQ-009 E3: cierra la sesión local de un usuario sin acceso; como en REQ-005, un error no impide salir. */
+export async function rejectSession(): Promise<void> {
+  try {
+    await signOut();
+  } catch {
+    // signOut sin `global` ya borró los tokens locales
   }
 }
 

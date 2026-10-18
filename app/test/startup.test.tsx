@@ -14,10 +14,11 @@ jest.mock('aws-amplify/auth', () => ({ fetchAuthSession: jest.fn(), signIn: jest
 jest.mock('@/lib/amplify', () => ({ isConfigured: true, configureAmplify: jest.fn() }));
 
 const mockFetchAuthSession = jest.mocked(fetchAuthSession);
-const withSession = { tokens: { idToken: { toString: () => 'id-token' } } } as unknown as Awaited<
-  ReturnType<typeof fetchAuthSession>
->;
-const withoutSession = {} as Awaited<ReturnType<typeof fetchAuthSession>>;
+type AuthSession = Awaited<ReturnType<typeof fetchAuthSession>>;
+const sessionOf = (groups: string[]) =>
+  ({ tokens: { idToken: { toString: () => 'id-token', payload: { 'cognito:groups': groups } } } }) as unknown as AuthSession;
+const withSession = sessionOf(['almaceneros']);
+const withoutSession = {} as AuthSession;
 
 // Las demás pantallas no importan aquí: basta con que existan las rutas que declara el layout.
 const stub = (name: string) => () => <Text>{name}</Text>;
@@ -29,6 +30,7 @@ const routes = {
   cart: stub('Pantalla carrito'),
   orders: stub('Pantalla mis pedidos'),
   'order/[id]': stub('Pantalla pedido'),
+  'dist/index': stub('Pantalla panel'),
 };
 
 // En el teléfono la URL inicial llega de forma asíncrona (Linking.getInitialURL).
@@ -49,6 +51,15 @@ describe('arranque de la app (REQ-001 E3)', () => {
     expect(await screen.findByText('Pantalla catálogo')).toBeOnTheScreen();
     expect(app.getPathname()).toBe('/catalog');
     expect(screen.queryByPlaceholderText('Correo')).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('REQ-009 E4: distribuidor con sesión vigente abre el panel "Pedidos" sin errores de React', async () => {
+    mockFetchAuthSession.mockResolvedValue(sessionOf(['distribuidores']));
+    const app = renderRouter(routes, nativeStart);
+    await app;
+    expect(await screen.findByText('Pantalla panel')).toBeOnTheScreen();
+    expect(app.getPathname()).toBe('/dist');
     expect(consoleError).not.toHaveBeenCalled();
   });
 

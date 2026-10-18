@@ -27,6 +27,8 @@ export default function RootLayout() {
         <Stack.Screen name="cart"options={{ title: 'Carrito' }} />
         <Stack.Screen name="orders" options={{ title: 'Mis pedidos' }} />
         <Stack.Screen name="order/[id]" options={{ title: 'Pedido' }} />
+        {/* REQ-009/REQ-010: inicio del distribuidor (S-28). */}
+        <Stack.Screen name="dist/index" options={{ title: 'Pedidos', headerBackVisible: false }} />
       </Stack>
     </CartProvider>
   );

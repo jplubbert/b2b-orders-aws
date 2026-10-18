@@ -44,3 +44,10 @@ export type OrderDetailQueryVariables = Exact<{
 
 
 export type OrderDetailQuery = { order: { id: string, number: string, createdAt: string, total: number, status: OrderStatus, lines: Array<{ productId: string, name: string, presentation: string, quantity: number, unitPrice: number, subtotal: number }> } | null };
+
+export type AllOrdersQueryVariables = Exact<{
+  status: OrderStatus | null | undefined;
+}>;
+
+
+export type AllOrdersQuery = { allOrders: Array<{ id: string, customerId: string, number: string, createdAt: string, total: number, status: OrderStatus, lines: Array<{ productId: string, name: string, presentation: string, quantity: number, unitPrice: number, subtotal: number }> }> };
