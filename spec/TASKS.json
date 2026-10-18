@@ -217,13 +217,13 @@
         "T-01",
         "T-03"
       ],
-      "status": "reviewed",
+      "status": "verified_auto",
       "verify": "npm test (componentes jest-expo) && npm run test:acceptance -- req_001 + recorrido manual REQ-001 E1–E3 y REQ-005 E1–E2 registrado en LOG",
       "evidence": {
-        "command": "npm test && AWS_PROFILE=night-loop npm run test:acceptance -- req_001 req_005 (perfil de DEC-010, contra PedidosB2B-dev desplegado)",
-        "result": "npm test vitest 124/124 + jest 10/10 (app/test/session.test.tsx: REQ-001 E1–E3, REQ-005 E1–E2); req_001_login 2/2; req_005 no tiene archivo de aceptación (manual en corte 1, DEC-007), queda en manual_pending.",
-        "commit": "e228c2f",
-        "manual_pending": "REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → \"Correo o contraseña incorrectos\"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, \"Cerrar sesión\" → inicio y carrito vacío; reabrir → pide credenciales."
+        "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android && git show --stat 775954c",
+        "result": "lint ok; typecheck ok; vitest 137/137 + jest 105/105 (session.test.tsx E3: Inicio con sesión vigente renderiza <Redirect href=\"/catalog\"> y no llama a router.replace al arrancar, falla con el código anterior; startup.test.tsx: router real de expo-router con URL inicial asíncrona, con sesión → /catalog y sin sesión → / pidiendo credenciales, ambos sin console.error); expo export android ok. Solo app/src/app/index.tsx y app/test; sin backend/, infra/, spec/contracts/ ni tests/acceptance/ (req_001 de aceptación no aplica a este cambio: es del backend). La advertencia del teléfono no se reproduce en jest: queda en manual_pending.",
+        "commit": "775954c",
+        "manual_pending": "REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → \"Correo o contraseña incorrectos\"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, \"Cerrar sesión\" → inicio y carrito vacío; reabrir → pide credenciales. Además (hallazgo del 2026-10-18): cerrar Expo Go con sesión vigente y reabrir → catálogo sin el aviso \"Can't perform a React state update on a component that hasn't mounted yet\" (ExpoRoot, ContextNavigator)."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
@@ -233,7 +233,7 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: req_001 2/2 contra dev desplegado → evidencia + manual_pending (DEC-011) → verified_auto."
+      "notes": "2026-10-17 23:53: implementada y verificada en local. App: al abrir, Inicio de sesión comprueba la sesión guardada por Amplify (AsyncStorage) y, si hay ID token vigente o renovable, abre el catálogo sin pedir credenciales (REQ-001 E3); NotAuthorizedException y UserNotFoundException → \"Correo o contraseña incorrectos\" sin salir de inicio (E2), otros errores se muestran con su causa; UserAlreadyAuthenticatedException → catálogo. \"Cerrar sesión\" en la cabecera del catálogo: signOut local, vacía el carrito y vuelve a inicio (REQ-005 E1); al reabrir pide credenciales (E2). Backend sin cambios. Pruebas de componentes con jest-expo 57 + @testing-library/react-native 14 (`npm test -w app`, encadenado en `npm test`). lint, typecheck, npm test (vitest 124/124, jest 10/10) y expo export android ok. Pendiente: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (denegado por permisos en esta sesión); luego evidencia → verified_auto con REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono como pendiente manual (DEC-011). 2026-10-18 00:05: req_001 2/2 contra dev desplegado → evidencia + manual_pending (DEC-011) → verified_auto. 2026-10-18: hallazgo en el teléfono (informado al verificar T-12): al abrir con sesión, aviso \"Can't perform a React state update on a component that hasn't mounted yet\" (ExpoRoot, ContextNavigator). Causa probable: router.replace desde el efecto de comprobación de sesión antes de que el navegador raíz esté montado. Corrección en 775954c: <Redirect href=\"/catalog\"> en vez de router.replace en el arranque (onSubmit sin cambios). reviewed → verified_auto para nueva revisión independiente; la revisión anterior (sobre e228c2f) queda en review hasta que se reemplace. Evidencia anterior: commit e228c2f, req_001_login 2/2."
     },
     {
       "id": "T-08",

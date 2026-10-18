@@ -412,3 +412,15 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario confirma T-12 (REQ-007 E6) en el teléfono y decide `accepted` en lote del corte 2 (T-09..T-12); el corte 1 (T-03..T-07) sigue esperando su checklist y aceptación.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Hallazgo del usuario en el teléfono (al verificar T-12): al abrir la app aparece "Can't perform a React state update on a component that hasn't mounted yet" (ExpoRoot, ContextNavigator); el usuario lo atribuye a que la redirección de sesión ocurre antes de que el navegador esté montado.
+- Hecho (T-07, REQ-001 E3, commit 775954c): Inicio ya no llama a `router.replace('/catalog')` desde el efecto que comprueba la sesión al arrancar; renderiza `<Redirect href="/catalog" />`, que navega recién cuando la pantalla tiene foco dentro del navegador raíz. El login manual sigue con `router.replace` (ocurre tras un toque, con el navegador montado). Pruebas: `session.test.tsx` E3 exige `<Redirect>` y ningún `router.replace` al arrancar (falla con el código anterior); `startup.test.tsx` nuevo, con el router real (`expo-router/testing-library`, URL inicial asíncrona como en el teléfono): con sesión → `/catalog`, sin sesión → `/` pidiendo credenciales, ambos sin `console.error`.
+- Interpretaciones: la corrección se asigna a T-07 y no a T-12 porque el código y el REQ (REQ-001 E3) son de T-07; T-12 (REQ-007) no cambia y sigue `reviewed`. T-07: `reviewed` → `verified_auto` con evidencia nueva para que el diff 775954c pase por revisión independiente.
+- Límite de la prueba: la advertencia no se reproduce en jest (ni con el código anterior); `startup.test.tsx` protege el arranque con el router real pero no reproduce el orden de montaje del teléfono. La confirmación final es manual y se suma al `manual_pending` de T-07.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 + jest 105/105; `npm exec -w app -- expo export --platform android` ok; `npm run check:spec` ok. No se corrieron `test:acceptance` ni `smoke` (cambio solo de app, sin backend ni deploy).
+- Pendiente manual: T-07 (además de lo anterior): cerrar Expo Go con sesión vigente y reabrir → catálogo sin el aviso. T-12 (REQ-007 E6) sigue pendiente. Corte 1: T-04, T-05, T-06 E4, T-07.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-07 (diff 775954c, REQ-001, DEC-003, DEC-004) en la próxima corrida del orquestador; el usuario confirma en el teléfono que el aviso no aparece al reabrir.
