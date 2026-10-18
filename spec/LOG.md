@@ -626,3 +626,13 @@
 - En curso / roto: T-18 `in_progress`: el autopilot usa el perfil `night-loop`, cuya llave es de `night-loop-tests` en la cuenta principal; contra el `.env.dev` nuevo su aceptación y humo fallarán hasta crear la llave en la cuenta nueva. La app en el teléfono necesita reiniciar Expo para tomar el `.env.dev` nuevo.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario revisa el resumen del cambio de autopilot y lo aprueba (o no); decide `accepted` de DEC-014. No correr el autopilot antes. No borrar recursos de [REDACTED_AWS_ACCOUNT_MAIN] sin pedido expreso.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Sigue con los 5 pasos, con un cambio en el paso 2: no guardes la llave vieja como [night-loop-principal]; desactívala en la cuenta principal con aws iam update-access-key --status Inactive y reemplaza [night-loop] por la llave nueva. Si el dry-run pasa, marca DEC-014 como accepted (lo apruebo yo, Pepe) y anótalo en LOG.md. Haz commit y push."
+- Hecho (T-18, DEC-014): `aws iam create-access-key` para `night-loop-tests` en [REDACTED_AWS_ACCOUNT_DEMO] ([REDACTED_ACCESS_KEY_ID_4]) → reemplaza `[night-loop]` en ~/.aws/credentials; la llave anterior de [REDACTED_AWS_ACCOUNT_MAIN] ([REDACTED_ACCESS_KEY_ID_2]) → `Inactive` (no borrada). Sin cambios en scripts/autopilot.sh. T-18 → `verified_auto`.
+- Verificado y cómo: `sts get-caller-identity --profile night-loop` → `arn:aws:iam::[REDACTED_AWS_ACCOUNT_DEMO]:user/night-loop-tests`; `dynamodb list-tables`, `s3 ls`, `iam get-user-policy` → AccessDenied; `list-access-keys` en la cuenta principal → Inactive; `AWS_PROFILE=night-loop npm run smoke` 2/2; `scripts/autopilot.sh --dry-run` ok (guardas: `AWS_PROFILE=night-loop`, llave [REDACTED_ACCESS_KEY_ID_4]); `npm run check:spec` ok.
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba DEC-014 → `accepted`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. La pila `PedidosB2B-dev`, `CDKToolkit` y el usuario `night-loop-tests` (llave inactiva) siguen en [REDACTED_AWS_ACCOUNT_MAIN].
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-18 (la hace el autopilot); el usuario decide `accepted` de T-18 y cuándo borrar los recursos de [REDACTED_AWS_ACCOUNT_MAIN].

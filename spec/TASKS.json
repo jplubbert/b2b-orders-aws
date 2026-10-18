@@ -617,10 +617,15 @@
         "DEC-010"
       ],
       "depends_on": [],
-      "status": "in_progress",
+      "status": "verified_auto",
       "verify": "aws sts get-caller-identity --profile pedidos-demo (cuenta [REDACTED_AWS_ACCOUNT_DEMO]) && npm run bootstrap:dev && npm run deploy:dev && npm run smoke && npm run test:acceptance && npm run check:spec; luego autopilot con night-loop en la cuenta nueva y scripts/autopilot.sh --dry-run",
       "blocked_by": null,
-      "notes": "2026-10-18: perfil pedidos-demo en ~/.aws/config; bootstrap (CDKToolkit) + deploy:dev (pila PedidosB2B-dev, cuenta [REDACTED_AWS_ACCOUNT_DEMO]) + seed ok; smoke 2/2 y aceptación 41/41 contra la cuenta nueva. package.json: bootstrap/deploy con pedidos-demo; seed, order:set-status, smoke y test:acceptance usan `${AWS_PROFILE:-pedidos-demo}` (respeta night-loop). La pila de [REDACTED_AWS_ACCOUNT_MAIN] sigue intacta (UPDATE_COMPLETE). Pendiente: autopilot (perfil night-loop apunta aún a la cuenta principal), a la espera del visto bueno del usuario."
+      "notes": "2026-10-18: perfil pedidos-demo en ~/.aws/config; bootstrap (CDKToolkit) + deploy:dev (pila PedidosB2B-dev, cuenta [REDACTED_AWS_ACCOUNT_DEMO]) + seed ok; smoke 2/2 y aceptación 41/41 contra la cuenta nueva. package.json: bootstrap/deploy con pedidos-demo; seed, order:set-status, smoke y test:acceptance usan `${AWS_PROFILE:-pedidos-demo}` (respeta night-loop). La pila de [REDACTED_AWS_ACCOUNT_MAIN] sigue intacta (UPDATE_COMPLETE). Pendiente: autopilot (perfil night-loop apunta aún a la cuenta principal), a la espera del visto bueno del usuario. 2026-10-18 (aprobado por el usuario, con cambio: desactivar la llave vieja en vez de guardarla): llave nueva de night-loop-tests en [REDACTED_AWS_ACCOUNT_DEMO] en [night-loop]; la de [REDACTED_AWS_ACCOUNT_MAIN] → Inactive. Verificado; DEC-014 aceptada por José Pedro Lübbert (Pepe). verified_auto; pendiente revisión independiente.",
+      "evidence": {
+        "command": "aws sts get-caller-identity --profile pedidos-demo && npm run bootstrap:dev && npm run deploy:dev && npm run smoke && npm run test:acceptance && aws sts get-caller-identity --profile night-loop && AWS_PROFILE=night-loop npm run smoke && scripts/autopilot.sh --dry-run && npm run check:spec",
+        "result": "pedidos-demo → assumed-role/OrganizationAccountAccessRole en [REDACTED_AWS_ACCOUNT_DEMO]; bootstrap ok; deploy:dev ok (PedidosB2B-dev + seed); smoke 2/2; aceptación 41/41; night-loop → user/night-loop-tests en [REDACTED_AWS_ACCOUNT_DEMO], dynamodb list-tables/s3 ls/iam get-user-policy AccessDenied; llave anterior de [REDACTED_AWS_ACCOUNT_MAIN] Inactive; smoke con night-loop 2/2; autopilot --dry-run ok (llave de la cuenta nueva); check:spec ok. Pila de [REDACTED_AWS_ACCOUNT_MAIN] intacta.",
+        "commit": "7a6897c"
+      }
     }
   ]
 }
