@@ -533,9 +533,9 @@ describe('autopilot.sh', () => {
         expect(header(c, 'Tags')).toBe('white_check_mark');
         expect(header(c, 'Title')).toMatch(/^autopilot .*: terminó bien$/);
         expect(body(c)).toContain('Motivo de parada: no hay tareas in_progress/ready/approved_for_impl');
-        expect(body(c)).toContain('Hechas: 1 tarea(s). T-03 implementada');
-        expect(body(c)).toContain('Fallidas: 0 fallo(s)');
-        expect(body(c)).toContain('Próxima acción: revisar el resumen en spec/LOG.md');
+        expect(body(c)).toContain('Hechas: 1 tarea(s) · Fallidas: 0 fallo(s)');
+        expect(body(c)).toContain('Detalle: T-03 implementada');
+                expect(body(c)).toContain('Próxima acción: revisar el resumen en spec/LOG.md');
         expect(r.stdout).toContain('aviso ntfy enviado (prioridad default)');
       });
 
@@ -568,6 +568,24 @@ describe('autopilot.sh', () => {
         expect(body(c!)).toContain('Próxima acción: correr npm run deploy:dev (T-03)');
       });
 
+      it('un rechazo del revisor pide intervención: prioridad alta, con la tarea rechazada', () => {
+        const r = autopilot({ ...ntfy, STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: falta un borde"],"notes":"n"}' }, '--max-tasks', '1');
+        expect(r.status).toBe(0);
+        const [c] = curlCalls();
+        expect(header(c!, 'Priority')).toBe('high');
+        expect(body(c!)).toContain('rechazadas por el revisor: T-03');
+        expect(body(c!)).toContain('Próxima acción: atender los hallazgos del revisor (review de T-03');
+      });
+
+      it('si el detalle no cabe, se recorta solo el detalle: motivo, hechas/fallidas y próxima acción siempre van', () => {
+        const r = autopilot({ ...approved, ...ntfy, AUTOPILOT_NTFY_MAX: '360' }, '--max-tasks', '1');
+        expect(r.status).toBe(0);
+        const b = body(curlCalls()[0]!);
+        expect(b.length <= 360).toBe(true);
+        for (const f of ['Motivo de parada: ', 'Hechas: 1 tarea(s) · Fallidas: 0 fallo(s)', 'Próxima acción: ', 'Corrida ', 'Detalle: ']) expect(b).toContain(f);
+        expect(b.endsWith('…')).toBe(true);
+      });
+
       it('si ntfy falla, la corrida no cambia su resultado y el resumen se confirma igual', () => {
         const r = autopilot({ ...approved, ...ntfy, STUB_CURL_RC: '7' }, '--max-tasks', '1');
         expect(r.status).toBe(0);
@@ -583,6 +601,8 @@ describe('autopilot.sh', () => {
         expect(header(c!, 'Priority')).toBe('high');
         expect(header(c!, 'Title')).toMatch(/se detuvo inesperadamente$/);
         expect(body(c!)).toContain(`terminó con código ${r.status}`);
+        expect(body(c!)).toContain('Hechas: 0 tarea(s) · Fallidas: 0 fallo(s)');
+        expect(body(c!)).toContain('Próxima acción: revisar la terminal');
       });
 
       it('lee el tema de AUTOPILOT_CONFIG y no lo pasa al implementador', () => {
