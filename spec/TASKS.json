@@ -740,6 +740,16 @@
         "command": "npm run lint && npm run typecheck && npm test && npm run check:spec && scripts/autopilot.sh --dry-run && scripts/autopilot.sh (corrida 2026-10-18_142407) && curl https://ntfy.sh/<tema>/json?poll=1",
         "result": "lint ok; typecheck ok; vitest 173/173 (9 nuevas en «aviso ntfy al detenerse (T-21)»: normal, alto por fallos, alto por límite de tareas, alto por despliegue pendiente, ntfy caído (código 7) sin cambiar el resultado, caída antes del resumen, tema desde AUTOPILOT_CONFIG sin llegar al implementador, --dry-run sin envío, sin NTFY_TOPIC sin curl) + jest 137/137; la prueba de ntfy caído falla si se quita la guarda `|| rc=$?`; check:spec ok; --dry-run muestra el aviso sin enviarlo; aviso real: la corrida 2026-10-18_142407 terminó con T-21 abandonada (2 fallos) y el tema recibió prioridad 4 (high), tags warning,rotating_light, título «autopilot pedidos-b2b-v2: requiere tu intervención», con motivo, hechas, fallidas y próxima acción. Port a sdd-base: 8445475 (npm test 89/89, publicado).",
         "commit": "0f00920"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "rejected",
+        "findings": [
+          "DEC-016: El aviso de caída antes del resumen omite tareas hechas y fallidas. Confirmado ejecutando on_exit del commit 96bb2f7 con TASKS_DONE=3 y FAILURES=2 y capturando ntfy_send: el mensaje no contiene esos datos. La prueba existente solo comprueba prioridad, título y código de salida.",
+          "DEC-016: El recorte del mensaje a 3800 caracteres puede eliminar Fallidas y Próxima acción, ubicadas después de SUMMARY. Confirmado ejecutando notify_stop y ntfy_send del commit 96bb2f7 con un resumen largo y curl simulado: se envían 3800 caracteres sin ninguno de esos campos. Las revisiones pendientes pueden acumular entradas sin el límite de tareas implementadas."
+        ],
+        "notes": "DEC-016 sigue proposed; los hallazgos señalan incumplimientos funcionales de sus condiciones citadas y de T-21, no una violación de una decisión accepted. Sin cambios fuera de alcance observados. Lint, typecheck, check:spec y npm test pasan (173 Vitest y 137 Jest). Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
       }
     }
   ]

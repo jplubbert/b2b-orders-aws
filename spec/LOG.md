@@ -775,3 +775,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` de DEC-016; revisión independiente de T-21 (la hace el autopilot; esa corrida debería avisar con prioridad normal).
+
+## 2026-10-18 14:41 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-21 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **rejected** → estado `verified_auto`. Hallazgos: DEC-016: El aviso de caída antes del resumen omite tareas hechas y fallidas. Confirmado ejecutando on_exit del commit 96bb2f7 con TASKS_DONE=3 y FAILURES=2 y capturando ntfy_send: el mensaje no contiene esos datos. La prueba existente solo comprueba prioridad, título y código de salida. | DEC-016: El recorte del mensaje a 3800 caracteres puede eliminar Fallidas y Próxima acción, ubicadas después de SUMMARY. Confirmado ejecutando notify_stop y ntfy_send del commit 96bb2f7 con un resumen largo y curl simulado: se envían 3800 caracteres sin ninguno de esos campos. Las revisiones pendientes pueden acumular entradas sin el límite de tareas implementadas..
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-21); salida íntegra en .autopilot/2026-10-18_143908/T-21-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
