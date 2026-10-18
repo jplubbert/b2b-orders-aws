@@ -924,3 +924,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto T-22 (aprobador: Pepe). Haz push. Luego agrega a AGENTS.md (y a sdd-base) la regla: código, identificadores, comentarios, mensajes de scripts y commits en inglés; spec/ y LOG.md en español. Abre una tarea para traducir lo existente que no cumpla, sin cambiar comportamiento."
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-22 → `accepted` (campo `acceptance` en TASKS.json). Solo spec/TASKS.json y esta bitácora.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. Sigue a decisión del usuario borrar la llave [REDACTED_ACCESS_KEY_ID_1] y el usuario `[REDACTED_IAM_USER]` tras el período de prueba.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: agregar la regla de idioma a AGENTS.md (aquí y en sdd-base) y abrir la tarea de traducción (misma sesión).
