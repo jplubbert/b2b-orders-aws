@@ -255,9 +255,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: el usuario borra la cuenta principal del demo, o se quiere un rol con menos permisos que `OrganizationAccountAccessRole`.
 
 ## DEC-015 Identidad del autopilot: perfil `autopilot` y usuario IAM `autopilot-tests` (supersede los nombres de DEC-010)
-- Estado: proposed
+- Estado: accepted
 - Alcance: global
-- Fecha: 2026-10-18 · Aprobador: pendiente (renombre pedido por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Fecha: 2026-10-18 · Aprobador: José Pedro Lübbert (Pepe), 2026-10-18 (decisión del usuario en sesión) · Confianza: alta
 - Problema: el orquestador se renombró de night-loop a autopilot (LOG 2026-10-18, T-08), pero la identidad AWS de DEC-010 seguía con los nombres viejos (perfil `night-loop`, usuario `night-loop-tests`, id lógico `NightLoopTestsUser`) porque DEC-010 está `accepted` y no se edita. El usuario pidió el renombre.
 - Impulsores: DEC-010, DEC-014, T-08
 - Alternativas consideradas:
