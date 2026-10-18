@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 1  ·  Estado del corte actual: approved  ·  Nivel de riesgo (10.4): funcionalidad mediana
+Versión: 2  ·  Corte 1: approved  ·  Corte 2: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -17,6 +17,9 @@ pasan contra el entorno `dev`.
 - Incluido (corte 1): inicio y cierre de sesión con usuario precreado; catálogo único; carrito en
   el dispositivo; confirmación de pedido con precio calculado en servidor; lista y detalle de
   mis pedidos con estado; script para que el distribuidor cambie el estado.
+- Incluido (corte 2, solo app): barra superior ordenada con "Cerrar sesión" fuera de la barra
+  (REQ-006); diseño visual consistente para una demo comercial (REQ-007); detalle de producto
+  (REQ-008). Sin cambios de backend, contrato, infraestructura ni despliegue.
 - Excluido explícitamente: auto-registro y recuperación de contraseña; pagos y facturación;
   control de stock; backoffice del distribuidor; notificaciones push y suscripciones en tiempo
   real; modo offline; varios distribuidores; listas de precios por cliente; imágenes, búsqueda y
@@ -110,6 +113,50 @@ Ejemplos (aceptación):
 | E2 borde | tras cerrar sesión, reabrir la app | pide credenciales |
 Trazas: §Objetivo · decisiones: DEC-003, DEC-004 · prueba: tests/acceptance/req_005_* (manual en corte 1, DEC-007)
 
+### REQ-006 Barra superior ordenada · estado: proposed · prioridad: must · corte 2
+Cuando el almacenero está en el catálogo, el sistema deberá mostrar en la barra superior el título "Catálogo" y, separados del título, el acceso a "Mis pedidos" y un botón de cuenta.
+Cuando el almacenero toca el botón de cuenta, el sistema deberá mostrar un menú con el correo de la sesión y la opción "Cerrar sesión" (REQ-005).
+Mientras el almacenero está en el catálogo, el sistema deberá mostrar una barra inferior fija con la cantidad de unidades y el total del carrito que abre el carrito.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | almacen1 en el catálogo | barra: "Catálogo" a la izquierda; "Mis pedidos" y botón de cuenta a la derecha; "Cerrar sesión" no está en la barra |
+| E2 positivo | botón de cuenta → "Cerrar sesión" | se cumple REQ-005 E1 (inicio, carrito vacío) |
+| E3 borde | se abre el menú de cuenta y se cierra sin elegir (tocar fuera o "Cancelar") | sigue en el catálogo con la sesión y el carrito intactos |
+| E4 positivo | 2 Arroz + 1 Yerba en el carrito | barra inferior "Ver carrito · 3 u. · $7.100"; al tocarla abre Carrito |
+| E5 borde | carrito vacío | barra inferior "Carrito vacío"; abre Carrito con "Confirmar pedido" deshabilitado (REQ-003 E5) |
+| E6 borde | teléfono de 360 dp de ancho | título, "Mis pedidos" y botón de cuenta no se superponen ni se cortan (manual, DEC-011) |
+Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/header.test.tsx (S-20) + manual E6
+
+### REQ-007 Diseño visual consistente · estado: proposed · prioridad: must · corte 2
+El sistema deberá dibujar todas las pantallas (Inicio de sesión, Catálogo, Detalle de producto, Carrito, Mis pedidos, Detalle de pedido) con un único tema de colores, espaciado y tipografía.
+El sistema deberá mostrar el estado del pedido como una etiqueta de color con su nombre legible (S-17).
+El sistema deberá mostrar carga, lista vacía y error con el mismo componente en todas las pantallas, conservando los textos de REQ-001..005.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | fuentes de `app/src/app` y `app/src/components` | ningún color literal (`#…`, `rgb(…)`) ni `fontSize` numérico fuera de `app/src/theme.ts` |
+| E2 negativo | cada par texto/fondo declarado en el tema | contraste ≥ 4,5:1 (WCAG AA); un par por debajo hace fallar la prueba |
+| E3 positivo | pedidos en los 5 estados de S-04 | etiquetas "Recibido", "En preparación", "Enviado", "Entregado", "Cancelado", cada una con su color |
+| E4 borde | controles táctiles (− / +, botones, enlaces de la barra) | área táctil ≥ 44 × 44 dp |
+| E5 borde | REQ-002 E3, REQ-004 E4, error de red | "No hay productos disponibles" / "Todavía no hiciste pedidos" / mensaje de error, con el mismo componente de estado |
+| E6 positivo | recorrido del criterio de éxito en el teléfono | todas las pantallas se ven del mismo sistema visual (manual, DEC-011) |
+Trazas: §Alcance corte 2 · decisiones: DEC-012 · prueba: app/test/theme.test.tsx, app/test/*.test.tsx (S-20) + manual E6
+
+### REQ-008 Detalle de producto · estado: proposed · prioridad: must · corte 2
+Cuando el almacenero toca un producto del catálogo, el sistema deberá abrir su detalle con nombre, presentación, precio unitario, la cantidad que ya tiene en el carrito y el subtotal de esa cantidad.
+Cuando el almacenero cambia la cantidad en el detalle, el sistema deberá actualizar el mismo carrito que usa el catálogo (REQ-003).
+Si el producto no está en el catálogo cargado, entonces el sistema deberá mostrar "Este producto ya no está disponible" y no permitir agregarlo.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | tocar "Arroz 1 kg" en el catálogo | detalle con "Arroz 1 kg", su presentación y $1.300; cantidad 0 |
+| E2 positivo | en el detalle, + dos veces | cantidad 2, subtotal $2.600; al volver, el catálogo y la barra del carrito muestran 2 u. |
+| E3 borde | "Yerba 1 kg" ya tiene 3 en el carrito | el detalle abre con cantidad 3 y subtotal $13.500 |
+| E4 borde | en el detalle, bajar de 1 a 0 | el producto sale del carrito |
+| E5 negativo | ruta `/product/<id>` con un id que no está en el catálogo cargado | "Este producto ya no está disponible", sin − / +, con botón "Volver al catálogo" |
+Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/product.test.tsx (S-20) + manual en teléfono
+
 ## Supuestos (no bloqueantes, con valor por defecto)
 | ID | creemos que… | valor por defecto | clase | disparador de revisión |
 |---|---|---|---|---|
@@ -127,6 +174,13 @@ Trazas: §Objetivo · decisiones: DEC-003, DEC-004 · prueba: tests/acceptance/r
 | S-12 | REQ-003 E2 ("precio $1 se ignora") busca que el servidor nunca use un precio del cliente | la entrada de `createOrder` no tiene campo de precio (DEC-009): si se envía, AppSync rechaza la solicitud sin crear pedido; sin precio, el pedido usa el de catálogo ($4.500) | reversible (se puede aceptar e ignorar un campo opcional) | se pide que la app pueda mandar precios |
 | S-13 | REQ-004 E1 ("pedidos del 15/10 y del 16/10") se refiere al orden por fecha de confirmación | la aceptación crea dos pedidos seguidos y espera el más nuevo primero; no se fijan fechas pasadas | reversible | se pide importar pedidos con fecha |
 | S-14 | los ejemplos de REQ-003/004 no exigen usar `almacen1` | la aceptación usa clientes desechables del grupo `almaceneros` (`acept-*@demo.test`, borrados al terminar) para no ensuciar el historial de la demo; `almacen2` solo lee en REQ-004 E3 | reversible | — |
+| S-15 | "Cerrar sesión pegado a Catálogo" se resuelve sacándolo de la barra | menú de cuenta (botón con la inicial del correo, a la derecha) con correo + "Cerrar sesión" + "Cancelar"; sin confirmación extra; el carrito pasa a una barra inferior fija del catálogo | reversible | el usuario prefiere pestañas inferiores |
+| S-16 | identidad visual de la demo | marca neutra "Pedidos B2B"; color primario azul (#1D4ED8), fondos claros, sin modo oscuro; tipografía del sistema (sin fuentes nuevas); escala de espaciado 4/8/12/16/24/32 y 5 tamaños de texto (12/14/16/20/28) | reversible (todo en `theme.ts`) | el usuario trae marca o colores propios |
+| S-17 | nombres legibles del estado | RECIBIDO → "Recibido", EN_PREPARACION → "En preparación", ENVIADO → "Enviado", ENTREGADO → "Entregado", CANCELADO → "Cancelado"; la API sigue usando los valores de S-04 | reversible | se pide mostrar el código tal cual |
+| S-18 | el detalle de producto no muestra imagen | las imágenes siguen excluidas (§Alcance): un recuadro con la inicial del producto ocupa su lugar; sin descripción larga (el contrato no la tiene) | reversible | se agregan imágenes o descripción al catálogo (backend) |
+| S-19 | origen de los datos del detalle | el catálogo ya cargado en la app (sin consulta nueva ni cambio de contrato); si el id no está, REQ-008 E5 | reversible (`product(id)` aditivo en un corte con backend) | se abre el detalle desde un enlace externo |
+| S-20 | aceptación de REQ-006..008 | son solo de UI: pruebas de componentes con jest en `app/test/` (no protegidas) + verificación manual en el teléfono (DEC-007, DEC-011); no hay tarea de spec ni cambios en `tests/acceptance/` | reversible | se agregan pruebas end-to-end de UI |
+| S-21 | textos visibles de REQ-001..005 | se conservan literalmente; el pulido no cambia textos ni flujos | no bloqueante | — |
 
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
@@ -167,3 +221,28 @@ Trazas: §Objetivo · decisiones: DEC-003, DEC-004 · prueba: tests/acceptance/r
 - [x] Conjunto coherente: objetivo→REQ→ejemplo, sin conflictos, glosario
 - [x] Revisión independiente sin bloqueos nuevos (2 bloqueos encontrados y resueltos, LOG 2026-10-17)
 - Presupuesto del bloque B2: 1 sesión; al agotarse: cortar (REQ-005 es el primero en salir)
+
+## Plan (corte 2, solo app)
+### Diseño
+- `app/src/theme.ts`: tokens de color, espaciado, radios, tipografía y estados del pedido (DEC-012).
+- `app/src/components/`: `Screen`, `Button`, `Card`, `StatusBadge`, `StateMessage` (carga/vacío/error), `AccountMenu` (modal de RN), `CartBar`; `QuantityStepper` y `SignOutButton` pasan al tema.
+- Navegación: misma pila de Expo Router; nueva ruta `product/[id]`; barra de la pila estilizada desde `_layout.tsx`.
+- Datos del detalle: el catálogo cargado se guarda en un contexto de la app junto al carrito (S-19). Sin cambios en `backend/`, `infra/`, `spec/contracts/` ni `tests/acceptance/`; sin dependencias nuevas.
+
+### Orden y dependencias
+1. T-09 Tema y componentes base (REQ-007) — sin dependencias del corte 2
+2. T-10 Barra superior, menú de cuenta y barra del carrito (REQ-006) — depende de T-09
+3. T-11 Detalle de producto (REQ-008) — depende de T-09, T-10
+4. T-12 Pulido de Inicio, Carrito, Mis pedidos y Detalle de pedido (REQ-007) — depende de T-09; última por tocar todas las pantallas
+
+### Riesgos
+| riesgo | mitigación |
+|---|---|
+| El rediseño rompe un flujo ya aceptado (REQ-001..005) | S-21 + las pruebas de `app/test` existentes siguen pasando; `npm run test:acceptance` no cambia (sin backend) |
+| La barra se ve distinta en Android e iOS | verificación manual en el teléfono del usuario (Android, Expo Go 57) |
+
+## Criterio de cierre del corte 2
+- [ ] REQ-006..008 y S-15..S-21 aprobados por el responsable
+- [ ] DEC-012 `accepted`
+- [ ] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
+- [ ] Sin preguntas bloqueantes (ninguna abierta)

@@ -200,3 +200,20 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: corrida nocturna 2026-10-17_230411 (dos intentos sobre T-04 sin cambios, ambos contados como fallo).
 - Confirmación: scripts/test/night-tasks.test.ts (`manual-pending`; el resumen lista las pendientes).
 - Revisar si: un defecto de UI aparece al aceptar y obliga a rehacer tareas dependientes.
+
+## DEC-012 Tema propio de la app sin librerías de UI ni dependencias nuevas
+- Estado: proposed
+- Alcance: global (app)
+- Fecha: 2026-10-18 · Aprobador: pendiente (José Pedro Lübbert, con el corte 2) · Confianza: alta
+- Problema: REQ-007 pide colores, espaciado y tipografía consistentes; hoy cada pantalla define sus propios valores literales (`#1f6feb`, `#555`, `fontSize: 16`…). Hay que elegir dónde viven los valores y con qué se dibujan los componentes, sin tocar backend ni arriesgar la compatibilidad con Expo Go 57 (DEC-008).
+- Impulsores: REQ-006, REQ-007, REQ-008, DEC-003, DEC-008
+- Alternativas consideradas:
+  1. Módulo `app/src/theme.ts` con tokens + componentes propios con `StyleSheet` de React Native — a favor: cero dependencias, funciona en Expo Go, verificable con una prueba que prohíbe literales fuera del tema; en contra: más componentes que escribir.
+  2. Librería de UI (React Native Paper, Tamagui, NativeWind) — a favor: componentes hechos; en contra: dependencia y configuración nuevas, riesgo con SDK 57 y Expo Go, aspecto "de librería".
+  3. Pestañas inferiores de Expo Router para la navegación — a favor: patrón conocido; en contra: requiere `@react-navigation/bottom-tabs` (no instalado) y cambia la estructura de rutas ya aceptada.
+- Decisión: Usaremos la alternativa 1. Íconos como texto/Unicode o `View` dibujadas (sin paquete de íconos); menú de cuenta con `Modal` de React Native; tipografía del sistema.
+  No usaremos la 2 ni la 3 porque agregan dependencias y riesgo sin beneficio visible en una demo de 3 minutos.
+- Consecuencias: buenas: un solo lugar para cambiar la marca (S-16); sin cambios en `package.json`. Malas: componentes propios básicos. Neutrales: la pila de navegación se mantiene.
+- Dependencias: depende de DEC-003, DEC-008 · afecta a T-09..T-12
+- Confirmación: app/test/theme.test.tsx (sin literales de color ni `fontSize` numérico fuera de `theme.ts`; contraste ≥ 4,5:1 de los pares del tema); `git diff --stat` del corte sin cambios en `app/package.json`, `backend/`, `infra/`, `spec/contracts/`.
+- Revisar si: el usuario trae una marca con componentes propios o se pide modo oscuro.

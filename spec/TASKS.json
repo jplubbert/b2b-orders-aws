@@ -1,5 +1,5 @@
 {
-  "corte": 1,
+  "corte": 2,
   "tasks": [
     {
       "id": "T-01",
@@ -272,6 +272,95 @@
         "by": "José Pedro Lübbert",
         "date": "2026-10-17"
       }
+    },
+    {
+      "id": "T-09",
+      "title": "Tema y componentes base de la app",
+      "description": "app/src/theme.ts con tokens de S-16 (colores, espaciado, radios, tipografía, colores de estado S-17); componentes Screen, Button, Card, StatusBadge, StateMessage; QuantityStepper y SignOutButton al tema con área táctil ≥ 44 dp; Catálogo migrado al tema como primera pantalla. Prueba app/test/theme.test.tsx: sin literales de color ni fontSize numérico fuera de theme.ts en las pantallas migradas, contraste ≥ 4,5:1 de los pares del tema, etiquetas y colores de los 5 estados. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json; textos de REQ-001..005 intactos (S-21).",
+      "reqs": [
+        "REQ-007"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-008",
+        "DEC-012"
+      ],
+      "status": "specified",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "depends_on": [],
+      "verify": "npm run lint && npm run typecheck && npm test (incluye app/test/theme.test.tsx) && npx expo export --platform android; git diff --stat sin backend/infra/contrato/acceptance",
+      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+    },
+    {
+      "id": "T-10",
+      "title": "Barra superior, menú de cuenta y barra del carrito",
+      "description": "Catálogo: título \"Catálogo\" a la izquierda, \"Mis pedidos\" y botón de cuenta (inicial del correo) a la derecha; \"Cerrar sesión\" sale de headerLeft y vive en AccountMenu (Modal) con el correo de la sesión (fetchUserAttributes de Amplify, solo cliente) y \"Cancelar\"; CartBar inferior fija \"Ver carrito · N u. · $total\" / \"Carrito vacío\". Estilo de la barra de la pila en _layout.tsx. Pruebas app/test/header.test.tsx (REQ-006 E1–E5) y session.test.tsx ajustada al menú (REQ-005 E1). Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json; textos de REQ-001..005 intactos (S-21).",
+      "reqs": [
+        "REQ-006",
+        "REQ-005"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-008",
+        "DEC-012"
+      ],
+      "status": "specified",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "depends_on": [
+        "T-09"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-006 E6 y REQ-005 E1 en el teléfono (manual, DEC-011)",
+      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+    },
+    {
+      "id": "T-11",
+      "title": "Detalle de producto",
+      "description": "Ruta app/src/app/product/[id].tsx; tocar la fila del catálogo (fuera de − / +) la abre. Catálogo cargado compartido en un contexto junto al carrito (S-19). Muestra recuadro con la inicial (S-18), nombre, presentación, precio, QuantityStepper sobre el mismo carrito, subtotal y CartBar; id ausente → \"Este producto ya no está disponible\" + \"Volver al catálogo\". Prueba app/test/product.test.tsx (REQ-008 E1–E5). Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json; textos de REQ-001..005 intactos (S-21).",
+      "reqs": [
+        "REQ-008",
+        "REQ-007"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-008",
+        "DEC-012"
+      ],
+      "status": "specified",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "depends_on": [
+        "T-09",
+        "T-10"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-008 E1–E2 en el teléfono (manual, DEC-011)",
+      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte."
+    },
+    {
+      "id": "T-12",
+      "title": "Pulido de Inicio, Carrito, Mis pedidos y Detalle de pedido",
+      "description": "Inicio de sesión con marca \"Pedidos B2B\" (S-16), campos y botón del tema; Carrito con tarjetas por línea, subtotal y total destacados y botón primario; Mis pedidos y Detalle de pedido con tarjetas y StatusBadge (S-17); carga/vacío/error con StateMessage. theme.test.tsx pasa a cubrir todas las pantallas de app/src/app y app/src/components (REQ-007 E1). Pruebas existentes (orders, session, cart) ajustadas solo donde cambia la etiqueta de estado. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json; textos de REQ-001..005 intactos (S-21).",
+      "reqs": [
+        "REQ-007"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-008",
+        "DEC-012"
+      ],
+      "status": "specified",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "depends_on": [
+        "T-09"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-007 E6: recorrido del criterio de éxito en el teléfono (manual, DEC-011)",
+      "notes": "Corte 2. Propuesta 2026-10-18; espera aprobación del corte. Va última: toca todas las pantallas."
     }
   ]
 }

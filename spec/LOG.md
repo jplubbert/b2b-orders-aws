@@ -315,3 +315,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 09:00 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Corte 2, solo app (sin cambios de backend ni deploy): arreglar la barra superior (Cerrar sesión pegado a Catálogo), pulir el diseño de las pantallas para una demo comercial (colores, espaciado, tipografía consistente) y agregar pantalla de detalle de producto. Escribe REQ y tareas con supuestos por defecto, sin preguntarme nada técnico."
+- Hecho: propuesta del corte 2 en spec/. SPEC.md v2: REQ-006 (barra superior), REQ-007 (diseño consistente), REQ-008 (detalle de producto) en `proposed`; supuestos S-15..S-21; Plan y criterio de cierre del corte 2. DEC-012 (tema propio, sin dependencias nuevas) `proposed`. TASKS.json: `corte: 2`, T-09..T-12 en `specified`. Sin código.
+- Interpretaciones (supuestos con valor por defecto): S-15 "Cerrar sesión" pasa a un menú de cuenta y el carrito a una barra inferior; S-16 marca neutra "Pedidos B2B", azul #1D4ED8, tipografía del sistema; S-17 nombres legibles de estado; S-18 sin imagen (siguen excluidas); S-19 detalle desde el catálogo ya cargado (sin consulta nueva); S-20 aceptación con jest en app/test + manual (sin tarea de spec); S-21 textos de REQ-001..005 intactos.
+- Verificado y cómo: `npm run check:spec`.
+- En curso / roto: nada. T-03..T-07 siguen `reviewed` esperando la aceptación en lote del corte 1 (independiente del corte 2).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario aprueba (o corrige) el corte 2. Con su aprobación: REQ-006..008 → `approved_for_impl`, DEC-012 → `accepted`, T-09 → `ready`, T-10..T-12 → `approved_for_impl`, aprobación nominal en esta bitácora; luego T-09.
