@@ -217,7 +217,7 @@
         "T-01",
         "T-03"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm test (componentes jest-expo) && npm run test:acceptance -- req_001 + recorrido manual REQ-001 E1–E3 y REQ-005 E1–E2 registrado en LOG",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android && git show --stat 775954c",
@@ -227,10 +227,10 @@
         "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono, tras 775954c: \"Ya no aparece el error al abrir la app en el teléfono\" (aviso \"Can't perform a React state update on a component that hasn't mounted yet\", ExpoRoot/ContextNavigator)."
       },
       "review": {
-        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, night-loop)",
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "approved",
         "findings": [],
-        "notes": "Aprobación del diff sin hallazgos bloqueantes. npm test: Vitest 127/127 y Jest 10/10; lint, typecheck y check:spec OK. No reproduje aceptación AWS ni recorrido manual: REQ-001 E3 y REQ-005 E2 requieren verificar persistencia y borrado real de tokens en teléfono. No detecté cambios fuera de alcance ni violaciones de DEC-003/DEC-004. Estilo y preferencias excluidos.",
+        "notes": "Comprobaciones locales correctas: 137 pruebas Vitest y 105 Jest; lint, typecheck y check:spec OK. Amplify está simulado en las pruebas de componentes: no confirmé persistencia ni borrado real de tokens en teléfono, ni ejecuté aceptación AWS. La checklist manual sigue pendiente; el informe sobre la desaparición del aviso de React no demuestra el resto. Sin cambios fuera de alcance ni violaciones detectadas de DEC-003/DEC-004. Estilo y preferencias excluidos.",
         "date": "2026-10-18"
       },
       "blocked_by": null,
