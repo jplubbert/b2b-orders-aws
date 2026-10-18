@@ -795,10 +795,10 @@
         "DEC-018"
       ],
       "depends_on": [],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "verify": "npm run lint && npm run typecheck && npm test (mismo número de pruebas, todas pasan) && npm run check:spec && scripts/autopilot.sh --dry-run && npm run test:acceptance && npm run smoke (mismos resultados) && npx expo export --platform android; en sdd-base npm test",
       "blocked_by": null,
-      "notes": "2026-10-18: abierta a pedido del usuario. Alcance medido: texto en español en 24/25 archivos de app/src, 9/9 de app/test, 8/9 de backend/src, 6/6 de backend/test, 8/9 de infra, 18/18 de scripts, 1/2 de tests/smoke y 11/11 de scripts de sdd-base. Queda proposed: el usuario la aprueba (approved_for_impl) antes de que la tome una sesión o el autopilot."
+      "notes": "2026-10-18: abierta a pedido del usuario. Alcance medido: texto en español en 24/25 archivos de app/src, 9/9 de app/test, 8/9 de backend/src, 6/6 de backend/test, 8/9 de infra, 18/18 de scripts, 1/2 de tests/smoke y 11/11 de scripts de sdd-base. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) → approved_for_impl, para el autopilot."
     },
     {
       "id": "T-24",

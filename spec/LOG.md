@@ -943,3 +943,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario decide `accepted` de DEC-018 y aprueba T-23 (approved_for_impl) para que la implemente una sesión o el autopilot; T-24 después de T-23. Sin push de estos commits hasta que el usuario lo pida.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto DEC-018 (aprobador: Pepe). Apruebo T-23: déjala approved_for_impl para el autopilot. Haz push de los dos repos."
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba DEC-018 → `accepted` y T-23 → `approved_for_impl`. Solo spec/DECISIONS.md, spec/TASKS.json y esta bitácora.
+- Verificado y cómo: `npm run check:spec` ok; `scripts/autopilot.sh --dry-run` elegiría T-23.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. T-24 sigue `proposed` (depende de T-23).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el autopilot implementa T-23 en su próxima corrida (y la revisa); el usuario decide `accepted` de T-23 y aprueba T-24.

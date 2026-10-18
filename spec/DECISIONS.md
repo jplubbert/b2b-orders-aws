@@ -304,9 +304,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: se agregan personas (grupos y permission sets acotados) o se quiere un permission set de menos privilegio para el día a día.
 
 ## DEC-018 Idioma: código y commits en inglés; spec/ y LOG.md en español
-- Estado: proposed
+- Estado: accepted
 - Alcance: global
-- Fecha: 2026-10-18 · Aprobador: pendiente (regla pedida por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Fecha: 2026-10-18 · Aprobador: José Pedro Lübbert (Pepe), 2026-10-18 (decisión del usuario en sesión) · Confianza: alta
 - Problema: el código, los comentarios, las pruebas, la salida de los scripts y los commits mezclan español e inglés. El usuario fijó una regla de idioma.
 - Impulsores: pedido del usuario 2026-10-18
 - Alternativas consideradas:
