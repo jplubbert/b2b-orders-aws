@@ -952,3 +952,14 @@
 - En curso / roto: nada. T-24 sigue `proposed` (depende de T-23).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el autopilot implementa T-23 en su próxima corrida (y la revisa); el usuario decide `accepted` de T-23 y aprueba T-24.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Encargo: "Lee AGENTS.md y ejecuta T-23" (implementador del orquestador nocturno).
+- Hecho (T-23, DEC-018): código, identificadores, comentarios, nombres de prueba y mensajes de scripts al inglés en app/, backend/, infra/, scripts/, tests/smoke/, tests/lib/ y configuraciones de la raíz; asuntos de commit del autopilot en inglés (4fcf4df). Port a sdd-base (3d608d7, Task: none). Sin tocar tests/acceptance/ ni spec/ (salvo TASKS.json y esta bitácora). T-23 → `verified_auto`.
+- Interpretaciones de DEC-018 (detalle en las notas de T-23): siguen en español los mensajes de rechazo de la API (la app puede mostrarlos), todo lo que el autopilot escribe en LOG.md y TASKS.json (el resumen y el motivo de parada ahora se guardan en los dos idiomas: español para LOG.md, inglés para terminal y ntfy) y la línea `- Pendiente deploy:`; el prompt del revisor pasa al inglés y le pide hallazgos y notas en español; no se renombran IDs de CDK, grupos de Cognito ni códigos de estado.
+- Verificado y cómo: línea base antes de tocar nada y repetición al final, con los mismos números: `npm test` vitest 14/177 y jest 8/137; `npm run test:acceptance` 7/41; `npm run smoke` 1/2 (2 pruebas, todas pasan); además `npm run lint` ok, `npm run typecheck` ok, `npm run check:spec` ok, export de Expo para Android ok; sdd-base `npm test` 93/93 y check:spec ok. `scripts/autopilot.sh --dry-run` no pude lanzarlo desde la sesión (permiso denegado dentro del autopilot); lo cubren las pruebas que lo ejecutan sobre un repositorio de prueba.
+- Pendiente deploy: ninguno. El Lambda de dev sigue con el bundle anterior, sin diferencia observable en la API (solo comentarios, literales internos y dos mensajes de desarrollador inalcanzables); se actualiza en el próximo `npm run deploy:dev`.
+- Pendiente manual: ninguna.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-23 (la hace el autopilot); el usuario decide `accepted` de T-23 y aprueba T-24. Sin push de los dos repos hasta que el usuario lo pida.
