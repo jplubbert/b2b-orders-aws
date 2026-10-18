@@ -31,6 +31,7 @@ const routes = {
   orders: stub('Pantalla mis pedidos'),
   'order/[id]': stub('Pantalla pedido'),
   'dist/index': stub('Pantalla panel'),
+  'dist/order/[id]': stub('Pantalla pedido del distribuidor'),
 };
 
 // En el teléfono la URL inicial llega de forma asíncrona (Linking.getInitialURL).

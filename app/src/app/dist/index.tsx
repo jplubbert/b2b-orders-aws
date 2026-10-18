@@ -1,13 +1,14 @@
-import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AccountMenu } from '@/components/AccountMenu';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
-import { allOrders, formatCLP, formatDate, type PanelOrder } from '@/lib/api';
+import { allOrders, formatCLP, formatDate } from '@/lib/api';
 import type { OrderStatus } from '@/lib/generated/graphql';
+import { usePanel } from '@/lib/PanelProvider';
 import { colors, fontSize, fontWeight, orderStatus, radius, spacing, touchTarget } from '@/theme';
 
 // S-28: "Todos" + los 5 estados con su nombre legible (S-17), en el orden de S-04.
@@ -19,9 +20,10 @@ const FILTERS: { status: OrderStatus | null; label: string }[] = [
 // REQ-010: pedidos de todos los almacenes del más reciente al más antiguo (el servidor ordena) con número,
 // almacén (customerId, S-23), fecha, total y estado. El filtro pide `allOrders(status)` al servidor (E2).
 // El estado vigente se pide de nuevo al volver a la pantalla y al deslizar hacia abajo (S-06).
+// La lista vive en PanelProvider: el detalle (dist/order/[id]) la lee y la actualiza al cambiar el estado.
 export default function PanelScreen() {
   const [filter, setFilter] = useState<OrderStatus | null>(null);
-  const [orders, setOrders] = useState<PanelOrder[] | null>(null);
+  const { orders, setOrders } = usePanel();
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   // Solo vale la respuesta del último pedido: al cambiar rápido de filtro no gana una respuesta vieja.
@@ -38,7 +40,12 @@ export default function PanelScreen() {
       if (request !== latest.current) return;
       setError(e instanceof Error ? e.message : JSON.stringify(e));
     }
-  }, [filter]);
+  }, [filter, setOrders]);
+
+  // Al entrar (nueva sesión) no se muestra la lista de una sesión anterior mientras llega la nueva.
+  useEffect(() => {
+    setOrders(null);
+  }, [setOrders]);
 
   // Corre al ganar el foco y cada vez que cambia el filtro.
   useFocusEffect(
@@ -115,17 +122,23 @@ export default function PanelScreen() {
         }
         contentContainerStyle={[styles.list, orders?.length === 0 && styles.emptyContainer]}
         renderItem={({ item }) => (
-          <Card style={styles.order}>
-            <View style={styles.line}>
-              <Text style={styles.number}>N° {item.number}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <Text style={styles.customer}>Almacén {item.customerId}</Text>
-            <View style={styles.line}>
-              <Text style={styles.detail}>{formatDate(item.createdAt)}</Text>
-              <Text style={styles.total}>{formatCLP(item.total)}</Text>
-            </View>
-          </Card>
+          <Pressable
+            onPress={() => router.push({ pathname: '/dist/order/[id]', params: { id: item.id } })}
+            accessibilityRole="button"
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            <Card style={styles.order}>
+              <View style={styles.line}>
+                <Text style={styles.number}>N° {item.number}</Text>
+                <StatusBadge status={item.status} />
+              </View>
+              <Text style={styles.customer}>Almacén {item.customerId}</Text>
+              <View style={styles.line}>
+                <Text style={styles.detail}>{formatDate(item.createdAt)}</Text>
+                <Text style={styles.total}>{formatCLP(item.total)}</Text>
+              </View>
+            </Card>
+          </Pressable>
         )}
       />
     </Screen>

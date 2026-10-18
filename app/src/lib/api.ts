@@ -10,6 +10,8 @@ import type {
   OrderDetailQueryVariables,
   OrderLineInput,
   OrderStatus,
+  SetOrderStatusMutation,
+  SetOrderStatusMutationVariables,
 } from './generated/graphql';
 
 // Tipos generados desde spec/contracts/schema.graphql (DEC-002): `npm run codegen` tras cambiar el contrato o una consulta.
@@ -95,6 +97,28 @@ const ALL_ORDERS = /* GraphQL */ `
   }
 `;
 
+// Cambio de estado del distribuidor (REQ-011): devuelve el pedido con los mismos campos del panel.
+const SET_ORDER_STATUS = /* GraphQL */ `
+  mutation SetOrderStatus($customerId: ID!, $id: ID!, $status: OrderStatus!) {
+    setOrderStatus(customerId: $customerId, id: $id, status: $status) {
+      id
+      customerId
+      number
+      createdAt
+      total
+      status
+      lines {
+        productId
+        name
+        presentation
+        quantity
+        unitPrice
+        subtotal
+      }
+    }
+  }
+`;
+
 // El cliente se crea en cada llamada: así siempre es posterior a Amplify.configure (en _layout).
 export async function listProducts(): Promise<Product[]> {
   const res = (await generateClient().graphql({ query: LIST_PRODUCTS })) as { data: ListProductsQuery };
@@ -119,6 +143,13 @@ export async function allOrders(status: OrderStatus | null): Promise<PanelOrder[
   const variables: AllOrdersQueryVariables = { status };
   const res = (await generateClient().graphql({ query: ALL_ORDERS, variables })) as { data: AllOrdersQuery };
   return res.data.allOrders;
+}
+
+/** Pasa el pedido `id` del almacén `customerId` a `status`; el servidor solo cambia el estado (REQ-011). */
+export async function setOrderStatus(customerId: string, id: string, status: OrderStatus): Promise<PanelOrder> {
+  const variables: SetOrderStatusMutationVariables = { customerId, id, status };
+  const res = (await generateClient().graphql({ query: SET_ORDER_STATUS, variables })) as { data: SetOrderStatusMutation };
+  return res.data.setOrderStatus;
 }
 
 /** Error de GraphQL con su `errorType` (motivos de rechazo de REQ-003, DEC-005). */

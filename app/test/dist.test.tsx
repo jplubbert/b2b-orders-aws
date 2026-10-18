@@ -10,6 +10,7 @@ import RootLayout from '@/app/_layout';
 import PanelScreen from '@/app/dist/index';
 import { allOrders, type PanelOrder } from '@/lib/api';
 import { CartProvider } from '@/lib/CartProvider';
+import { PanelProvider } from '@/lib/PanelProvider';
 
 type ScreenProps = { name?: string; options?: { title?: string; headerBackVisible?: boolean; headerRight?: () => ReactNode } };
 const mockScreens: ScreenProps[] = [];
@@ -85,7 +86,7 @@ describe('REQ-010 panel "Pedidos"', () => {
 
   it('E1: pedidos de todos los almacenes en el orden del servidor con número, almacén, fecha, total y estado', async () => {
     mockAllOrders.mockResolvedValue([fromAlmacen2, fromAlmacen1]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     expect(await numbers()).toEqual(['N° ALM2N1', 'N° ALM1N1']);
     expect(mockAllOrders).toHaveBeenCalledWith(null);
     const stores = screen.getAllByText(/^Almacén /).map((n) => n.props.children.join(''));
@@ -99,7 +100,7 @@ describe('REQ-010 panel "Pedidos"', () => {
 
   it('filtro: "Todos" + los 5 estados (S-28), "Todos" marcado al abrir', async () => {
     mockAllOrders.mockResolvedValue([]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     await screen.findByText('Todavía no hay pedidos');
     for (const label of ['Todos', 'Recibido', 'En preparación', 'Enviado', 'Entregado', 'Cancelado']) {
       expect(screen.getByLabelText(`Filtro ${label}`)).toBeOnTheScreen();
@@ -112,7 +113,7 @@ describe('REQ-010 panel "Pedidos"', () => {
     mockAllOrders.mockImplementation(async (status) =>
       [fromAlmacen2, fromAlmacen1].filter((o) => status === null || o.status === status),
     );
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     expect(await numbers()).toEqual(['N° ALM2N1', 'N° ALM1N1']);
 
     await fireEvent.press(screen.getByLabelText('Filtro Enviado'));
@@ -128,7 +129,7 @@ describe('REQ-010 panel "Pedidos"', () => {
 
   it('E3: filtro sin pedidos en ese estado → "No hay pedidos en este estado"', async () => {
     mockAllOrders.mockResolvedValueOnce([fromAlmacen1]).mockResolvedValueOnce([]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     await screen.findByText('N° ALM1N1');
     await fireEvent.press(screen.getByLabelText('Filtro Cancelado'));
     expect(await screen.findByText('No hay pedidos en este estado')).toBeOnTheScreen();
@@ -138,20 +139,20 @@ describe('REQ-010 panel "Pedidos"', () => {
 
   it('E4: ningún pedido en el sistema → "Todavía no hay pedidos" en state-empty', async () => {
     mockAllOrders.mockResolvedValue([]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     expect(await screen.findByText('Todavía no hay pedidos')).toBeOnTheScreen();
     expect(screen.getByTestId('state-empty')).toBeOnTheScreen();
   });
 
   it('cargando → state-loading', async () => {
     mockAllOrders.mockReturnValue(new Promise(() => {}));
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     expect(screen.getByTestId('state-loading')).toBeOnTheScreen();
   });
 
   it('un error de la API se muestra con su causa en state-error (no como lista vacía)', async () => {
     mockAllOrders.mockRejectedValue(new Error('Network error'));
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     expect(await screen.findByText('Network error')).toBeOnTheScreen();
     expect(screen.getByTestId('state-error')).toBeOnTheScreen();
     expect(screen.queryByText('Todavía no hay pedidos')).toBeNull();
@@ -162,7 +163,7 @@ describe('REQ-010 panel "Pedidos"', () => {
       .mockResolvedValueOnce([fromAlmacen1])
       .mockResolvedValueOnce([fromAlmacen1])
       .mockResolvedValueOnce([{ ...fromAlmacen1, status: 'EN_PREPARACION' }]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     await screen.findByText('N° ALM1N1');
     await fireEvent.press(screen.getByLabelText('Filtro Recibido'));
     await waitFor(() => expect(mockAllOrders).toHaveBeenCalledTimes(2));
@@ -178,7 +179,7 @@ describe('REQ-010 panel "Pedidos"', () => {
       .mockResolvedValueOnce([fromAlmacen2, fromAlmacen1])
       .mockReturnValueOnce(new Promise((r) => (resolveFirst = r)))
       .mockResolvedValueOnce([fromAlmacen1]);
-    await render(<PanelScreen />);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
     await screen.findByText('N° ALM2N1');
     await fireEvent.press(screen.getByLabelText('Filtro Enviado'));
     await fireEvent.press(screen.getByLabelText('Filtro Recibido'));
@@ -188,11 +189,23 @@ describe('REQ-010 panel "Pedidos"', () => {
     expect(await numbers()).toEqual(['N° ALM1N1']);
   });
 
+  it('el layout declara el detalle dist/order/[id]; tocar un pedido lo abre', async () => {
+    await render(<RootLayout />);
+    expect(mockScreens.find((s) => s.name === 'dist/order/[id]')?.options?.title).toBe('Pedido');
+
+    mockAllOrders.mockResolvedValue([fromAlmacen1]);
+    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await fireEvent.press(await screen.findByText('N° ALM1N1'));
+    expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/dist/order/[id]', params: { id: fromAlmacen1.id } });
+  });
+
   it('menú de cuenta con "Cerrar sesión" (S-28) → vuelve al inicio', async () => {
     mockAllOrders.mockResolvedValue([]);
     await render(
       <CartProvider>
-        <PanelScreen />
+        <PanelProvider>
+          <PanelScreen />
+        </PanelProvider>
       </CartProvider>,
     );
     await fireEvent.press(screen.getByLabelText('Cuenta'));
