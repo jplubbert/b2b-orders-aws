@@ -79,6 +79,18 @@ export type OrderStatus =
   | 'EN_PREPARACION'
   | 'RECIBIDO';
 
+/** Evento del historial de estados de un pedido (REQ-012, DEC-020); `at` lo fija quien publica (S-33). */
+export type OrderStatusEvent = {
+  at: Scalars['AWSDateTime']['output'];
+  customerId: Scalars['ID']['output'];
+  /** ULID del evento: la misma entrega repetida se guarda una sola vez. */
+  eventId: Scalars['ID']['output'];
+  /** Estado anterior; null en el evento de creación (RECIBIDO). */
+  from: Maybe<OrderStatus>;
+  orderId: Scalars['ID']['output'];
+  to: OrderStatus;
+};
+
 export type Product = {
   name: Scalars['String']['output'];
   presentation: Scalars['String']['output'];
@@ -95,6 +107,8 @@ export type Query = {
   myOrders: Array<Order>;
   /** Pedido del cliente del token; null si no existe o es de otro cliente (REQ-004 E3). */
   order: Maybe<Order>;
+  /** Historial del pedido `id`, del más antiguo al más reciente (REQ-012, S-29). Un almacenero solo recibe los eventos de sus pedidos (otro → lista vacía); el distribuidor, los de cualquiera. */
+  orderHistory: Array<OrderStatusEvent>;
 };
 
 
@@ -104,5 +118,10 @@ export type QueryAllOrdersArgs = {
 
 
 export type QueryOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryOrderHistoryArgs = {
   id: Scalars['ID']['input'];
 };

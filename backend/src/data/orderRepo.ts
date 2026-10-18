@@ -21,8 +21,16 @@ export interface OrderRepo {
   getOrder(customerId: string, orderId: string): Promise<Order | null>;
   /** Orders of every customer, newest first; only those in `status` if given (DEC-013). */
   listAllOrders(status?: OrderStatus | null): Promise<Order[]>;
-  /** Changes only the order's `status` in the customer's partition; `null` if missing (creates nothing). */
-  setStatus(customerId: string, orderId: string, status: OrderStatus): Promise<Order | null>;
+  /**
+   * Changes only the order's `status` in the customer's partition; `null` if missing (creates nothing).
+   * `previous` is the status this write replaced (REQ-012: the event's `from`).
+   */
+  setStatus(customerId: string, orderId: string, status: OrderStatus): Promise<StatusChange | null>;
+}
+
+export interface StatusChange {
+  order: Order;
+  previous: OrderStatus;
 }
 
 // DEC-006: `PK=CUSTOMER#<customerId>`, `SK=ORDER#<ulid>`, embedded lines with frozen name and price.
@@ -90,6 +98,7 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
     },
 
     // The condition keeps UpdateItem from creating an empty order when the key doesn't exist (REQ-011 E5).
+    // ALL_OLD: the previous status comes from the same atomic write, even with concurrent changes.
     async setStatus(customerId, orderId, status) {
       try {
         const { Attributes } = await doc.send(
@@ -100,10 +109,12 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
             ConditionExpression: 'attribute_exists(PK)',
             ExpressionAttributeNames: { '#status': 'status' },
             ExpressionAttributeValues: { ':status': status },
-            ReturnValues: 'ALL_NEW',
+            ReturnValues: 'ALL_OLD',
           }),
         );
-        return Attributes ? toOrder(Attributes) : null;
+        if (!Attributes) return null;
+        const old = toOrder(Attributes);
+        return { order: { ...old, status }, previous: old.status };
       } catch (e) {
         if (e instanceof ConditionalCheckFailedException) return null;
         throw e;

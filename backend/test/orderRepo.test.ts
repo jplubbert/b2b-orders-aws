@@ -115,9 +115,12 @@ describe('dynamoOrderRepo: distributor (DEC-013)', () => {
     expect(out.map((o) => o.status)).toEqual(['ENVIADO']);
   });
 
-  it('setStatus updates only status, provided the order exists in that partition', async () => {
-    const { doc, inputs } = fakeDoc([{ Attributes: item(order.id, 'C-1', 'ENVIADO') }]);
-    expect(await dynamoOrderRepo(doc, 'table').setStatus('C-1', order.id, 'ENVIADO')).toEqual({ ...order, status: 'ENVIADO' });
+  it('setStatus updates only status, provided the order exists in that partition, and returns the replaced status', async () => {
+    const { doc, inputs } = fakeDoc([{ Attributes: item(order.id, 'C-1', 'EN_PREPARACION') }]);
+    expect(await dynamoOrderRepo(doc, 'table').setStatus('C-1', order.id, 'ENVIADO')).toEqual({
+      order: { ...order, status: 'ENVIADO' },
+      previous: 'EN_PREPARACION',
+    });
     expect(inputs).toEqual([
       {
         TableName: 'table',
@@ -126,7 +129,7 @@ describe('dynamoOrderRepo: distributor (DEC-013)', () => {
         ConditionExpression: 'attribute_exists(PK)',
         ExpressionAttributeNames: { '#status': 'status' },
         ExpressionAttributeValues: { ':status': 'ENVIADO' },
-        ReturnValues: 'ALL_NEW',
+        ReturnValues: 'ALL_OLD',
       },
     ]);
   });

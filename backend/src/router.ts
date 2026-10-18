@@ -1,9 +1,12 @@
 import { activeCatalog } from './domain/catalog.js';
 import { identityFromClaims, requireCustomer, requireDistributor, type Identity } from './domain/identity.js';
 import { OrderNotFoundError, buildOrder } from './domain/order.js';
+import { orderCreatedEvent, orderStatusChangedEvent, type OrderEventMessage } from './domain/orderEvent.js';
 import { ulid, ulidTime } from './domain/ulid.js';
 import { DOMAIN_FIELDS, type Domain } from './domains.js';
 import type { CatalogRepo } from './data/catalogRepo.js';
+import type { OrderEventPublisher } from './data/eventPublisher.js';
+import type { HistoryRepo } from './data/historyRepo.js';
 import type { OrderRepo } from './data/orderRepo.js';
 import type {
   Mutation,
@@ -12,12 +15,17 @@ import type {
   Query,
   QueryAllOrdersArgs,
   QueryOrderArgs,
+  QueryOrderHistoryArgs,
 } from './generated/graphql.js';
 
 export interface Deps {
   catalog: CatalogRepo;
   orders: OrderRepo;
+  history: Pick<HistoryRepo, 'listEvents'>;
+  events: OrderEventPublisher;
   newOrderId?: () => string;
+  newEventId?: (now: number) => string;
+  now?: () => number;
 }
 
 export interface ResolverEvent {
@@ -41,6 +49,15 @@ const asDistributor =
     return fn(deps, args);
   };
 
+// DEC-020 (S-32): only after a successful write; if publishing fails, the operation still succeeds and the error is logged.
+async function publish(deps: Deps, event: OrderEventMessage): Promise<void> {
+  try {
+    await deps.events.publish(event);
+  } catch (err) {
+    console.error(JSON.stringify({ msg: 'Order event not published', event, error: String(err) }));
+  }
+}
+
 // Return types from the generated contract (DEC-002): `Query.<field>` → Query[field].
 type QueryResolvers = { [F in keyof Query as `Query.${F & string}`]: Resolver<Query[F]> };
 type MutationResolvers = { [F in keyof Mutation as `Mutation.${F & string}`]: Resolver<Mutation[F]> };
@@ -59,6 +76,14 @@ const queryResolvers: QueryResolvers = {
     const { status } = args as unknown as Partial<QueryAllOrdersArgs>;
     return deps.orders.listAllOrders(status ?? null);
   }),
+  // REQ-012 (S-29): the distributor sees any order's history; a customer only events with their token's customerId,
+  // so another store's order gives an empty list, like REQ-004 E3. A user in both groups has the distributor's (S-25).
+  'Query.orderHistory': async (deps, identity, args) => {
+    const { id } = args as unknown as QueryOrderHistoryArgs;
+    if (identity.roles.has('distributor')) return deps.history.listEvents(id);
+    const customerId = requireCustomer(identity);
+    return (await deps.history.listEvents(id)).filter((e) => e.customerId === customerId);
+  },
 };
 
 const mutationResolvers: MutationResolvers = {
@@ -69,14 +94,18 @@ const mutationResolvers: MutationResolvers = {
     const id = (deps.newOrderId ?? ulid)();
     const order = buildOrder(input.lines, catalog, { id, customerId, createdAt: new Date(ulidTime(id)).toISOString() });
     await deps.orders.putOrder(customerId, order);
+    await publish(deps, orderCreatedEvent(order, deps.newEventId));
     return order;
   }),
   // REQ-011: changes only `status`; an order not in that partition gives ORDER_NOT_FOUND without writing anything.
+  // REQ-012 E3: the same status again is an accepted change, so it publishes too.
   'Mutation.setOrderStatus': asDistributor(async (deps, args) => {
     const { customerId, id, status } = args as unknown as MutationSetOrderStatusArgs;
-    const order = await deps.orders.setStatus(customerId, id, status);
-    if (!order) throw new OrderNotFoundError(customerId, id);
-    return order;
+    const change = await deps.orders.setStatus(customerId, id, status);
+    if (!change) throw new OrderNotFoundError(customerId, id);
+    const now = (deps.now ?? Date.now)();
+    await publish(deps, orderStatusChangedEvent(change.order, change.previous, now, deps.newEventId));
+    return change.order;
   }),
 };
 

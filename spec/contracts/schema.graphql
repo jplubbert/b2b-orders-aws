@@ -53,6 +53,18 @@ input CreateOrderInput {
   lines: [OrderLineInput!]!
 }
 
+"Evento del historial de estados de un pedido (REQ-012, DEC-020); `at` lo fija quien publica (S-33)."
+type OrderStatusEvent @aws_auth(cognito_groups: ["almaceneros", "distribuidores"]) {
+  "ULID del evento: la misma entrega repetida se guarda una sola vez."
+  eventId: ID!
+  orderId: ID!
+  customerId: ID!
+  "Estado anterior; null en el evento de creación (RECIBIDO)."
+  from: OrderStatus
+  to: OrderStatus!
+  at: AWSDateTime!
+}
+
 type Query {
   "Productos activos ordenados por nombre (REQ-002)."
   listProducts: [Product!]! @aws_auth(cognito_groups: ["almaceneros"])
@@ -62,6 +74,8 @@ type Query {
   order(id: ID!): Order @aws_auth(cognito_groups: ["almaceneros"])
   "Pedidos de todos los almacenes, del más reciente al más antiguo; solo los de `status` si se indica (REQ-010)."
   allOrders(status: OrderStatus): [Order!]! @aws_auth(cognito_groups: ["distribuidores"])
+  "Historial del pedido `id`, del más antiguo al más reciente (REQ-012, S-29). Un almacenero solo recibe los eventos de sus pedidos (otro → lista vacía); el distribuidor, los de cualquiera."
+  orderHistory(id: ID!): [OrderStatusEvent!]! @aws_auth(cognito_groups: ["almaceneros", "distribuidores"])
 }
 
 type Mutation {

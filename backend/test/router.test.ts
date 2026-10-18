@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Order } from '../src/domain/order.js';
+import type { OrderEventMessage, OrderStatusEvent } from '../src/domain/orderEvent.js';
 import { DOMAINS, DOMAIN_FIELDS } from '../src/domains.js';
 import { domainResolvers, resolvers, route, type Deps, type ResolverEvent } from '../src/router.js';
 
-// In-memory order repository, per customer.
+// In-memory order repository, per customer; `published` records the order events, `history` is what orderHistory reads.
 function makeDeps() {
   const saved = new Map<string, Order[]>();
+  const published: OrderEventMessage[] = [];
+  const history: OrderStatusEvent[] = [];
+  let eventSeq = 0;
   const deps: Deps = {
     catalog: {
       listProducts: async () => [
@@ -27,13 +31,18 @@ function makeDeps() {
         const list = saved.get(customerId) ?? [];
         const i = list.findIndex((o) => o.id === orderId);
         if (i < 0) return null;
+        const previous = list[i]!.status;
         list[i] = { ...list[i]!, status };
-        return list[i]!;
+        return { order: list[i]!, previous };
       },
     },
+    history: { listEvents: async (orderId) => history.filter((e) => e.orderId === orderId) },
+    events: { publish: async (e) => void published.push(e) },
     newOrderId: () => '01JAAAAAAAAAAAAAAAAAB7XQ2M9Z',
+    newEventId: (now) => `EVT-${now}-${++eventSeq}`,
+    now: () => Date.parse('2026-10-18T12:00:00.000Z'),
   };
-  return { deps, saved };
+  return { deps, saved, published, history };
 }
 
 const event = (
@@ -163,12 +172,12 @@ describe('route: order(id) (REQ-004)', () => {
 
 // Two orders with increasing ULIDs: one from store1 and, after it, one from store2.
 async function twoOrders() {
-  const { deps, saved } = makeDeps();
+  const { deps, saved, published } = makeDeps();
   deps.newOrderId = () => '01JAAAAAAAAAAAAAAAAAAAAAA1';
   const first = (await route(deps, createOrder(store1, [{ productId: 'arroz', quantity: 1 }]))) as Order;
   deps.newOrderId = () => '01JAAAAAAAAAAAAAAAAAAAAAA2';
   const second = (await route(deps, createOrder(store2, [{ productId: 'yerba', quantity: 2 }]))) as Order;
-  return { deps, saved, first, second };
+  return { deps, saved, published, first, second };
 }
 
 const allOrders = (claims: Record<string, unknown> | undefined, status?: string | null) =>
@@ -265,5 +274,159 @@ describe('route: setOrderStatus (REQ-011)', () => {
       name: 'ORDER_NOT_FOUND',
     });
     expect([...saved]).toEqual(before);
+  });
+});
+
+describe('route: order events (REQ-012, DEC-020)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('E1: createOrder publishes one OrderCreated event in RECIBIDO, no previous status, at the order time', async () => {
+    const { deps, published } = makeDeps();
+    const order = (await route(deps, createOrder(store1, [{ productId: 'yerba', quantity: 1 }]))) as Order;
+    expect(published).toEqual([
+      {
+        type: 'OrderCreated',
+        eventId: `EVT-${Date.parse(order.createdAt)}-1`,
+        orderId: order.id,
+        customerId: 'C-ALMACEN1',
+        from: null,
+        to: 'RECIBIDO',
+        at: order.createdAt,
+      },
+    ]);
+  });
+
+  it('E2/E3: each accepted setOrderStatus publishes from → to, also for the same status', async () => {
+    const { deps, published, first } = await twoOrdersWithEvents();
+    published.length = 0;
+    const target = { customerId: 'C-ALMACEN1', id: first.id };
+    await route(deps, setStatus(distributor, { ...target, status: 'ENVIADO' }));
+    await route(deps, setStatus(distributor, { ...target, status: 'ENVIADO' }));
+    await route(deps, setStatus(distributor, { ...target, status: 'ENTREGADO' }));
+    expect(published.map((e) => [e.type, e.from, e.to])).toEqual([
+      ['OrderStatusChanged', 'RECIBIDO', 'ENVIADO'],
+      ['OrderStatusChanged', 'ENVIADO', 'ENVIADO'],
+      ['OrderStatusChanged', 'ENVIADO', 'ENTREGADO'],
+    ]);
+    expect(published[0]).toMatchObject({ orderId: first.id, customerId: 'C-ALMACEN1', at: '2026-10-18T12:00:00.000Z' });
+    expect(new Set(published.map((e) => e.eventId)).size).toBe(3);
+  });
+
+  it.each([
+    ['EMPTY_ORDER', []],
+    ['INVALID_QUANTITY', [{ productId: 'yerba', quantity: 0 }]],
+    ['PRODUCT_UNAVAILABLE', [{ productId: 'aceite', quantity: 1 }]],
+  ])('E4: a %s rejection publishes nothing', async (code, lines) => {
+    const { deps, published } = makeDeps();
+    await expect(route(deps, createOrder(store1, lines))).rejects.toMatchObject({ name: code });
+    expect(published).toEqual([]);
+  });
+
+  it('E4: ORDER_NOT_FOUND and Unauthorized publish nothing', async () => {
+    const { deps, published, first } = await twoOrdersWithEvents();
+    published.length = 0;
+    await expect(
+      route(deps, setStatus(distributor, { customerId: 'C-ALMACEN2', id: first.id, status: 'CANCELADO' })),
+    ).rejects.toMatchObject({ name: 'ORDER_NOT_FOUND' });
+    await expect(
+      route(deps, setStatus(store1, { customerId: 'C-ALMACEN1', id: first.id, status: 'CANCELADO' })),
+    ).rejects.toMatchObject({ name: 'Unauthorized' });
+    await expect(route(deps, createOrder(distributor, [{ productId: 'yerba', quantity: 1 }]))).rejects.toMatchObject({
+      name: 'Unauthorized',
+    });
+    expect(published).toEqual([]);
+  });
+
+  it('publishes nothing if the write itself fails', async () => {
+    const { deps, published } = makeDeps();
+    deps.orders.putOrder = async () => {
+      throw new Error('throttled');
+    };
+    deps.orders.setStatus = async () => {
+      throw new Error('throttled');
+    };
+    await expect(route(deps, createOrder(store1, [{ productId: 'yerba', quantity: 1 }]))).rejects.toThrow('throttled');
+    await expect(
+      route(deps, setStatus(distributor, { customerId: 'C-ALMACEN1', id: 'x', status: 'ENVIADO' })),
+    ).rejects.toThrow('throttled');
+    expect(published).toEqual([]);
+  });
+
+  it('S-32: if publishing fails, the operation still succeeds and the error is logged', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps, saved } = makeDeps();
+    deps.events = {
+      publish: async () => {
+        throw new Error('SNS down');
+      },
+    };
+    const order = (await route(deps, createOrder(store1, [{ productId: 'yerba', quantity: 1 }]))) as Order;
+    expect(saved.get('C-ALMACEN1')).toEqual([order]);
+    const updated = await route(deps, setStatus(distributor, { customerId: 'C-ALMACEN1', id: order.id, status: 'ENVIADO' }));
+    expect(updated).toEqual({ ...order, status: 'ENVIADO' });
+    expect(errors).toHaveBeenCalledTimes(2);
+    expect(String(errors.mock.calls[0]![0])).toContain('Order event not published');
+    expect(String(errors.mock.calls[0]![0])).toContain('SNS down');
+  });
+});
+
+// Two orders (store1, store2) whose events are stored as soon as they're published, as the history Lambda would.
+async function twoOrdersWithEvents() {
+  const base = await twoOrders();
+  const published: OrderEventMessage[] = [];
+  const history: OrderStatusEvent[] = [];
+  const publish = async ({ type, ...e }: OrderEventMessage) => {
+    published.push({ type, ...e });
+    history.push(e);
+  };
+  for (const e of base.published) await publish(e);
+  base.deps.events = { publish };
+  base.deps.history = { listEvents: async (orderId) => history.filter((e) => e.orderId === orderId) };
+  return { ...base, published, history };
+}
+
+describe('route: orderHistory (REQ-012, S-29)', () => {
+  const historyOf = (claims: Record<string, unknown> | undefined, id: string) =>
+    event(claims, 'orderHistory', 'Query', { id });
+
+  it("E8: the owner gets their order's events in the repository's order (oldest first)", async () => {
+    const { deps, first } = await twoOrdersWithEvents();
+    await route(deps, setStatus(distributor, { customerId: 'C-ALMACEN1', id: first.id, status: 'ENVIADO' }));
+    const events = (await route(deps, historyOf(store1, first.id))) as OrderStatusEvent[];
+    expect(events.map((e) => [e.from, e.to])).toEqual([
+      [null, 'RECIBIDO'],
+      ['RECIBIDO', 'ENVIADO'],
+    ]);
+    expect(events[1]).not.toHaveProperty('type');
+  });
+
+  it('E9: the distributor gets the same events of any order', async () => {
+    const { deps, first, second } = await twoOrdersWithEvents();
+    expect(await route(deps, historyOf(distributor, first.id))).toEqual(await route(deps, historyOf(store1, first.id)));
+    expect(await route(deps, historyOf(distributor, second.id))).toHaveLength(1);
+  });
+
+  it("E10: another store's order gives an empty list, with no error; a missing order too", async () => {
+    const { deps, first } = await twoOrdersWithEvents();
+    expect(await route(deps, historyOf(store2, first.id))).toEqual([]);
+    expect(await route(deps, historyOf(store1, '01J0000000000000000000NONE'))).toEqual([]);
+  });
+
+  it('S-25: a user in both groups reads it as the distributor', async () => {
+    const { deps, second } = await twoOrdersWithEvents();
+    const both = { 'custom:customerId': 'C-ALMACEN1', 'cognito:groups': ['almaceneros', 'distribuidores'] };
+    expect(await route(deps, historyOf(both, second.id))).toHaveLength(1);
+  });
+
+  it('without a group or customerId → Unauthorized (DEC-004)', async () => {
+    const { deps, first } = await twoOrdersWithEvents();
+    await expect(route(deps, historyOf(undefined, first.id))).rejects.toMatchObject({ name: 'Unauthorized' });
+    await expect(route(deps, historyOf({ 'cognito:groups': ['almaceneros'] }, first.id))).rejects.toMatchObject({
+      name: 'Unauthorized',
+    });
+  });
+
+  it('is served by the orders Lambda (DEC-019)', () => {
+    expect(DOMAIN_FIELDS.orders).toContain('Query.orderHistory');
   });
 });

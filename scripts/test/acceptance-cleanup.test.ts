@@ -1,6 +1,6 @@
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { describe, expect, it } from 'vitest';
-import { deleteAcceptanceOrders } from '../lib/acceptance-cleanup.ts';
+import { deleteAcceptanceHistory, deleteAcceptanceOrders } from '../lib/acceptance-cleanup.ts';
 
 // Fake client: returns the responses in order and records each command.
 function fakeDoc(responses: unknown[]) {
@@ -38,6 +38,44 @@ describe('acceptance:cleanup (T-19)', () => {
       { Items: [{ PK: 'CUSTOMER#C-ALMACEN1', SK: 'ORDER#1' }, { PK: 'CATALOG', SK: 'PRODUCT#p' }] },
     ]);
     await expect(deleteAcceptanceOrders(doc, 'table')).resolves.toBe(0);
+    expect(sent.map((s) => s.name)).toEqual(['ScanCommand']);
+  });
+});
+
+describe('acceptance:cleanup of the order history (DEC-020)', () => {
+  const event = (customerId: string, orderId: string) => ({
+    PK: `HISTORY#${orderId}`,
+    SK: `EVENT#2026-10-18T12:00:00.000Z#${orderId}-E`,
+    customerId,
+  });
+
+  it('looks only for history events of C-ACEPT-… customers, walks the pages and deletes each one by its key', async () => {
+    const a = event('C-ACEPT-AAA', '01A');
+    const b = event('C-ACEPT-BBB', '01B');
+    const { doc, sent } = fakeDoc([{ Items: [a], LastEvaluatedKey: { PK: 'x', SK: 'y' } }, {}, { Items: [b] }, {}]);
+    await expect(deleteAcceptanceHistory(doc, 'table')).resolves.toBe(2);
+    expect(sent.map((s) => s.name)).toEqual(['ScanCommand', 'DeleteCommand', 'ScanCommand', 'DeleteCommand']);
+    expect(sent[0]!.input).toMatchObject({
+      TableName: 'table',
+      FilterExpression: 'begins_with(PK, :pk) AND begins_with(SK, :sk) AND begins_with(customerId, :c)',
+      ExpressionAttributeValues: { ':pk': 'HISTORY#', ':sk': 'EVENT#', ':c': 'C-ACEPT-' },
+    });
+    expect(sent[2]!.input.ExclusiveStartKey).toEqual({ PK: 'x', SK: 'y' });
+    expect(sent[1]!.input).toEqual({ TableName: 'table', Key: { PK: a.PK, SK: a.SK } });
+    expect(sent[3]!.input).toEqual({ TableName: 'table', Key: { PK: b.PK, SK: b.SK } });
+  });
+
+  it("never deletes the demo stores' history, orders or products, even if the Scan returns them", async () => {
+    const { doc, sent } = fakeDoc([
+      {
+        Items: [
+          event('C-ALMACEN1', '01A'),
+          { PK: 'CUSTOMER#C-ACEPT-AAA', SK: 'ORDER#1', customerId: 'C-ACEPT-AAA' },
+          { PK: 'CATALOG', SK: 'PRODUCT#p' },
+        ],
+      },
+    ]);
+    await expect(deleteAcceptanceHistory(doc, 'table')).resolves.toBe(0);
     expect(sent.map((s) => s.name)).toEqual(['ScanCommand']);
   });
 });

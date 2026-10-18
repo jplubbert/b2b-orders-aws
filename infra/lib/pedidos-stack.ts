@@ -5,11 +5,15 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import type { Construct } from 'constructs';
-import { CATALOG_PK } from '../../backend/src/data/keys.js';
-import { DOMAINS, DOMAIN_FIELDS, type Domain } from '../../backend/src/domains.js';
+import { CATALOG_PK, HISTORY_PK_PREFIX } from '../../backend/src/data/keys.js';
+import { DOMAINS, DOMAIN_FIELDS, PUBLISHING_DOMAINS, type Domain } from '../../backend/src/domains.js';
 import { SCHEMA_PATH, rootFields } from './contract.js';
 
 export const CUSTOMER_GROUP = 'almaceneros';
@@ -39,11 +43,20 @@ export const DOMAIN_TABLE_ACTIONS: Record<Domain, string[]> = {
 /** Construct id prefix and AppSync data source name of each domain Lambda. */
 export const domainFunctionId = (domain: Domain) => `${domain[0]!.toUpperCase()}${domain.slice(1)}Function`;
 
+/** DEC-020: the history Lambda only writes events, and only in `HISTORY#…` partitions. */
+export const HISTORY_FUNCTION_ID = 'OrderHistoryFunction';
+export const HISTORY_TABLE_ACTIONS = ['dynamodb:PutItem'];
+/** Timeout of every backend Lambda; the history queue's visibility is 6× this (DEC-020). */
+export const FUNCTION_TIMEOUT_SECONDS = 10;
+/** DEC-020: tries before a message goes to the DLQ, and how long the DLQ keeps it. */
+export const HISTORY_MAX_RECEIVE_COUNT = 3;
+export const HISTORY_DLQ_RETENTION_DAYS = 14;
+
 export interface PedidosStackProps extends StackProps {
   stage: string;
 }
 
-/** `PedidosB2B-<stage>` stack (DEC-001): Cognito + AppSync + one Lambda per domain (DEC-019) + single table. */
+/** `PedidosB2B-<stage>` stack (DEC-001): Cognito + AppSync + one Lambda per domain (DEC-019) + single table + order events (DEC-020). */
 export class PedidosStack extends Stack {
   constructor(scope: Construct, id: string, props: PedidosStackProps) {
     super(scope, id, props);
@@ -86,24 +99,54 @@ export class PedidosStack extends Stack {
       removalPolicy,
     });
 
-    // DEC-019: one Lambda per domain, each with only its own table actions.
-    const functions = {} as Record<Domain, NodejsFunction>;
-    for (const domain of DOMAINS) {
-      const id = domainFunctionId(domain);
-      const fn = new NodejsFunction(this, id, {
-        entry: fileURLToPath(new URL(`../../backend/src/handlers/${domain}.ts`, import.meta.url)),
+    const backendFunction = (id: string, handlerFile: string, environment: Record<string, string>) =>
+      new NodejsFunction(this, id, {
+        entry: fileURLToPath(new URL(`../../backend/src/handlers/${handlerFile}.ts`, import.meta.url)),
         handler: 'handler',
         runtime: lambda.Runtime.NODEJS_24_X,
         architecture: lambda.Architecture.ARM_64,
         memorySize: 512,
-        timeout: Duration.seconds(10),
-        environment: { TABLE_NAME: table.tableName },
+        timeout: Duration.seconds(FUNCTION_TIMEOUT_SECONDS),
+        environment,
         bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
         logGroup: new logs.LogGroup(this, `${id}Logs`, {
           retention: logs.RetentionDays.ONE_WEEK,
           removalPolicy,
         }),
       });
+
+    // DEC-020: standard topic → standard queue (raw delivery) with DLQ → history Lambda.
+    const topic = new sns.Topic(this, 'OrderEvents', { topicName: `pedidos-b2b-${props.stage}-order-events` });
+    const deadLetters = new sqs.Queue(this, 'OrderHistoryDlq', {
+      retentionPeriod: Duration.days(HISTORY_DLQ_RETENTION_DAYS),
+      removalPolicy,
+    });
+    const queue = new sqs.Queue(this, 'OrderHistoryQueue', {
+      visibilityTimeout: Duration.seconds(6 * FUNCTION_TIMEOUT_SECONDS),
+      deadLetterQueue: { queue: deadLetters, maxReceiveCount: HISTORY_MAX_RECEIVE_COUNT },
+      removalPolicy,
+    });
+    topic.addSubscription(new subscriptions.SqsSubscription(queue, { rawMessageDelivery: true }));
+    const historyFn = backendFunction(HISTORY_FUNCTION_ID, 'orderHistory', { TABLE_NAME: table.tableName });
+    historyFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: HISTORY_TABLE_ACTIONS,
+        resources: [table.tableArn],
+        conditions: { 'ForAllValues:StringLike': { 'dynamodb:LeadingKeys': [`${HISTORY_PK_PREFIX}*`] } },
+      }),
+    );
+    historyFn.addEventSource(new SqsEventSource(queue, { batchSize: 10, reportBatchItemFailures: true }));
+
+    // DEC-019: one Lambda per domain, each with only its own table actions.
+    const functions = {} as Record<Domain, NodejsFunction>;
+    for (const domain of DOMAINS) {
+      const id = domainFunctionId(domain);
+      const publishes = PUBLISHING_DOMAINS.includes(domain);
+      const fn = backendFunction(id, domain, {
+        TABLE_NAME: table.tableName,
+        ...(publishes ? { TOPIC_ARN: topic.topicArn } : {}),
+      });
+      if (publishes) topic.grantPublish(fn);
       fn.addToRolePolicy(
         new iam.PolicyStatement({
           actions: DOMAIN_TABLE_ACTIONS[domain],
