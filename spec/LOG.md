@@ -735,3 +735,12 @@
 - En curso / roto: nada. Todas las tareas (T-01..T-20) están `accepted`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte.
+
+## 2026-10-18 14:28 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Lee AGENTS.md y ejecuta T-21. Detente según las reglas de autoridad."
+- Hecho: T-21 ya estaba implementada (0f00920). Corrí la verificación automática y la registré en `notes` de T-21. Sin cambios de código; solo spec/TASKS.json y esta bitácora.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 173/173 (incluye `aviso ntfy al detenerse (T-21)`) y jest 137/137; `npm run check:spec` ok; `npm run test:acceptance` 41/41 (borró 23 pedidos C-ACEPT-…); `npm run smoke` 2/2.
+- Pendiente deploy: ninguno (T-21 es tooling local, no toca la pila).
+- En curso / roto: T-21 sigue `in_progress`.
+- Bloqueos nuevos (escalado, AGENTS.md § Autoridad): (1) DEC-016 sigue `proposed` y ntfy.sh es un servicio fuera de R-01: falta el `accepted` del usuario; (2) el aviso real que pide `verify` exige correr `scripts/autopilot.sh` fuera de esta sesión (es el orquestador mismo) y publica en un servicio externo: lo corre el usuario y confirma que llegó al tema; (3) el port a sdd-base es otro repositorio, fuera del alcance de esta sesión.
+- Próxima acción autorizada: el usuario decide `accepted` de DEC-016, corre `scripts/autopilot.sh` con el árbol limpio y confirma que el aviso llegó; luego un agente registra la evidencia y pasa T-21 a `verified_auto`. El port a sdd-base, en una sesión sobre ese repositorio.

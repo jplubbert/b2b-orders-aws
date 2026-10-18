@@ -735,7 +735,7 @@
       "status": "in_progress",
       "verify": "npm run lint && npm run typecheck && npm test (scripts/test/autopilot-tasks.test.ts: aviso ntfy normal/alto/límite/deploy, ntfy caído, caída antes del resumen, config y --dry-run) && npm run check:spec && scripts/autopilot.sh (aviso real recibido en el tema)",
       "blocked_by": null,
-      "notes": "2026-10-18: implementado; pendiente la corrida real del autopilot (necesita árbol limpio) y el port a sdd-base. Tema elegido por el usuario: guardado solo en ~/.config/autopilot/autopilot.config.sh (no se escribe en el repo ni en los registros)."
+      "notes": "2026-10-18: implementado; pendiente la corrida real del autopilot (necesita árbol limpio) y el port a sdd-base. Tema elegido por el usuario: guardado solo en ~/.config/autopilot/autopilot.config.sh (no se escribe en el repo ni en los registros). 2026-10-18 14:28 (sesión del implementador sobre 0f00920): lint ok, typecheck ok, npm test (vitest 173/173 incl. aviso ntfy T-21, jest 137/137), check:spec ok, test:acceptance 41/41, smoke 2/2. Escalado al usuario: (1) DEC-016 sigue proposed y ntfy.sh está fuera de R-01: falta su accepted; (2) el aviso real exige correr scripts/autopilot.sh fuera de esta sesión y publica en un servicio externo: lo corre el usuario; (3) el port a sdd-base es otro repositorio, fuera de este."
     }
   ]
 }
