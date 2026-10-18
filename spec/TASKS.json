@@ -1,5 +1,5 @@
 {
-  "corte": 2,
+  "corte": 3,
   "tasks": [
     {
       "id": "T-01",
@@ -421,6 +421,92 @@
         "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
+    },
+    {
+      "id": "T-13",
+      "kind": "spec",
+      "title": "Pruebas de aceptación de REQ-009..011 (tarea de spec)",
+      "description": "Escribir tests/acceptance/req_009_roles, req_010_panel y req_011_estado a partir de los ejemplos de API de SPEC.md (REQ-009 E5–E6, REQ-010 E1, E2, E5, REQ-011 E1–E6) con la forma de DEC-013. support/fixtures.ts gana un distribuidor desechable (`acept-dist-*@demo.test`, grupo `distribuidores`, borrado al terminar) y un usuario sin grupo. Deben fallar donde la funcionalidad no existe. Única tarea del corte que edita tests/acceptance/; el usuario aprueba el diff.",
+      "reqs": [
+        "REQ-009",
+        "REQ-010",
+        "REQ-011"
+      ],
+      "decisions": [
+        "DEC-007",
+        "DEC-010",
+        "DEC-013"
+      ],
+      "depends_on": [],
+      "status": "specified",
+      "verify": "npm run lint && npm run typecheck && npm run test:acceptance: un caso por ejemplo de API citado; req_001..004 siguen pasando; los nuevos fallan por la razón esperada (campo inexistente o grupo inexistente)",
+      "blocked_by": null,
+      "notes": "Corte 3. Propuesta 2026-10-18."
+    },
+    {
+      "id": "T-14",
+      "title": "Backend: rol distribuidor, allOrders y setOrderStatus (requiere deploy)",
+      "description": "Contrato (DEC-013): Order.customerId, Query.allOrders(status), Mutation.setOrderStatus(customerId, id, status), @aws_auth por campo (almaceneros / distribuidores). Infra: grupo `distribuidores`; Lambda con dynamodb:Scan y UpdateItem; prueba de plantilla actualizada. Backend: identityFromClaims con rol; cada resolver declara su rol; orderRepo.listAllOrders (Scan paginado, ULID descendente, filtro de estado) y setStatus (UpdateItem condicional, solo `status`; ORDER_NOT_FOUND). Seed: `distribuidor@demo.test` (S-22). Codegen de tipos. Sin cambios en app/ ni tests/acceptance/.",
+      "reqs": [
+        "REQ-009",
+        "REQ-010",
+        "REQ-011"
+      ],
+      "decisions": [
+        "DEC-004",
+        "DEC-005",
+        "DEC-006",
+        "DEC-013"
+      ],
+      "depends_on": [
+        "T-13"
+      ],
+      "status": "specified",
+      "verify": "npm run lint && npm run typecheck && npm test + npm run deploy:dev (en autopilot: `- Pendiente deploy:` en LOG) + npm run test:acceptance completo (req_001..004 y req_009..011) + npm run smoke",
+      "blocked_by": null,
+      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy."
+    },
+    {
+      "id": "T-15",
+      "title": "App: acceso por rol y panel de pedidos con filtro",
+      "description": "Tras el login y al reabrir con sesión, leer `cognito:groups` del token: almaceneros → /catalog (sin cambios), distribuidores → /dist, ninguno → \"Tu usuario no tiene acceso a la app\" + cerrar sesión (REQ-009 E1–E4, S-25). Ruta dist/index: panel \"Pedidos\" con allOrders (número, almacén = customerId S-23, fecha es-CL, total, StatusBadge), filtro \"Todos\" + 5 estados (S-28), StateMessage para carga, \"Todavía no hay pedidos\", \"No hay pedidos en este estado\" y error; recarga al ganar el foco y al deslizar; menú de cuenta con \"Cerrar sesión\". Tema y componentes del corte 2 (DEC-012). Pruebas jest en app/test/dist.test.tsx y session.test.tsx. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json; flujo del almacenero intacto.",
+      "reqs": [
+        "REQ-009",
+        "REQ-010"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-012",
+        "DEC-013"
+      ],
+      "depends_on": [
+        "T-14"
+      ],
+      "status": "specified",
+      "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + REQ-009 E1, E4 y panel con filtro en el teléfono (manual, DEC-011)",
+      "blocked_by": null,
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app."
+    },
+    {
+      "id": "T-16",
+      "title": "App: detalle del pedido y cambio de estado del distribuidor",
+      "description": "Ruta dist/order/[id]: \"Pedido <número>\" con almacén, líneas con precio congelado, total y estado, desde el panel ya cargado (como S-19). \"Cambiar estado\": los 5 estados como botones (el actual marcado); al elegir uno llama setOrderStatus y actualiza detalle y panel; error → \"No se pudo cambiar el estado\" y conserva el anterior (REQ-011 E7); S-24 sin confirmación. README: guion de demo del corte 3 sin order:set-status. Pruebas jest en app/test/dist-order.test.tsx. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.",
+      "reqs": [
+        "REQ-010",
+        "REQ-011"
+      ],
+      "decisions": [
+        "DEC-003",
+        "DEC-012",
+        "DEC-013"
+      ],
+      "depends_on": [
+        "T-15"
+      ],
+      "status": "specified",
+      "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + criterio de éxito del corte 3 en el teléfono (manual, DEC-011)",
+      "blocked_by": null,
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app."
     }
   ]
 }

@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 2  ·  Corte 1: approved  ·  Corte 2: approved  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy)
+Versión: 3  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -12,6 +12,10 @@ Criterio de éxito: en una demo de ≤3 minutos en un teléfono, un almacenero d
 sesión, confirma un pedido de ≥2 productos, lo ve en `RECIBIDO` y, tras cambiar el estado con el
 script del distribuidor, lo ve en `ENVIADO` al refrescar; las pruebas de aceptación REQ-001..004
 pasan contra el entorno `dev`.
+Criterio de éxito (corte 3, reemplaza el script en la demo): en el teléfono, el almacenero confirma
+un pedido y lo ve "Recibido"; el distribuidor inicia sesión en la misma app, filtra "Recibido",
+pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "Enviado", sin usar
+`order:set-status`. Las pruebas de aceptación REQ-001..004 y REQ-009..011 pasan contra `dev`.
 
 ## Alcance
 - Incluido (corte 1): inicio y cierre de sesión con usuario precreado; catálogo único; carrito en
@@ -20,11 +24,15 @@ pasan contra el entorno `dev`.
 - Incluido (corte 2, solo app): barra superior ordenada con "Cerrar sesión" fuera de la barra
   (REQ-006); diseño visual consistente para una demo comercial (REQ-007); detalle de producto
   (REQ-008). Sin cambios de backend, contrato, infraestructura ni despliegue.
+- Incluido (corte 3): rol distribuidor en la misma app (grupo Cognito `distribuidores`, REQ-009);
+  panel con todos los pedidos de todos los almacenes y filtro por estado (REQ-010); cambio de
+  estado de un pedido desde la app (REQ-011). Responde Q-02 para la demo. El script
+  `order:set-status` sigue existiendo para pruebas y soporte, pero la demo ya no lo usa.
 - Excluido explícitamente: auto-registro y recuperación de contraseña; pagos y facturación;
-  control de stock; backoffice del distribuidor; notificaciones push y suscripciones en tiempo
+  control de stock; backoffice del distribuidor más allá del corte 3 (alta de usuarios, catálogo y precios desde la app); notificaciones push y suscripciones en tiempo
   real; modo offline; varios distribuidores; listas de precios por cliente; imágenes, búsqueda y
   filtros del catálogo; editar o cancelar un pedido confirmado; publicación en tiendas.
-- Cortes futuros: backoffice del distribuidor (Q-02), búsqueda/categorías, cancelación,
+- Cortes futuros: catálogo y precios desde la app del distribuidor, búsqueda/categorías, cancelación,
   notificaciones de cambio de estado, varios usuarios por almacén.
 
 ## Restricciones
@@ -34,8 +42,9 @@ pasan contra el entorno `dev`.
 - R-04 Despliegue `dev` con el perfil AWS `default` en `us-east-1` — fuente: usuario (Q-01), LOG 2026-10-17
 
 ## Glosario
-- Almacenero: dueño o encargado de un almacén; cliente B2B del distribuidor; único actor de la app.
-- Distribuidor: empresa que vende al almacenero y procesa los pedidos; en el corte 1 actúa por script.
+- Almacenero: dueño o encargado de un almacén; cliente B2B del distribuidor; actor de la app (grupo `almaceneros`).
+- Distribuidor: empresa que vende al almacenero y procesa los pedidos; en el corte 1 actúa por script; desde el corte 3 es un usuario de la app del grupo `distribuidores`, sin `customerId`.
+- Panel del distribuidor: pantalla "Pedidos" con los pedidos de todos los almacenes (REQ-010).
 - Cliente: almacén identificado por `customerId`; en el corte 1, un usuario = un cliente (S-01).
 - Catálogo: conjunto de productos activos que el distribuidor ofrece a todos los clientes.
 - Producto: artículo con `productId`, nombre, presentación (p. ej. "Caja x 12 u."), precio unitario y si está activo.
@@ -157,6 +166,55 @@ Ejemplos (aceptación):
 | E5 negativo | ruta `/product/<id>` con un id que no está en el catálogo cargado | "Este producto ya no está disponible", sin − / +, con botón "Volver al catálogo" |
 Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/product.test.tsx (S-20) + manual en teléfono
 
+### REQ-009 Acceso por rol · estado: proposed · prioridad: must · corte 3
+Cuando un usuario del grupo `distribuidores` inicia sesión, el sistema deberá abrir el panel "Pedidos" en lugar del catálogo.
+Cuando un usuario del grupo `almaceneros` inicia sesión, el sistema deberá abrir el catálogo como hasta ahora (REQ-001).
+Cuando un usuario vuelve a abrir la app con una sesión vigente, el sistema deberá abrir la pantalla de su rol sin pedir credenciales.
+Si el usuario no pertenece a ninguno de los dos grupos, entonces el sistema deberá mostrar "Tu usuario no tiene acceso a la app", cerrar la sesión y permanecer en inicio.
+Si un usuario llama una operación de la API que no corresponde a su rol, entonces el sistema deberá rechazarla con `Unauthorized` sin devolver datos.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | `distribuidor@demo.test` / contraseña correcta | se muestra el panel "Pedidos" |
+| E2 positivo | `almacen1@demo.test` / contraseña correcta | se muestra el catálogo (sin cambios) |
+| E3 negativo | usuario válido sin grupo | "Tu usuario no tiene acceso a la app"; sigue en inicio, sin sesión |
+| E4 borde | distribuidor con sesión, app cerrada y reabierta | panel "Pedidos" sin pedir credenciales |
+| E5 negativo | almacenero llama `allOrders` o `setOrderStatus` | error `Unauthorized`; sin datos ni cambios |
+| E6 negativo | distribuidor llama `myOrders`, `order` o `createOrder` | error `Unauthorized`; sin datos ni pedido creado |
+Trazas: §Alcance corte 3 · decisiones: DEC-004, DEC-013 · prueba: tests/acceptance/req_009_* (E5, E6) + app/test (E1–E4, S-27) + manual E1, E4
+
+### REQ-010 Panel de pedidos del distribuidor · estado: proposed · prioridad: must · corte 3
+Cuando el distribuidor abre el panel, el sistema deberá listar los pedidos de todos los almacenes del más reciente al más antiguo con número, almacén, fecha, total y estado.
+Cuando el distribuidor elige un estado en el filtro, el sistema deberá mostrar solo los pedidos en ese estado; "Todos" quita el filtro.
+Cuando el distribuidor abre un pedido, el sistema deberá mostrar el almacén, sus líneas con precios congelados, el total y el estado actual.
+Cuando el distribuidor refresca el panel o vuelve a él, el sistema deberá mostrar el estado vigente (S-06).
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | almacen1 confirma un pedido y luego almacen2 otro | ambos aparecen; primero el de almacen2; cada uno con su almacén |
+| E2 positivo | filtro "Enviado" con pedidos en `RECIBIDO` y `ENVIADO` | solo los `ENVIADO` (`allOrders(status: ENVIADO)`) |
+| E3 borde | filtro sin pedidos en ese estado | mensaje "No hay pedidos en este estado" |
+| E4 borde | ningún pedido en el sistema | mensaje "Todavía no hay pedidos" |
+| E5 positivo | abrir un pedido de almacen1 de 2 Yerba + 5 Arroz | almacén, 2 líneas con $4.500 y $1.300, total $15.500 y estado |
+Trazas: §Alcance corte 3 · decisiones: DEC-006, DEC-013 · prueba: tests/acceptance/req_010_* (E1, E2, E5 por API) + app/test (E2–E5) + manual en teléfono
+
+### REQ-011 Cambiar estado de un pedido · estado: proposed · prioridad: must · corte 3
+Cuando el distribuidor elige un estado nuevo en el detalle de un pedido, el sistema deberá guardar ese estado y mostrarlo en el detalle y en el panel.
+Cuando el almacenero dueño del pedido refresca "Mis pedidos" o el detalle, el sistema deberá mostrar el estado nuevo (REQ-004).
+El sistema deberá cambiar solo el estado: líneas, precios, total, número y fecha quedan iguales.
+Si el pedido no existe, entonces el sistema deberá rechazar el cambio con `ORDER_NOT_FOUND` sin modificar nada.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | pedido `RECIBIDO` → el distribuidor elige "En preparación" | respuesta y panel con `EN_PREPARACION` |
+| E2 positivo | distribuidor pasa el pedido de almacen1 a `ENVIADO`; almacen1 refresca | almacen1 ve "Enviado" (reemplaza el script de REQ-004 E2 en la demo) |
+| E3 borde | pedido ya `ENVIADO` → se elige `ENVIADO` | sin error; estado `ENVIADO`; nada más cambia |
+| E4 borde | tras el cambio, comparar con el pedido original | mismas líneas, total, número y `createdAt` |
+| E5 negativo | `setOrderStatus` con un `id` inexistente (o con el `customerId` de otro almacén) | rechazo `ORDER_NOT_FOUND`; no se crea ni modifica ningún pedido |
+| E6 negativo | `setOrderStatus` con estado `PERDIDO` | AppSync rechaza la solicitud (no es de S-04); el pedido no cambia |
+| E7 negativo | el cambio falla por red en la app | mensaje "No se pudo cambiar el estado" y el detalle conserva el estado anterior |
+Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/acceptance/req_011_* (E1–E6 por API) + app/test (E1, E7) + manual en teléfono (criterio de éxito del corte 3)
+
 ## Supuestos (no bloqueantes, con valor por defecto)
 | ID | creemos que… | valor por defecto | clase | disparador de revisión |
 |---|---|---|---|---|
@@ -181,12 +239,19 @@ Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/pr
 | S-19 | origen de los datos del detalle | el catálogo ya cargado en la app (sin consulta nueva ni cambio de contrato); si el id no está, REQ-008 E5 | reversible (`product(id)` aditivo en un corte con backend) | se abre el detalle desde un enlace externo |
 | S-20 | aceptación de REQ-006..008 | son solo de UI: pruebas de componentes con jest en `app/test/` (no protegidas) + verificación manual en el teléfono (DEC-007, DEC-011); no hay tarea de spec ni cambios en `tests/acceptance/` | reversible | se agregan pruebas end-to-end de UI |
 | S-21 | textos visibles de REQ-001..005 | se conservan literalmente; el pulido no cambia textos ni flujos | no bloqueante | — |
+| S-22 | un único distribuidor | todos los usuarios del grupo `distribuidores` ven todos los pedidos; usuario de demo `distribuidor@demo.test` (seed, misma contraseña de demo) sin `custom:customerId` | reversible (varios distribuidores = atributo aditivo) | se piden varios distribuidores |
+| S-23 | "almacén" en el panel | se muestra el `customerId` del pedido (p. ej. `C-ALMACEN1`); no hay nombre de almacén en el modelo | reversible (nombre aditivo en el seed/token) | se pide el nombre comercial |
+| S-24 | transiciones de estado | el distribuidor puede pasar un pedido a cualquiera de los 5 estados, sin orden obligatorio ni confirmación extra (igual que el script); elegir el mismo estado no es error | reversible | el distribuidor pide reglas de flujo (p. ej. `ENTREGADO` final) |
+| S-25 | un usuario en ambos grupos | no lo crea el seed; si ocurre, la app abre el panel del distribuidor y la API autoriza cada operación según sus grupos | reversible | se pide cambiar de rol en la app |
+| S-26 | volumen | el panel trae todos los pedidos sin paginar (demo: decenas) | reversible (paginación aditiva) | más de 1.000 pedidos (DEC-013) |
+| S-27 | aceptación de la UI del panel | como S-20: jest en `app/test/` + verificación manual en el teléfono (DEC-011); la API se prueba en `tests/acceptance/` (tarea de spec T-13) | reversible | — |
+| S-28 | textos de la UI del distribuidor | panel "Pedidos"; filtro "Todos" + los 5 nombres de S-17; detalle "Pedido <número>" con "Cambiar estado"; menú de cuenta igual al del almacenero (REQ-006) | reversible | — |
 
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
 |---|---|---|---|---|---|
 | Q-01 | ¿Qué cuenta/perfil AWS y región uso para desplegar `dev`? — **resuelta 2026-10-17**: perfil `default`, `us-east-1` (R-04) | bloqueante | — | usuario | — |
-| Q-02 | ¿Quién y cómo cambia el estado del pedido en la operación real? | diferible | nada en corte 1 (script cubre la demo) | usuario | inicio del corte 2 |
+| Q-02 | ¿Quién y cómo cambia el estado del pedido en la operación real? — **respondida para la demo 2026-10-18** por el encargo del corte 3: el distribuidor, desde la misma app (REQ-009..011) | diferible | — | usuario | — |
 
 ## Plan (corte 1)
 ### Diseño
@@ -246,3 +311,31 @@ Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/pr
 - [x] DEC-012 `accepted`
 - [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
 - [x] Sin preguntas bloqueantes (ninguna abierta)
+
+## Plan (corte 3, panel del distribuidor)
+### Diseño
+- Cognito: grupo nuevo `distribuidores`; el seed crea `distribuidor@demo.test` sin `custom:customerId` (S-22).
+- Contrato (DEC-013): `Order.customerId: ID!`; `Query.allOrders(status: OrderStatus): [Order!]!` y `Mutation.setOrderStatus(customerId: ID!, id: ID!, status: OrderStatus!): Order!` solo para `distribuidores`; `myOrders`, `order`, `createOrder` y `listProducts` solo para `almaceneros`; tipos visibles para ambos grupos. Error nuevo `ORDER_NOT_FOUND`.
+- Backend: `identityFromClaims` devuelve el rol (almacenero con `customerId` o distribuidor) y cada resolver declara qué rol acepta (doble control con `@aws_auth`). `allOrders` = Scan paginado de `ORDER#*` ordenado por ULID descendente con filtro opcional por estado; `setOrderStatus` = UpdateItem condicional en `CUSTOMER#<customerId>/ORDER#<id>` que solo toca `status`. La Lambda gana `Scan` y `UpdateItem` sobre la tabla.
+- App: tras el login (y al reabrir) se leen los grupos del token (`fetchAuthSession`): `/catalog`, `/dist` o rechazo (REQ-009 E3). Rutas nuevas `dist/index` (panel con filtro) y `dist/order/[id]` (detalle desde el panel ya cargado, como S-19, y botones de estado). Mismo tema y componentes del corte 2 (DEC-012), sin dependencias nuevas.
+- Despliegue: un solo `npm run deploy:dev` al cerrar el backend (T-14); en autopilot queda como `- Pendiente deploy:`.
+
+### Orden y dependencias
+1. T-13 Pruebas de aceptación REQ-009..011 (tarea de spec) — sin dependencias del corte 3
+2. T-14 Backend: rol distribuidor, `allOrders` y `setOrderStatus` (REQ-009 E5–E6, REQ-010, REQ-011) — **requiere deploy** — depende de T-13
+3. T-15 App: acceso por rol y panel de pedidos con filtro (REQ-009 E1–E4, REQ-010) — solo app — depende de T-14 (contrato y tipos generados)
+4. T-16 App: detalle del pedido y cambio de estado + guion de demo sin script (REQ-010 E5, REQ-011) — solo app — depende de T-15
+
+### Riesgos
+| riesgo | mitigación |
+|---|---|
+| El cambio de autorización rompe al almacenero (REQ-001..004) | `test:acceptance` completo (req_001..004 siguen pasando) es parte del `verify` de T-14 |
+| `@aws_auth` por campo con varios grupos se comporta distinto de lo esperado | REQ-009 E5–E6 contra `dev` real; prueba de plantilla del esquema en `infra/test` |
+| Scan de todos los pedidos se vuelve lento | S-26; DEC-013 anota el GSI aditivo como salida |
+| Una sola persona con un teléfono hace de los dos roles | la demo cierra sesión entre roles (menú de cuenta); con dos teléfonos se omite |
+
+## Criterio de cierre del corte 3
+- [ ] REQ-009..011 y S-22..S-28 aprobados por el responsable
+- [ ] DEC-013 `accepted`
+- [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
+- [x] Sin preguntas bloqueantes (Q-02 respondida para la demo)

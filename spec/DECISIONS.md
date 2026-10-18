@@ -217,3 +217,21 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Dependencias: depende de DEC-003, DEC-008 · afecta a T-09..T-12
 - Confirmación: app/test/theme.test.tsx (sin literales de color ni `fontSize` numérico fuera de `theme.ts`; contraste ≥ 4,5:1 de los pares del tema); `git diff --stat` del corte sin cambios en `app/package.json`, `backend/`, `infra/`, `spec/contracts/`.
 - Revisar si: el usuario trae una marca con componentes propios o se pide modo oscuro.
+
+## DEC-013 Rol distribuidor: grupo Cognito, autorización por campo y acceso a todos los pedidos
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (propuesta por el agente, R-03) · Confianza: media
+- Problema: el corte 3 agrega un segundo actor que ve y modifica pedidos de todos los almacenes. Hay que decidir cómo se identifica, cómo se autoriza cada operación sin abrir los pedidos ajenos a un almacenero (DEC-004) y cómo se leen todos los pedidos de una tabla particionada por cliente (DEC-006).
+- Impulsores: REQ-009, REQ-010, REQ-011, S-22, S-26, DEC-004, DEC-005, DEC-006, DEC-009
+- Alternativas consideradas:
+  1. Grupo `distribuidores` en el mismo user pool; `@aws_auth(cognito_groups)` por campo en el contrato y el rol verificado también en la Lambda; `allOrders` con Scan paginado; `setOrderStatus` recibe `customerId` + `id` y hace UpdateItem condicional directo — a favor: sin recursos nuevos ni migración de datos; el pedido ya guarda `customerId`; en contra: el Scan lee la tabla completa.
+  2. Igual, pero `allOrders` sobre un GSI (`GSI1PK=ORDER`, `GSI1SK=<ulid>`, o uno por estado) — a favor: consulta ordenada y escalable (anticipado en DEC-006); en contra: hay que rellenar el índice en los pedidos existentes y, si la clave es el estado, mantenerla en cada cambio.
+  3. Segundo user pool o segunda app para el distribuidor — a favor: separación total; en contra: duplica auth e infra y contradice "misma app".
+- Decisión: Usaremos la alternativa 1, y no la 2, porque la demo tiene decenas de pedidos y el Scan no requiere migrar datos ya creados, aceptando revisar la decisión al superar 1.000 pedidos. `setOrderStatus` no busca por Scan (a diferencia del script de DEC-009) porque el panel ya conoce el `customerId` de cada pedido. Un pedido inexistente da `ORDER_NOT_FOUND` como `errorType` (DEC-005). El distribuidor no tiene `customerId`; las operaciones de almacenero lo siguen exigiendo.
+- Consecuencias: buenas: cambio aditivo en contrato e infra; el aislamiento entre almaceneros (REQ-004 E3) no cambia. Malas: el Scan crece con la tabla; la Lambda gana `Scan` y `UpdateItem`. Neutrales: el script `order:set-status` sigue igual.
+- Dependencias: depende de DEC-004, DEC-005, DEC-006, DEC-009 · afecta a T-13..T-16, contrato spec/contracts/schema.graphql, infra/lib/pedidos-stack.ts
+- Evidencia: documentación de AppSync (`@aws_auth` con `cognito_groups` por campo en modo user pool).
+- Confirmación: tests/acceptance/req_009_* (E5, E6), req_010_*, req_011_* contra `dev`; req_001..004 siguen pasando.
+- Revisar si: hay más de 1.000 pedidos, varios distribuidores o se piden reglas de transición de estado.
+

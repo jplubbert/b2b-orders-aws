@@ -463,3 +463,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: la próxima corrida nocturna se lanza con `scripts/autopilot.sh` y revisa T-07 (diff 775954c); el usuario completa la checklist manual del corte 1 y decide `accepted` en lote (T-03..T-07).
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Corte 3: panel del distribuidor. Un usuario con rol distribuidor (grupo Cognito aparte) inicia sesión en la misma app y ve todos los pedidos de todos los almacenes, filtra por estado y cambia el estado de un pedido; el almacenero lo ve actualizado al refrescar. Reemplaza el uso del script order:set-status en la demo. Escribe REQ y tareas con supuestos por defecto, sin preguntarme nada técnico. Separa las tareas de backend (requieren deploy) de las de app."
+- Hecho: propuesta del corte 3 en spec/. SPEC.md v3: REQ-009 (acceso por rol), REQ-010 (panel con filtro), REQ-011 (cambio de estado) en `proposed`; S-22..S-28; criterio de éxito del corte 3 (demo sin script); Alcance y Glosario con el distribuidor; Q-02 respondida para la demo; Plan y criterio de cierre del corte 3. DEC-013 (grupo `distribuidores`, `@aws_auth` por campo, `allOrders` por Scan, `setOrderStatus` con `customerId` + `id`) `proposed`. TASKS.json: `corte: 3`, T-13 (spec), T-14 (backend, requiere deploy), T-15 y T-16 (solo app) en `specified`. Sin código.
+- Interpretaciones (supuestos con valor por defecto): S-22 un solo distribuidor que ve todo, usuario `distribuidor@demo.test`; S-23 el almacén se muestra por `customerId`; S-24 cualquier estado a cualquier estado, sin confirmación; S-25 usuario en ambos grupos abre el panel; S-26 sin paginación; S-27 UI con jest + manual, API en tests/acceptance; S-28 textos del panel. Cambio del criterio de éxito (demo sin script) y la inclusión de un backoffice mínimo vienen del encargo; el script `order:set-status` se conserva para pruebas.
+- Verificado y cómo: `npm run check:spec`.
+- En curso / roto: nada. Corte 1 (T-03..T-07) sigue esperando checklist manual y aceptación en lote, independiente del corte 3.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario aprueba (o corrige) el corte 3. Con su aprobación: REQ-009..011 → `approved_for_impl`, DEC-013 → `accepted`, T-13..T-16 → `approved_for_impl`, aprobación nominal en esta bitácora; luego T-13 (el usuario aprueba su diff de tests/acceptance/), T-14 con `npm run deploy:dev`, T-15, T-16.
