@@ -144,18 +144,27 @@ ntfy_send() { # $1 = prioridad (high|default), $2 = tags, $3 = título, $4 = men
   else log "aviso: ntfy falló (código $rc); la corrida no cambia su resultado"; fi
   return 0
 }
-ntfy_body() { # $1 = motivo, $2 = próxima acción. Campos fijos primero; solo el detalle se recorta para caber.
+short_list() { # lista de tareas acotada para el aviso: las 5 primeras y "… (+N más)"
+  local n=$#
+  if [ "$n" -le 5 ]; then printf '%s' "$*"; else printf '%s … (+%s más)' "${*:1:5}" "$((n - 5))"; fi
+}
+ntfy_body() { # $1 = motivo, $2 = próxima acción. Nunca pasa de AUTOPILOT_NTFY_MAX caracteres (3000; ntfy admite 4096
+  # bytes): la próxima acción va al final y se conserva; lo anterior (detalle, corrida, hechas/fallidas, motivo) se
+  # recorta desde el final.
+  local max=${AUTOPILOT_NTFY_MAX:-3000}
   local fallidas="${FAILURES} fallo(s)"
-  [ "${#ABANDONED[@]}" -gt 0 ] && fallidas+="; abandonadas: ${ABANDONED[*]}"
-  [ "${#REJECTED[@]}" -gt 0 ] && fallidas+="; rechazadas por el revisor: ${REJECTED[*]}"
-  local fixed detail room
-  fixed=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s) · Fallidas: %s\nPróxima acción: %s\nCorrida %s (registros en .autopilot/%s/)' \
-    "$1" "$TASKS_DONE" "$fallidas" "$2" "$RUN_ID" "$RUN_ID")
-  detail=$(printf '%s; ' "${SUMMARY[@]:-nada}"); detail=${detail%; }
-  room=$(( ${AUTOPILOT_NTFY_MAX:-3000} - ${#fixed} - 10 ))   # ntfy admite 4096 bytes por mensaje
-  if [ "$room" -le 0 ]; then printf '%s' "$fixed"; return 0; fi
-  [ "${#detail}" -gt "$room" ] && detail="${detail:0:$((room - 1))}…"
-  printf '%s\nDetalle: %s' "$fixed" "$detail"
+  [ "${#ABANDONED[@]}" -gt 0 ] && fallidas+="; abandonadas: $(short_list "${ABANDONED[@]}")"
+  [ "${#REJECTED[@]}" -gt 0 ] && fallidas+="; rechazadas por el revisor: $(short_list "${REJECTED[@]}")"
+  local detail; detail=$(printf '%s; ' "${SUMMARY[@]:-nada}"); detail=${detail%; }
+  local next="Próxima acción: $2"
+  [ "${#next}" -gt "$max" ] && next="${next:0:$((max - 1))}…"
+  local rest
+  rest=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s) · Fallidas: %s\nCorrida %s (registros en .autopilot/%s/)\nDetalle: %s' \
+    "$1" "$TASKS_DONE" "$fallidas" "$RUN_ID" "$RUN_ID" "$detail")
+  local room=$((max - ${#next} - 1))
+  if [ "$room" -le 1 ]; then printf '%s' "$next"; return 0; fi
+  [ "${#rest}" -gt "$room" ] && rest="${rest:0:$((room - 1))}…"
+  printf '%s\n%s' "$rest" "$next"
 }
 notify_stop() { # aviso de la parada normal (tras write_summary)
   local repo intervention=0 next
@@ -167,11 +176,11 @@ notify_stop() { # aviso de la parada normal (tras write_summary)
   [ "${#REJECTED[@]}" -gt 0 ] && intervention=1
   if [ "$(node -e 'console.log(require(process.argv[1]).tasks.some(t=>t.status==="blocked"))' "$ROOT/spec/TASKS.json")" = true ]; then
     intervention=1; next="resolver el bloqueo (${STOP_REASON}) y relanzar el autopilot"
-  elif [ "${#ABANDONED[@]}" -gt 0 ]; then next="revisar los fallos de ${ABANDONED[*]} en .autopilot/${RUN_ID}/ y relanzar"
-  elif [ "${#REJECTED[@]}" -gt 0 ]; then next="atender los hallazgos del revisor (review de ${REJECTED[*]} en spec/TASKS.json)"
+  elif [ "${#ABANDONED[@]}" -gt 0 ]; then next="revisar los fallos de $(short_list "${ABANDONED[@]}") en .autopilot/${RUN_ID}/ y relanzar"
+  elif [ "${#REJECTED[@]}" -gt 0 ]; then next="atender los hallazgos del revisor (review de $(short_list "${REJECTED[@]}") en spec/TASKS.json)"
   elif [ "$ABNORMAL" = 1 ]; then next="revisar a mano: ${STOP_REASON}"
-  elif [ "${#DEPLOY_PENDING[@]}" -gt 0 ]; then next="correr npm run deploy:dev (${DEPLOY_PENDING[*]}) y relanzar el autopilot"
-  elif [ "${#USER_WAIT[@]}" -gt 0 ]; then next="aprobar el diff de tests/acceptance/ de ${USER_WAIT[*]}"
+  elif [ "${#DEPLOY_PENDING[@]}" -gt 0 ]; then next="correr npm run deploy:dev ($(short_list "${DEPLOY_PENDING[@]}")) y relanzar el autopilot"
+  elif [ "${#USER_WAIT[@]}" -gt 0 ]; then next="aprobar el diff de tests/acceptance/ de $(short_list "${USER_WAIT[@]}")"
   elif [ "$intervention" = 1 ]; then next="relanzar el autopilot para seguir (límite alcanzado)"
   else next="revisar el resumen en spec/LOG.md y los veredictos en TASKS.json; decidir accepted"; fi
   local msg; msg=$(ntfy_body "$STOP_REASON" "$next")

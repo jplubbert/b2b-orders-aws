@@ -583,7 +583,37 @@ describe('autopilot.sh', () => {
         const b = body(curlCalls()[0]!);
         expect(b.length <= 360).toBe(true);
         for (const f of ['Motivo de parada: ', 'Hechas: 1 tarea(s) · Fallidas: 0 fallo(s)', 'Próxima acción: ', 'Corrida ', 'Detalle: ']) expect(b).toContain(f);
+        expect(b.split('\n').find((l) => l.startsWith('Detalle: '))?.endsWith('…')).toBe(true);
+        expect(b.split('\n').at(-1)).toMatch(/^Próxima acción: /);
+      });
+
+      it('con un límite menor que los campos fijos respeta el largo y conserva la próxima acción completa', () => {
+        const r = autopilot({ ...ntfy, STUB_MODE: 'fail', AUTOPILOT_NTFY_MAX: '110' });
+        expect(r.status).toBe(1);
+        const b = body(curlCalls()[0]!);
+        expect(b.length <= 110).toBe(true);
+        expect(b.split('\n').at(-1)).toMatch(/^Próxima acción: revisar los fallos de T-03 en \.autopilot\/[0-9_-]+\/ y relanzar$/);
+        expect(b.startsWith('Motivo de parada: ')).toBe(true);
+      });
+
+      it('si ni la próxima acción cabe, se recorta ella sola hasta el límite', () => {
+        const r = autopilot({ ...ntfy, STUB_MODE: 'fail', AUTOPILOT_NTFY_MAX: '40' });
+        expect(r.status).toBe(1);
+        const b = body(curlCalls()[0]!);
+        expect(b.length <= 40).toBe(true);
+        expect(b.startsWith('Próxima acción: revisar')).toBe(true);
         expect(b.endsWith('…')).toBe(true);
+      });
+
+      it('las listas de tareas de los campos fijos se acortan: 5 y "(+N más)"', () => {
+        // Siete tareas verified_auto: el revisor las rechaza todas antes de elegir tarea nueva.
+        editTasks((ts) => { for (const id of ['T-02', 'T-03', 'T-04', 'T-05', 'T-06', 'T-07', 'T-08']) { task(ts, id).status = 'verified_auto'; task(ts, id).evidence = { command: 'x', result: 'y', commit: 'z' }; } });
+        git('commit', '-q', '-am', 'siete por revisar\n\nTask: none\nReq: none');
+        const r = autopilot({ ...ntfy, STUB_VERDICT: '{"verdict":"rejected","findings":["REQ-002: x"],"notes":"n"}' });
+        const b = body(curlCalls()[0]!);
+        expect(b).toContain('rechazadas por el revisor: T-02 T-03 T-04 T-05 T-06 … (+2 más)');
+        expect(b).toContain('Próxima acción: atender los hallazgos del revisor (review de T-02 T-03 T-04 T-05 T-06 … (+2 más) en spec/TASKS.json)');
+        expect(r.stdout).toContain('veredicto sobre T-08: rejected');
       });
 
       it('si ntfy falla, la corrida no cambia su resultado y el resumen se confirma igual', () => {
