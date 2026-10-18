@@ -703,3 +703,14 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Sí, agrega la nota en T-18 aclarando que la pila vieja se borró después, con mi autorización. Acepto T-18, T-19 y T-20 (aprobador: Pepe). Haz commit y push."
+- Hecho: T-18 `evidence.notes` aclara que "Pila de [REDACTED_AWS_ACCOUNT_MAIN] intacta" era el estado al registrar la evidencia y que después, con autorización expresa del usuario, se borraron la pila, CDKToolkit con su bucket y night-loop-tests (b07e5fc); atiende la observación no bloqueante del revisor. Solo spec/TASKS.json y esta bitácora; sin código.
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-18, T-19 y T-20 → `accepted` (campo `acceptance` en TASKS.json).
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente manual (de cortes anteriores, siguen en TASKS.json): T-04, T-05, T-06, T-07.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte o cierra las verificaciones manuales pendientes de T-04..T-07.
