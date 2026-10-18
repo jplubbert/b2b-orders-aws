@@ -753,3 +753,14 @@
 - En curso / roto: T-21 sigue `in_progress`.
 - Bloqueos (escalado, AGENTS.md § Autoridad, los mismos de las 14:28): (1) DEC-016 `proposed`: ntfy.sh está fuera de R-01 y falta el `accepted` del usuario; (2) el aviso real lo genera `scripts/autopilot.sh` al detenerse: el usuario confirma que llegó a su tema; (3) el port a sdd-base es otro repositorio.
 - Próxima acción autorizada: el usuario decide `accepted` de DEC-016 y confirma si el aviso ntfy de esta corrida (o de una `scripts/autopilot.sh` con el árbol limpio) llegó; luego un agente registra la evidencia y pasa T-21 a `verified_auto`. El port a sdd-base, en una sesión sobre ese repositorio.
+
+## 2026-10-18 14:33 · autopilot (scripts/autopilot.sh)
+- Hecho: T-21: el implementador terminó en in_progress (código 0); T-21: el implementador terminó en in_progress (código 0); T-21 abandonada en esta corrida tras 2 fallos (tope por tarea 2). Corrida 2026-10-18_142407 (9 min, 0 tarea(s) completada(s), 2 fallo(s)); registros en .autopilot/2026-10-18_142407/.
+- Tokens (implementador, campo usage del evento result): T-21: entrada 50 · salida 8.785 · caché leída 874.429 · caché escrita 62.956 (2 invocaciones); total de la corrida: entrada 50 · salida 8.785 · caché leída 874.429 · caché escrita 62.956.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en ea03343.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-21).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
