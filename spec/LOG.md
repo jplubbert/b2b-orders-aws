@@ -539,3 +539,14 @@
 - En curso / roto: T-14 `in_progress` esperando el deploy.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario despliega (`npm run deploy:dev`) y corre `npm run test:acceptance` y `npm run smoke`; si pasan, T-14 → `verified_auto` con esa evidencia y revisión independiente. T-15 depende de T-14 (necesita el contrato desplegado para su verificación manual) y no se toma antes.
+
+## 2026-10-18 04:12 · autopilot (scripts/autopilot.sh)
+- Hecho: T-13 revisada por codex: approved → reviewed (commit dcf8000); T-17 revisada por codex: approved → reviewed (commit e5a76bd); T-14: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida. Corrida 2026-10-18_040235 (9 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_040235/.
+- Tokens (implementador, campo usage del evento result): T-14: entrada 90 · salida 35.065 · caché leída 4.795.452 · caché escrita 129.923; total de la corrida: entrada 90 · salida 35.065 · caché leída 4.795.452 · caché escrita 129.923.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-04: REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → "No hay productos disponibles"; npm run seed y deslizar → vuelven; T-05: REQ-003 E5 y subtotal por línea en el teléfono: npm run app, login almacen1; con el carrito vacío "Confirmar pedido" está deshabilitado; agregar 2 Arroz y 1 Yerba → Carrito muestra subtotal por línea ($2.600 y $4.500) y total $7.100; confirmar → carrito vacío y "Pedido confirmado N° …"; T-06: REQ-004 E4 en el teléfono (no incluido en el informe de la demo): login almacen2 (sin pedidos) → Mis pedidos → "Todavía no hiciste pedidos"; T-07: REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → "Correo o contraseña incorrectos"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, "Cerrar sesión" → inicio y carrito vacío; reabrir → pide credenciales.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-14.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en d2f16a3.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-14).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
