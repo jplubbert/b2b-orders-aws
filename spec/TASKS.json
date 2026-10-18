@@ -967,15 +967,20 @@
         "DEC-008"
       ],
       "depends_on": [],
-      "status": "approved_for_impl",
+      "status": "verified_auto",
       "touches": [
         "app/"
       ],
       "verify": "npm run lint && npm run typecheck && npm test (app/test: mismas expectativas + pruebas de los stores) && npx expo export --platform android && npm run check:spec; manual en el teléfono (DEC-011)",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test (línea base); npm test -w app; npm run lint; npm run typecheck; npm test; npm exec -w app -- expo export --platform android --output-dir /tmp/t29-export; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit)",
+        "result": "línea base: vitest 186/186, app (jest) 137/137. Después: lint ok; typecheck ok; vitest 186/186; app (jest) 9 suites / 152 pruebas: las 137 existentes pasan sin cambiar ninguna expectativa (git diff de app/test sin líneas `expect(` tocadas; solo se quitan CartProvider/PanelProvider de los render y se reinician los stores en beforeEach) + 15 nuevas en test/stores.test.tsx (carrito: agrega, reemplaza, quita con 0, tope 999, clear conserva el catálogo; panel: replaceOrder solo el mismo id y con lista null; sesión: unknown → loading → signedIn, rol/correo/customerId desde el ID token, S-25, sin tokens en el store, sin sesión o sin renovar → signedOut, REQ-009 E3 reject aunque falle la revocación; signOut REQ-005 E1 y borde: vacía carrito, lista del panel y sesión). expo export android ok (2467 módulos, bundle 4.6 MB). Aceptación contra dev: 49 pruebas, 41 pasan, 5 fallan y 3 se omiten, igual que T-26/T-27 (todas de REQ-012 por `orderHistory` inexistente, llega en T-28). Humo 2/2. check:spec ok.",
+        "commit": "ed24b12",
+        "manual_pending": "DEC-011, en el teléfono con Expo Go y el dev desplegado, el guion del README sin cambios visibles: (1) almacen1@demo.test inicia sesión → Catálogo; cerrar y reabrir la app entra directo (REQ-001 E3); (2) agregar productos con − / +, abrir un detalle y volver: la barra del carrito suma igual (REQ-003, REQ-008); confirmar el pedido → número y carrito vacío; (3) menú de cuenta muestra el correo; \"Cerrar sesión\" vuelve al inicio y al reingresar el carrito está vacío (REQ-005); (4) distribuidor@demo.test → panel \"Pedidos\", filtro, abrir el pedido, cambiar estado y volver: el panel muestra el estado nuevo (REQ-010, REQ-011)."
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí. 2026-10-18: implementada (commit ed24b12): app/src/lib/store/{cart,panel,session}.ts con zustand ^5.0.15; se borran CartProvider y PanelProvider; `useCart`/`usePanel` conservan nombre y forma, así las pantallas solo cambian el import. Sesión: `readSession()` en lib/session.ts lee rol (`cognito:groups`, S-25), `email` y `custom:customerId` del ID token; el store guarda eso y `status` (unknown/loading/signedIn/signedOut); el inicio de sesión hidrata por el store y, sin grupo, `reject()` cierra la sesión (REQ-009 E3). Detalles internos: el menú de cuenta toma el correo del store y, si el ID token no lo trae, lo pide con fetchUserAttributes como antes (lo guarda en el store); el estado \"Comprobando sesión\" de la pantalla de inicio sigue siendo local, para que el botón Ingresar no cambie a esa vista al hidratar tras signIn. Interpretación de DEC-021 (\"cerrar sesión vacía el carrito y la lista del panel como hoy\"): hoy la lista del panel se vacía al entrar al panel; ahora además `signOut` la vacía (el panel la sigue vaciando al montar), sin cambio visible porque se navega al inicio enseguida. Sin deploy (solo app/). Queda verified_auto con la verificación manual en el teléfono pendiente (DEC-011)."
     },
     {
       "id": "T-30",

@@ -1095,3 +1095,14 @@
 - En curso / roto: T-27 `in_progress` a la espera del deploy. T-26 sigue esperando que el usuario apruebe el diff de tests/acceptance/ (8ab4a0f).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario hace el deploy de T-27 y corre aceptación y humo (línea `Pendiente deploy` de arriba); el autopilot sigue con T-29 (sin dependencias). T-28 espera T-26 y T-27.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Lee AGENTS.md y ejecuta T-29. […] Si la tarea necesita deploy, no lo intentes […]".
+- Hecho: T-29 (DEC-021, S-31): estado de la app con Zustand. app/src/lib/store/ con tres stores: `cart` (carrito en memoria y catálogo cargado, S-09, S-19), `panel` (lista del distribuidor y `replaceOrder`) y `session` (rol, correo, `customerId` y estado de carga, hidratado desde `fetchAuthSession`; los tokens siguen en Amplify, DEC-003). `signOut` vacía la sesión de Amplify, el carrito, la lista del panel y el store de sesión. Se borran CartProvider y PanelProvider; pantallas, textos y flujos sin cambios. Dependencia nueva: zustand ^5.0.15. Commit ed24b12.
+- Interpretaciones (en `notes` de T-29): el menú de cuenta toma el correo del store y, si el ID token no lo trae, lo pide a Cognito como antes; "Comprobando sesión" sigue como estado local de la pantalla de inicio; `signOut` también vacía la lista del panel (el panel la seguía vaciando al montar), sin cambio visible.
+- Verificado y cómo: línea base `npm test` vitest 186/186 y app 137/137; después `npm run lint` ok, `npm run typecheck` ok, `npm test` vitest 186/186 y app 152/152 (las 137 existentes sin cambiar ninguna expectativa + 15 de los stores); `expo export --platform android` ok; `npm run test:acceptance` 41 pasan, 5 fallan y 3 se omiten, todos de REQ-012 por `orderHistory` (igual que T-26/T-27); `npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente deploy: ninguno (solo app/).
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-29: el guion del README en el teléfono sin cambios visibles: inicio de sesión y reapertura, carrito con detalle de producto y confirmación, menú de cuenta y cerrar sesión (carrito vacío al reingresar), panel del distribuidor con cambio de estado (detalle en `evidence.manual_pending` de T-29).
+- En curso / roto: T-29 `verified_auto`, espera revisión independiente. T-27 sigue `in_progress` a la espera del deploy; T-26 a la espera de la aprobación del diff de tests/acceptance/ (8ab4a0f).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-29 (diff de ed24b12, REQ-001/003/005/010, DEC-021/003/008); el usuario hace el deploy de T-27 (línea `Pendiente deploy` de su entrada) y aprueba el diff de T-26; luego T-28 y después T-31 (depende de T-28 y T-29).
