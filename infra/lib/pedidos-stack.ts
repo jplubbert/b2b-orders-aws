@@ -32,7 +32,7 @@ export class PedidosStack extends Stack {
       removalPolicy,
     });
     const userPoolClient = userPool.addClient('AppClient', {
-      authFlows: { userSrp: true, userPassword: true }, // SRP para la app; usuario/contraseña para humo y aceptación
+      authFlows: { userSrp: true, userPassword: true }, // usuario/contraseña para app (Expo Go), humo y aceptación
       generateSecret: false,
       preventUserExistenceErrors: true,
       readAttributes: new cognito.ClientAttributes()

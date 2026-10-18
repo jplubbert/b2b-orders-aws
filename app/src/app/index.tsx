@@ -15,11 +15,16 @@ export default function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      const { isSignedIn, nextStep } = await signIn({ username: email.trim(), password });
+      // USER_PASSWORD_AUTH en vez de SRP: SRP necesita el módulo nativo AmplifyRTNCore, ausente en Expo Go.
+      const { isSignedIn, nextStep } = await signIn({
+        username: email.trim(),
+        password,
+        options: { authFlowType: 'USER_PASSWORD_AUTH' },
+      });
       if (isSignedIn) router.replace('/catalog');
       else setError(`Paso pendiente: ${nextStep.signInStep}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeError(e));
     } finally {
       setBusy(false);
     }
@@ -61,6 +66,26 @@ export default function LoginScreen() {
       </Pressable>
     </View>
   );
+}
+
+// Amplify envuelve fallos de red o de módulos nativos en "An unknown error has occurred";
+// la causa real va en `underlyingError`, así que se muestra completa.
+function describeError(e: unknown): string {
+  if (!(e instanceof Error)) return String(e);
+  const { recoverySuggestion, underlyingError } = e as Error & {
+    recoverySuggestion?: string;
+    underlyingError?: unknown;
+  };
+  const parts = [`${e.name}: ${e.message}`];
+  if (underlyingError) {
+    parts.push(
+      underlyingError instanceof Error
+        ? `Causa: ${underlyingError.name}: ${underlyingError.message}`
+        : `Causa: ${String(underlyingError)}`,
+    );
+  }
+  if (recoverySuggestion) parts.push(recoverySuggestion);
+  return parts.join('\n');
 }
 
 const styles = StyleSheet.create({
