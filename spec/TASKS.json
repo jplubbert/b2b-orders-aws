@@ -881,15 +881,19 @@
         "DEC-020"
       ],
       "depends_on": [],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "touches": [
         "tests/acceptance/"
       ],
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance (casos nuevos de REQ-012 fallan porque `orderHistory` no existe; los 41 actuales pasan) && npm run check:spec; aprobación del usuario del diff",
-      "evidence": null,
+      "evidence": {
+        "command": "npm run test:acceptance (línea base antes de tocar nada); npm run lint; npm run typecheck; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit)",
+        "result": "línea base: aceptación 7 archivos / 41 pruebas, todas pasan. Después: lint ok; typecheck ok; aceptación 8 archivos / 49 pruebas: 41 pasan (req_001..011 sin cambios), 5 fallan y 3 se omiten, todos por la razón esperada: E1–E4 fallan con ValidationError de AppSync \"FieldUndefined: Field 'orderHistory' in type 'Query' is undefined\"; E7 falla porque los campos de Query desplegados no incluyen `orderHistory`; E8–E10 se omiten porque su beforeAll falla con el mismo FieldUndefined. Limpieza: 28 pedidos C-ACEPT-… borrados. Humo 2/2. check:spec ok.",
+        "commit": "8ab4a0f"
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido (almacenero y distribuidor): la aceptación lee por `orderHistory` en vez de la tabla y suma E8–E10. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. El diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido (almacenero y distribuidor): la aceptación lee por `orderHistory` en vez de la tabla y suma E8–E10. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. El diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto. 2026-10-18: pruebas escritas (commit 8ab4a0f): req_012_historial (E1, E2, E3, E4, E7, E8, E9, E10; 8 casos nuevos) y en support/fixtures.ts la consulta `orderHistory`, el tipo `OrderStatusEvent`, `listOrderHistory` y `waitForHistory` (sondeo cada 1 s, tope 30 s desde la respuesta; falla de inmediato si la API responde con errores). Interpretaciones: E8–E10 usan clientes desechables en lugar de almacen1/almacen2 (S-14, como T-13); E4 (\"ningún evento nuevo\") se mide sin esperar 30 s fijos: tras los rechazos (EMPTY_ORDER, ORDER_NOT_FOUND con el customerId de otro almacén y con id inexistente) se hace un cambio válido como centinela, y cuando su evento aparece el historial debe tener exactamente RECIBIDO y RECIBIDO → ENVIADO; además `orderHistory` del id inexistente es vacío y no aparecen pedidos nuevos; con colas estándar (DEC-020, sin orden estricto) un evento rechazado que llegara después del centinela no se detectaría; E7 verifica el contrato desplegado por introspección (Query = los 4 campos actuales + `orderHistory`, Mutation sin cambios, `OrderStatusEvent` con los 6 campos de S-29); que REQ-001..011 sigan pasando lo cubre el resto de la suite. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente."
     },
     {
       "id": "T-27",

@@ -1075,3 +1075,13 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el autopilot implementa el corte 4 en orden de dependencias (T-26, T-27 y T-29 primero; T-26 espera la aprobación del diff de tests/acceptance/; T-27 y T-28 quedan con `- Pendiente deploy:`); el usuario entrega las capturas para T-30.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Lee AGENTS.md y ejecuta T-26 […]".
+- Hecho: T-26 (tarea de spec): tests/acceptance/req_012_historial.test.ts con REQ-012 E1, E2, E3, E4, E7, E8, E9 y E10 (8 casos) leyendo por `orderHistory(id)` con espera activa de hasta 30 s; support/fixtures.ts suma la consulta, el tipo `OrderStatusEvent` y `waitForHistory`. Commit 8ab4a0f.
+- Interpretaciones (en `notes` de T-26): clientes desechables en lugar de almacen1/almacen2 (S-14); E4 se mide con un cambio válido como centinela después de los rechazos, no con una espera fija de 30 s; E7 revisa el contrato desplegado por introspección y el resto de la suite cubre REQ-001..011.
+- Verificado y cómo: línea base `npm run test:acceptance` 41/41 pasan; después: `npm run lint` ok, `npm run typecheck` ok, `npm run test:acceptance` 41 pasan, 5 fallan y 3 se omiten, todos por la razón esperada (`orderHistory` no existe en el contrato desplegado: FieldUndefined); `npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente deploy: ninguno (tarea de spec; los casos nuevos pasan cuando T-28 esté desplegada).
+- En curso / roto: T-26 `in_progress` a la espera de que el usuario apruebe el diff de tests/acceptance/ (8ab4a0f).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario revisa y aprueba (o corrige) el diff de tests/acceptance/ de 8ab4a0f y las interpretaciones → T-26 `verified_auto`; el autopilot sigue con T-27 y T-29 (sin dependencias).
