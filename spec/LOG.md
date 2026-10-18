@@ -878,3 +878,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto T-21 (aprobador: Pepe). Commit y push."
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — acepta T-21 → `accepted` (campo `acceptance` en TASKS.json). Solo spec/TASKS.json y esta bitácora; sin código.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente manual: ninguno.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. Todas las tareas (T-01..T-21) están `accepted`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte.
