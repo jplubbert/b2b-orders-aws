@@ -605,6 +605,22 @@
         "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
+    },
+    {
+      "id": "T-18",
+      "kind": "tooling",
+      "title": "dev en la cuenta AWS propia del demo ([REDACTED_AWS_ACCOUNT_DEMO]) con el perfil pedidos-demo",
+      "description": "Pedido del usuario 2026-10-18: perfil `pedidos-demo` que asume `OrganizationAccountAccessRole` en [REDACTED_AWS_ACCOUNT_DEMO] desde `default`; cdk bootstrap en us-east-1; desplegar PedidosB2B-dev con seed; DEC nueva. No borrar nada de la cuenta principal ([REDACTED_AWS_ACCOUNT_MAIN]). El cambio del autopilot (perfil night-loop en la cuenta nueva) se hace solo tras mostrar un resumen al usuario.",
+      "reqs": [],
+      "decisions": [
+        "DEC-014",
+        "DEC-010"
+      ],
+      "depends_on": [],
+      "status": "in_progress",
+      "verify": "aws sts get-caller-identity --profile pedidos-demo (cuenta [REDACTED_AWS_ACCOUNT_DEMO]) && npm run bootstrap:dev && npm run deploy:dev && npm run smoke && npm run test:acceptance && npm run check:spec; luego autopilot con night-loop en la cuenta nueva y scripts/autopilot.sh --dry-run",
+      "blocked_by": null,
+      "notes": "2026-10-18: perfil pedidos-demo en ~/.aws/config; bootstrap (CDKToolkit) + deploy:dev (pila PedidosB2B-dev, cuenta [REDACTED_AWS_ACCOUNT_DEMO]) + seed ok; smoke 2/2 y aceptación 41/41 contra la cuenta nueva. package.json: bootstrap/deploy con pedidos-demo; seed, order:set-status, smoke y test:acceptance usan `${AWS_PROFILE:-pedidos-demo}` (respeta night-loop). La pila de [REDACTED_AWS_ACCOUNT_MAIN] sigue intacta (UPDATE_COMPLETE). Pendiente: autopilot (perfil night-loop apunta aún a la cuenta principal), a la espera del visto bueno del usuario."
     }
   ]
 }

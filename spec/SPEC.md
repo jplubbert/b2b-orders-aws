@@ -39,7 +39,7 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
 - R-01 Stack: AWS Cognito, AppSync, Lambda, DynamoDB; cliente React Native — fuente: usuario
 - R-02 Es una demo: un entorno `dev`, sin recursos de costo fijo (todo serverless/on-demand) — fuente: usuario (demo) · DEC-001, DEC-006
 - R-03 Las decisiones técnicas las toma el agente y las registra sin preguntar — fuente: usuario, LOG 2026-10-17
-- R-04 Despliegue `dev` con el perfil AWS `default` en `us-east-1` — fuente: usuario (Q-01), LOG 2026-10-17
+- R-04 Despliegue `dev` con el perfil AWS `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], rol `OrganizationAccountAccessRole` asumido desde `default`) en `us-east-1` — fuente: usuario, LOG 2026-10-18 (antes: perfil `default`, cuenta [REDACTED_AWS_ACCOUNT_MAIN] — Q-01, LOG 2026-10-17; DEC-014)
 
 ## Glosario
 - Almacenero: dueño o encargado de un almacén; cliente B2B del distribuidor; actor de la app (grupo `almaceneros`).
@@ -250,7 +250,7 @@ Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/accep
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
 |---|---|---|---|---|---|
-| Q-01 | ¿Qué cuenta/perfil AWS y región uso para desplegar `dev`? — **resuelta 2026-10-17**: perfil `default`, `us-east-1` (R-04) | bloqueante | — | usuario | — |
+| Q-01 | ¿Qué cuenta/perfil AWS y región uso para desplegar `dev`? — **resuelta 2026-10-17**: perfil `default`, `us-east-1` (R-04); **cambiada por el usuario 2026-10-18**: perfil `pedidos-demo`, cuenta [REDACTED_AWS_ACCOUNT_DEMO] (R-04, DEC-014) | bloqueante | — | usuario | — |
 | Q-02 | ¿Quién y cómo cambia el estado del pedido en la operación real? — **respondida para la demo 2026-10-18** por el encargo del corte 3: el distribuidor, desde la misma app (REQ-009..011) | diferible | — | usuario | — |
 
 ## Plan (corte 1)

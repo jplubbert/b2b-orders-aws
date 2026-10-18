@@ -235,3 +235,21 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Confirmación: tests/acceptance/req_009_* (E5, E6), req_010_*, req_011_* contra `dev`; req_001..004 siguen pasando.
 - Revisar si: hay más de 1.000 pedidos, varios distribuidores o se piden reglas de transición de estado.
 
+
+## DEC-014 `dev` en una cuenta AWS propia del demo, con rol asumido desde `default`
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (decisión pedida por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Problema: `dev` vivía en la cuenta principal del usuario ([REDACTED_AWS_ACCOUNT_MAIN]) con el perfil `default` (usuario IAM `[REDACTED_IAM_USER]`, administrador). El demo comparte cuenta, costos y radio de daño con todo lo demás del usuario. El usuario creó una cuenta miembro de su organización solo para el demo ([REDACTED_AWS_ACCOUNT_DEMO]) y pidió moverlo ahí. Cambia R-04.
+- Impulsores: R-02, R-04, DEC-001, DEC-010
+- Alternativas consideradas:
+  1. Perfil `pedidos-demo` que asume `OrganizationAccountAccessRole` en [REDACTED_AWS_ACCOUNT_DEMO] con `source_profile = default` — a favor: sin llaves nuevas de larga duración; credenciales temporales; costos y recursos aislados; en contra: el rol es administrador de la cuenta miembro.
+  2. Usuario IAM con llave propia en la cuenta nueva — a favor: no depende de `default`; en contra: otra llave larga que rotar.
+  3. Seguir en la cuenta principal — a favor: nada que mover; en contra: no separa el demo, que es lo pedido.
+- Decisión: Usaremos la alternativa 1. `bootstrap:dev` y `deploy:dev` fijan `AWS_PROFILE=pedidos-demo`; `seed`, `order:set-status`, `smoke` y `test:acceptance` usan `${AWS_PROFILE:-pedidos-demo}`, así un `AWS_PROFILE` explícito (p. ej. `night-loop` en el autopilot, DEC-010) sigue mandando. Región `us-east-1` sin cambios. La pila `PedidosB2B-dev` y `CDKToolkit` de [REDACTED_AWS_ACCOUNT_MAIN] se conservan hasta que el usuario decida borrarlas.
+  No usaremos la 2 porque agrega una llave larga sin necesidad; ni la 3 porque contradice el pedido.
+- Consecuencias: buenas: el demo queda aislado; su costo se ve por cuenta. Malas: durante la transición hay dos pilas `PedidosB2B-dev` (la vieja ya no la usan `.env.dev` ni las pruebas); usuarios, contraseña y pedidos de la cuenta vieja no se migran (el seed recrea catálogo y usuarios, conserva `DEMO_PASSWORD`). Neutrales: el usuario `night-loop-tests` (DEC-010) se crea también en la cuenta nueva, pero la llave del perfil local `night-loop` sigue siendo de la cuenta principal: el autopilot no puede probar contra la cuenta nueva hasta cambiar esa llave (pendiente, a la espera del usuario).
+- Dependencias: depende de DEC-001, DEC-010 · afecta a R-04, package.json, ~/.aws/config (fuera de git), scripts/autopilot.sh (pendiente), T-18
+- Evidencia: 2026-10-18, `aws sts get-caller-identity --profile pedidos-demo` → `assumed-role/OrganizationAccountAccessRole/pedidos-demo` en [REDACTED_AWS_ACCOUNT_DEMO]; `npm run bootstrap:dev` → aws://[REDACTED_AWS_ACCOUNT_DEMO]/us-east-1 bootstrapped; `npm run deploy:dev` → PedidosB2B-dev creada + seed; `npm run smoke` 2/2; `npm run test:acceptance` 41/41.
+- Confirmación: `npm run smoke` y `npm run test:acceptance` sin `AWS_PROFILE` pasan contra la cuenta nueva.
+- Revisar si: el usuario borra la cuenta principal del demo, o se quiere un rol con menos permisos que `OrganizationAccountAccessRole`.

@@ -40,7 +40,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - DEBES registrar: toda interpretación de un requisito ambiguo (supuesto en SPEC.md).
 - DEBES DETENERTE Y ESCALAR: cambio de requisito, alcance o regla de negocio;
   edición de tests/acceptance/ fuera de su tarea de spec; servicio o proveedor fuera de R-01;
-  desplegar fuera de perfil `default` / `us-east-1` (R-04); decisión global no registrada;
+  desplegar fuera de perfil `pedidos-demo` / `us-east-1` (R-04, DEC-014); decisión global no registrada;
   dos intentos fallidos sobre la misma falla.
 
 ## Reglas duras (verificadas por `npm run check:spec` y hook de commit, T-02)

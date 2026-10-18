@@ -617,3 +617,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte o cierra las verificaciones manuales pendientes de T-04..T-07. Sin push (main va 23 commits por delante de origin/main).
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Nueva cuenta AWS solo para el demo: [REDACTED_AWS_ACCOUNT_DEMO] (miembro de mi organización, con rol OrganizationAccountAccessRole). Configura un perfil "pedidos-demo" que asuma ese rol desde mi perfil default, haz cdk bootstrap ahí en us-east-1 y despliega PedidosB2B-dev en esa cuenta con seed. Registra la decisión como DEC nueva. No borres nada de la cuenta principal todavía. Muéstrame un resumen antes de cambiar el autopilot."
+- Hecho (T-18, DEC-014 proposed; R-04 cambiada por el usuario): perfil `pedidos-demo` en ~/.aws/config (`role_arn` OrganizationAccountAccessRole de [REDACTED_AWS_ACCOUNT_DEMO], `source_profile = default`, us-east-1). `npm run bootstrap:dev` (CDKToolkit en [REDACTED_AWS_ACCOUNT_DEMO]) → `npm run deploy:dev` (PedidosB2B-dev creada; `.env.dev` reescrito con los recursos nuevos, conserva `DEMO_PASSWORD`; seed: Yerba, Arroz, almacen1, almacen2, distribuidor). package.json: bootstrap/deploy con `pedidos-demo`; seed, order:set-status, smoke y test:acceptance con `${AWS_PROFILE:-pedidos-demo}`. R-04, Q-01, AGENTS.md y README.md apuntan al perfil nuevo.
+- Verificado y cómo: `sts get-caller-identity --profile pedidos-demo` → cuenta [REDACTED_AWS_ACCOUNT_DEMO]; `npm run smoke` 2/2 y `npm run test:acceptance` 41/41 sin `AWS_PROFILE`; la pila de [REDACTED_AWS_ACCOUNT_MAIN] sigue `UPDATE_COMPLETE` (nada borrado). Copia del `.env.dev` anterior fuera del repo (scratchpad de la sesión).
+- Pendiente deploy: ninguno.
+- En curso / roto: T-18 `in_progress`: el autopilot usa el perfil `night-loop`, cuya llave es de `night-loop-tests` en la cuenta principal; contra el `.env.dev` nuevo su aceptación y humo fallarán hasta crear la llave en la cuenta nueva. La app en el teléfono necesita reiniciar Expo para tomar el `.env.dev` nuevo.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario revisa el resumen del cambio de autopilot y lo aprueba (o no); decide `accepted` de DEC-014. No correr el autopilot antes. No borrar recursos de [REDACTED_AWS_ACCOUNT_MAIN] sin pedido expreso.

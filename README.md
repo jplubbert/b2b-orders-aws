@@ -7,7 +7,7 @@ Spec, plan y decisiones en `spec/`; instrucciones para agentes en `AGENTS.md`.
 ## Preparar
 - `npm ci`
 - Una vez por cuenta: `npm run bootstrap:dev`
-- Desplegar `dev` (perfil `default`, `us-east-1`): `npm run deploy:dev` — escribe `.env.dev` y siembra
+- Desplegar `dev` (perfil `pedidos-demo` → cuenta [REDACTED_AWS_ACCOUNT_DEMO], `us-east-1`; DEC-014): `npm run deploy:dev` — escribe `.env.dev` y siembra
   catálogo y usuarios (`almacen1@demo.test`, `almacen2@demo.test`, `distribuidor@demo.test`).
   La contraseña de demo es `DEMO_PASSWORD` en `.env.dev`.
 - App: `npm run app` y abrir el código QR con Expo Go en el teléfono.
