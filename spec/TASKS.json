@@ -795,7 +795,7 @@
         "DEC-018"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test (mismo número de pruebas, todas pasan) && npm run check:spec && scripts/autopilot.sh --dry-run && npm run test:acceptance && npm run smoke (mismos resultados) && npx expo export --platform android; en sdd-base npm test",
       "blocked_by": null,
       "notes": "2026-10-18: abierta a pedido del usuario. Alcance medido: texto en español en 24/25 archivos de app/src, 9/9 de app/test, 8/9 de backend/src, 6/6 de backend/test, 8/9 de infra, 18/18 de scripts, 1/2 de tests/smoke y 11/11 de scripts de sdd-base. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) → approved_for_impl, para el autopilot. 2026-10-18: implementada (4fcf4df; sdd-base 3d608d7). Además del alcance listado se tradujeron tests/lib/api.ts, codegen.ts, vitest*.config.ts, .gitignore y .githooks/commit-msg (código fuera de tests/acceptance/). Interpretaciones de DEC-018 aplicadas: (1) los mensajes de rechazo del dominio que viajan por la API (OrderRejectedError, OrderNotFoundError) siguen en español porque la app puede mostrarlos (fallback de rejectionMessage), igual que los textos de pantalla (DEC-018 a); (2) el resumen y el motivo de parada del autopilot alimentan a la vez LOG.md (español) y el aviso ntfy (inglés): se guardan en los dos idiomas; la línea de tokens tiene variante en español (`tokens-summary --lang es`) para LOG.md; (3) quedan en español los valores que el autopilot escribe en TASKS.json (reviewer '… (contexto limpio, autopilot)', 'desconocido') y la línea '- Pendiente deploy:' con sus patrones 'ninguno/nada/N/A'; (4) el prompt del revisor pasa al inglés y pide hallazgos y notas en español (van a TASKS.json y LOG.md); (5) no se renombran IDs de constructs de CDK (reemplazarían recursos), nombres de grupos de Cognito, códigos de estado ni datos de prueba. Cambios internos sin efecto observable en la API: literales de Role 'customer'|'distributor'; mensajes de desarrollador 'No resolver for field' y 'TABLE_NAME is not set'. El Lambda de dev sigue con el bundle anterior: no hay diferencia observable, se actualiza en el próximo deploy:dev (no hace falta desplegar para esta tarea).",
@@ -803,6 +803,13 @@
         "command": "npm run lint; npm run typecheck; npm test; npm run check:spec; npm run test:acceptance; npm run smoke; npm exec -w app -- expo export --platform android --output-dir /tmp/t23-expo-export; npm --prefix ../sdd-base test; node ../sdd-base/scripts/check-spec.mjs",
         "result": "lint ok; typecheck ok; vitest 14 archivos / 177 pruebas y jest 8 suites / 137 pruebas, todas pasan (línea base antes del cambio: los mismos números); check:spec ok; aceptación 7 archivos / 41 pruebas (línea base 7/41); humo 1 archivo / 2 pruebas, todas pasan (línea base igual); export Android ok (bundle de 2463 módulos); sdd-base 93/93 (igual que en 2e123cb) y check:spec ok. scripts/autopilot.sh --dry-run no se pudo lanzar desde la sesión del implementador (permiso denegado dentro del autopilot); queda cubierto por las pruebas que lo ejecutan sobre un repositorio de prueba (autopilot-tasks.test.ts y, en sdd-base, bootstrap.test.mjs y autopilot-tasks.test.mjs), que pasan.",
         "commit": "4fcf4df"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Comprobaciones ejecutadas satisfactorias: lint, typecheck, check:spec, 177 pruebas Vitest, 137 Jest y 93 pruebas en sdd-base. Aceptación, humo y exportación Android no verificados independientemente; dry-run cubierto mediante fixtures. Sin hallazgos bloqueantes de alcance o DEC-018. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
       }
     },
     {
