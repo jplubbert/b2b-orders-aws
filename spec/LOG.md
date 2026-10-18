@@ -968,3 +968,14 @@
 - Hecho: revisión independiente de T-23 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-23); salida íntegra en .autopilot/2026-10-18_164324/T-23-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 17:27 · autopilot (scripts/autopilot.sh)
+- Hecho: T-23 implementada (520d364..1db4abf, estado verified_auto); T-23 revisada por codex: approved → reviewed (commit 8da9441). Corrida 2026-10-18_164324 (43 min, 1 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_164324/.
+- Tokens (implementador, campo usage del evento result): T-23: input 210 · output 271,369 · cache read 32,037,154 · cache write 604,014; total for the run: input 210 · output 271,369 · cache read 32,037,154 · cache write 604,014.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: npm run check:spec tras T-23 → ok.
+- En curso / roto: árbol limpio en 8da9441.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
