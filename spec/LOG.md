@@ -111,3 +111,11 @@
 - En curso / roto: nada. T-01, T-02 y T-08 `accepted`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: T-03 (tarea `"kind": "spec"`, `approved_for_impl`) queda elegible ahora que su dependencia T-01 está cerrada; puede tomarla una sesión interactiva o el orquestador nocturno (`scripts/night-loop.sh`).
+
+## 2026-10-17 21:33 · night-loop (scripts/night-loop.sh)
+- Hecho: nada. Corrida 2026-10-17_213347 (0 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .night-loop/2026-10-17_213347/.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 3d61197.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas ready con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
