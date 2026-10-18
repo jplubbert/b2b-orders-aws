@@ -3,12 +3,17 @@ import type {
   CreateOrderMutation,
   CreateOrderMutationVariables,
   ListProductsQuery,
+  MyOrdersQuery,
+  OrderDetailQuery,
+  OrderDetailQueryVariables,
   OrderLineInput,
 } from './generated/graphql';
 
 // Tipos generados desde spec/contracts/schema.graphql (DEC-002): `npm run codegen` tras cambiar el contrato o una consulta.
 export type Product = ListProductsQuery['listProducts'][number];
 export type CreatedOrder = CreateOrderMutation['createOrder'];
+export type OrderSummary = MyOrdersQuery['myOrders'][number];
+export type OrderDetail = NonNullable<OrderDetailQuery['order']>;
 
 const LIST_PRODUCTS = /* GraphQL */ `
   query ListProducts {
@@ -32,10 +37,55 @@ const CREATE_ORDER = /* GraphQL */ `
   }
 `;
 
+const MY_ORDERS = /* GraphQL */ `
+  query MyOrders {
+    myOrders {
+      id
+      number
+      createdAt
+      total
+      status
+    }
+  }
+`;
+
+const ORDER_DETAIL = /* GraphQL */ `
+  query OrderDetail($id: ID!) {
+    order(id: $id) {
+      id
+      number
+      createdAt
+      total
+      status
+      lines {
+        productId
+        name
+        presentation
+        quantity
+        unitPrice
+        subtotal
+      }
+    }
+  }
+`;
+
 // El cliente se crea en cada llamada: así siempre es posterior a Amplify.configure (en _layout).
 export async function listProducts(): Promise<Product[]> {
   const res = (await generateClient().graphql({ query: LIST_PRODUCTS })) as { data: ListProductsQuery };
   return res.data.listProducts;
+}
+
+/** Pedidos del cliente del token, del más reciente al más antiguo (REQ-004; el servidor ordena). */
+export async function myOrders(): Promise<OrderSummary[]> {
+  const res = (await generateClient().graphql({ query: MY_ORDERS })) as { data: MyOrdersQuery };
+  return res.data.myOrders;
+}
+
+/** Detalle con líneas y precios congelados; `null` si no existe o es de otro cliente (REQ-004 E3). */
+export async function getOrder(id: string): Promise<OrderDetail | null> {
+  const variables: OrderDetailQueryVariables = { id };
+  const res = (await generateClient().graphql({ query: ORDER_DETAIL, variables })) as { data: OrderDetailQuery };
+  return res.data.order;
 }
 
 /** Error de GraphQL con su `errorType` (motivos de rechazo de REQ-003, DEC-005). */
@@ -67,3 +117,8 @@ const clp = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP',
 
 /** Monto entero en pesos CLP → `$4.500` (S-02, DEC-006). */
 export const formatCLP = (amount: number) => clp.format(amount);
+
+const dateTime = new Intl.DateTimeFormat('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+
+/** Fecha ISO (AWSDateTime) → fecha y hora locales en formato es-CL (S-08). */
+export const formatDate = (iso: string) => dateTime.format(new Date(iso));

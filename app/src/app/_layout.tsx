@@ -13,6 +13,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: 'Iniciar sesión' }} />
         <Stack.Screen name="catalog" options={{ title: 'Catálogo', headerBackVisible: false }} />
         <Stack.Screen name="cart" options={{ title: 'Carrito' }} />
+        <Stack.Screen name="orders" options={{ title: 'Mis pedidos' }} />
+        <Stack.Screen name="order/[id]" options={{ title: 'Pedido' }} />
       </Stack>
     </CartProvider>
   );

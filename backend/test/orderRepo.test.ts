@@ -55,4 +55,16 @@ describe('dynamoOrderRepo (DEC-006)', () => {
     expect(out[0]).toEqual(order); // sin claves de tabla ni customerId
     expect(out.map((o) => o.id)).toEqual([order.id, 'otro']);
   });
+
+  it('getOrder lee solo la clave del cliente pedido; si no está, null', async () => {
+    const item = { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}`, customerId: 'C-1', ...order };
+    const { doc, inputs } = fakeDoc([{ Item: item }, {}]);
+    const repo = dynamoOrderRepo(doc, 'tabla');
+    expect(await repo.getOrder('C-1', order.id)).toEqual(order);
+    expect(await repo.getOrder('C-2', order.id)).toBeNull();
+    expect(inputs).toEqual([
+      { TableName: 'tabla', Key: { PK: 'CUSTOMER#C-1', SK: `ORDER#${order.id}` } },
+      { TableName: 'tabla', Key: { PK: 'CUSTOMER#C-2', SK: `ORDER#${order.id}` } },
+    ]);
+  });
 });

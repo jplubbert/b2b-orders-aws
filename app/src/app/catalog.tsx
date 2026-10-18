@@ -40,9 +40,14 @@ export default function CatalogScreen() {
       options={{
         headerLeft: () => <SignOutButton />,
         headerRight: () => (
-          <Pressable onPress={() => router.push('/cart')} accessibilityLabel="Ver carrito">
-            <Text style={styles.cartLink}>Carrito ({cartUnits(cart)})</Text>
-          </Pressable>
+          <View style={styles.headerLinks}>
+            <Pressable onPress={() => router.push('/orders')} accessibilityLabel="Ver mis pedidos">
+              <Text style={styles.cartLink}>Mis pedidos</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/cart')} accessibilityLabel="Ver carrito">
+              <Text style={styles.cartLink}>Carrito ({cartUnits(cart)})</Text>
+            </Pressable>
+          </View>
         ),
       }}
     />
@@ -88,5 +93,6 @@ const styles = StyleSheet.create({
   error: { color: '#b00020' },
   emptyContainer: { flexGrow: 1, justifyContent: 'center' },
   empty: { textAlign: 'center', fontSize: 16, color: '#555', padding: 24 },
+  headerLinks: { flexDirection: 'row', gap: 16 },
   cartLink: { color: '#1f6feb', fontSize: 16, fontWeight: '600' },
 });

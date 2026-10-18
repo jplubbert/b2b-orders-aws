@@ -1,7 +1,12 @@
-import type { Order, OrderLine, OrderLineInput } from '../generated/graphql.js';
+import type { Order, OrderLine, OrderLineInput, OrderStatus } from '../generated/graphql.js';
 import type { Product } from './catalog.js';
 
-export type { Order, OrderLine, OrderLineInput };
+export type { Order, OrderLine, OrderLineInput, OrderStatus };
+
+/** Estados del pedido (S-04), en el orden del contrato. */
+export const ORDER_STATUSES = ['RECIBIDO', 'EN_PREPARACION', 'ENVIADO', 'ENTREGADO', 'CANCELADO'] as const satisfies readonly OrderStatus[];
+
+export const isOrderStatus = (s: string): s is OrderStatus => (ORDER_STATUSES as readonly string[]).includes(s);
 
 export const MIN_QUANTITY = 1;
 export const MAX_QUANTITY = 999;

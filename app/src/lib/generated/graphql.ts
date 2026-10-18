@@ -32,3 +32,15 @@ export type CreateOrderMutationVariables = Exact<{
 
 
 export type CreateOrderMutation = { createOrder: { id: string, number: string, total: number, status: OrderStatus } };
+
+export type MyOrdersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyOrdersQuery = { myOrders: Array<{ id: string, number: string, createdAt: string, total: number, status: OrderStatus }> };
+
+export type OrderDetailQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type OrderDetailQuery = { order: { id: string, number: string, createdAt: string, total: number, status: OrderStatus, lines: Array<{ productId: string, name: string, presentation: string, quantity: number, unitPrice: number, subtotal: number }> } | null };

@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, PutCommand, QueryCommand, type QueryCommandOutput } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, type QueryCommandOutput } from '@aws-sdk/lib-dynamodb';
 import type { Order, OrderLine } from '../domain/order.js';
 import { ORDER_SK_PREFIX, customerPk, orderSk } from './keys.js';
 
@@ -7,6 +7,8 @@ export interface OrderRepo {
   putOrder(customerId: string, order: Order): Promise<void>;
   /** Pedidos del cliente, del más reciente al más antiguo (orden del ULID). */
   listOrders(customerId: string): Promise<Order[]>;
+  /** Pedido `orderId` dentro de la partición del cliente; `null` si no está (o es de otro cliente). */
+  getOrder(customerId: string, orderId: string): Promise<Order | null>;
 }
 
 // DEC-006: `PK=CUSTOMER#<customerId>`, `SK=ORDER#<ulid>`, líneas embebidas con nombre y precio congelados.
@@ -39,6 +41,14 @@ export function dynamoOrderRepo(doc: DynamoDBDocumentClient, tableName: string):
         startKey = page.LastEvaluatedKey;
       } while (startKey);
       return orders;
+    },
+
+    // La clave incluye al cliente del token: un pedido ajeno no se puede leer ni distinguir de uno inexistente.
+    async getOrder(customerId, orderId) {
+      const { Item } = await doc.send(
+        new GetCommand({ TableName: tableName, Key: { PK: customerPk(customerId), SK: orderSk(orderId) } }),
+      );
+      return Item ? toOrder(Item) : null;
     },
   };
 }

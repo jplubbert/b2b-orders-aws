@@ -80,4 +80,11 @@ export type Query = {
   listProducts: Array<Product>;
   /** Pedidos del cliente del token, del más reciente al más antiguo (REQ-004). */
   myOrders: Array<Order>;
+  /** Pedido del cliente del token; null si no existe o es de otro cliente (REQ-004 E3). */
+  order: Maybe<Order>;
+};
+
+
+export type QueryOrderArgs = {
+  id: Scalars['ID']['input'];
 };

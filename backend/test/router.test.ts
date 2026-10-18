@@ -16,6 +16,7 @@ function makeDeps() {
     orders: {
       putOrder: async (customerId, order) => void saved.set(customerId, [...(saved.get(customerId) ?? []), order]),
       listOrders: async (customerId) => [...(saved.get(customerId) ?? [])].reverse(),
+      getOrder: async (customerId, orderId) => saved.get(customerId)?.find((o) => o.id === orderId) ?? null,
     },
     newOrderId: () => '01JAAAAAAAAAAAAAAAAAB7XQ2M9Z',
   };
@@ -88,5 +89,26 @@ describe('route: createOrder y myOrders (REQ-003)', () => {
     const { deps, saved } = makeDeps();
     await expect(route(deps, createOrder(almacen1, lines))).rejects.toMatchObject({ name: code });
     expect(saved.size).toBe(0);
+  });
+});
+
+describe('route: order(id) (REQ-004)', () => {
+  const orderOf = (claims: Record<string, unknown> | undefined, id: string) => event(claims, 'order', 'Query', { id });
+
+  it('el dueño ve su pedido con líneas y precios congelados', async () => {
+    const { deps } = makeDeps();
+    const created = (await route(deps, createOrder(almacen1, [{ productId: 'yerba', quantity: 2 }]))) as Order;
+    expect(await route(deps, orderOf(almacen1, created.id))).toEqual(created);
+  });
+
+  it('E3: un pedido de otro cliente da null, igual que uno inexistente', async () => {
+    const { deps } = makeDeps();
+    const created = (await route(deps, createOrder(almacen1, [{ productId: 'yerba', quantity: 1 }]))) as Order;
+    expect(await route(deps, orderOf(almacen2, created.id))).toBeNull();
+    expect(await route(deps, orderOf(almacen2, '01J0000000000000000000NONE'))).toBeNull();
+  });
+
+  it('sin identidad válida → Unauthorized (DEC-004)', async () => {
+    await expect(route(makeDeps().deps, orderOf(undefined, 'x'))).rejects.toMatchObject({ name: 'Unauthorized' });
   });
 });

@@ -4,7 +4,7 @@ import { buildOrder } from './domain/order.js';
 import { ulid, ulidTime } from './domain/ulid.js';
 import type { CatalogRepo } from './data/catalogRepo.js';
 import type { OrderRepo } from './data/orderRepo.js';
-import type { Mutation, MutationCreateOrderArgs, Query } from './generated/graphql.js';
+import type { Mutation, MutationCreateOrderArgs, Query, QueryOrderArgs } from './generated/graphql.js';
 
 export interface Deps {
   catalog: CatalogRepo;
@@ -28,6 +28,11 @@ type MutationResolvers = { [F in keyof Mutation as `Mutation.${F & string}`]: Re
 const queryResolvers: QueryResolvers = {
   'Query.listProducts': async (deps) => activeCatalog(await deps.catalog.listProducts()),
   'Query.myOrders': async (deps, identity) => deps.orders.listOrders(identity.customerId),
+  // REQ-004 E3: se busca solo en la partición del cliente del token; uno ajeno da null, como uno inexistente.
+  'Query.order': async (deps, identity, args) => {
+    const { id } = args as unknown as QueryOrderArgs;
+    return deps.orders.getOrder(identity.customerId, id);
+  },
 };
 
 const mutationResolvers: MutationResolvers = {

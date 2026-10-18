@@ -21,6 +21,7 @@
     "bootstrap:dev": "AWS_PROFILE=default npm run bootstrap -w infra -- --context stage=dev --context region=us-east-1",
     "deploy:dev": "AWS_PROFILE=default npm run deploy -w infra -- --context stage=dev --context region=us-east-1 && tsx scripts/write-env.ts dev && npm run seed",
     "seed": "tsx scripts/seed.ts",
+    "order:set-status": "tsx scripts/order-set-status.ts",
     "app": "npm run start -w app",
     "check:spec": "node scripts/check-spec.mjs",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true"

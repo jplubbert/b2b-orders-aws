@@ -54,6 +54,8 @@ type Query @aws_auth(cognito_groups: ["almaceneros"]) {
   listProducts: [Product!]!
   "Pedidos del cliente del token, del más reciente al más antiguo (REQ-004)."
   myOrders: [Order!]!
+  "Pedido del cliente del token; null si no existe o es de otro cliente (REQ-004 E3)."
+  order(id: ID!): Order
 }
 
 type Mutation @aws_auth(cognito_groups: ["almaceneros"]) {
