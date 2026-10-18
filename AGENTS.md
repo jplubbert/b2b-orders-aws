@@ -1,7 +1,7 @@
 # Instrucciones para agentes
 
 Proyecto: demo de pedidos B2B (almacenero → catálogo → pedido → estado).
-Stack fijo (R-01): AWS Cognito, AppSync, Lambda, DynamoDB · app React Native (Expo).
+Stack fijo (R-01): AWS Cognito, AppSync, Lambda, DynamoDB, SNS, SQS · app React Native (Expo) con Zustand.
 Protocolo: Cierre por Riesgo (PCR), variante "desarrollador único": `PLAN` vive como sección de `spec/SPEC.md`.
 
 ## Lectura obligatoria al iniciar (en este orden)

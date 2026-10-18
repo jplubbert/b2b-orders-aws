@@ -1064,3 +1064,14 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario aprueba (o corrige) la ampliación de R-01, REQ-012, S-29..S-36, DEC-019..022 y las tareas T-26..T-30, y entrega las capturas de la app para T-30. Nada se implementa antes.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Apruebo el corte 4: R-01 ampliado, REQ-012, DEC-019 a DEC-022 y T-26 a T-30 (aprobador: Pepe). Un cambio: el historial de estados se muestra en el detalle del pedido (almacenero y distribuidor), con su ejemplo de aceptación. Ajusta REQ-012 y las tareas, pásalas a approved_for_impl y haz push."
+- Aprobación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — R-01 ampliada (SNS, SQS, Zustand; también en AGENTS.md); REQ-012 → `approved_for_impl`; DEC-019..022 → `accepted`; S-29..S-36 aprobados; T-26..T-30 → `approved_for_impl`; corte 4 `approved`.
+- Hecho (el cambio pedido): REQ-012 suma la sección "Historial" en el detalle del pedido del almacenero y del distribuidor, con ejemplos E8 (almacenero ve "Recibido" y "Recibido → Enviado"), E9 (distribuidor ve lo mismo), E10 (otro almacén recibe lista vacía), E11 (aún sin eventos: "Sin movimientos registrados todavía") y E12 (falla de carga: "No se pudo cargar el historial", el detalle sigue visible). S-29 reescrito: consulta aditiva `orderHistory(id)` para los dos grupos, resuelta por la Lambda `orders`; la aceptación lee por la API y no por la tabla. S-32 ajustado; S-37 nuevo (textos y carga de la sección). DEC-019 y DEC-020 anotan la lectura antes de quedar `accepted` (eran `proposed`). T-26 (aceptación por `orderHistory`, E8–E10) y T-28 (contrato y resolver) ajustadas; T-31 nueva (app: sección "Historial" en los dos detalles), creada por este cambio y aprobada con el corte → `approved_for_impl`; T-30 depende también de T-31.
+- Interpretaciones: el pedido "ejemplo de aceptación" se cubre con E8 (y E9 para el distribuidor); E10–E12 son los bordes y negativos que exige el protocolo. La UI va en una tarea aparte (T-31) para que T-29 siga sin cambio visible. DEC-005 queda como está (se supersede, no se edita).
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el autopilot implementa el corte 4 en orden de dependencias (T-26, T-27 y T-29 primero; T-26 espera la aprobación del diff de tests/acceptance/; T-27 y T-28 quedan con `- Pendiente deploy:`); el usuario entrega las capturas para T-30.

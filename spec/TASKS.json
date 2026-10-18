@@ -1,5 +1,5 @@
 {
-  "corte": 3,
+  "corte": 4,
   "tasks": [
     {
       "id": "T-01",
@@ -872,7 +872,7 @@
       "id": "T-26",
       "kind": "spec",
       "title": "Pruebas de aceptación de REQ-012 (historial de estados por eventos)",
-      "description": "tests/acceptance/req_012_historial.test.ts: E1–E4 y E7 contra dev, leyendo el historial de la tabla (`PK=HISTORY#<orderId>`, Query) con espera activa de hasta 30 s (S-29); fixtures para leer el historial; los 41 casos actuales no cambian. Antes del corte fallan por la razón esperada (sin historial). El usuario aprueba el diff de tests/acceptance/ antes de verified_auto.",
+      "description": "tests/acceptance/req_012_historial.test.ts: E1–E4, E7 y E8–E10 contra dev, leyendo el historial por la API con `orderHistory(id)` (S-29) con espera activa de hasta 30 s: el dueño y el distribuidor ven los mismos eventos en orden de `at` (E8, E9) y otro almacenero recibe lista vacía (E10); los 41 casos actuales no cambian. Antes del corte fallan por la razón esperada (`orderHistory` no existe en el contrato desplegado). El usuario aprueba el diff de tests/acceptance/ antes de verified_auto.",
       "reqs": [
         "REQ-012"
       ],
@@ -881,20 +881,20 @@
         "DEC-020"
       ],
       "depends_on": [],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "touches": [
         "tests/acceptance/"
       ],
-      "verify": "npm run lint && npm run typecheck && npm run test:acceptance (casos nuevos de REQ-012 fallan por falta de historial; los 41 actuales pasan) && npm run check:spec; aprobación del usuario del diff",
+      "verify": "npm run lint && npm run typecheck && npm run test:acceptance (casos nuevos de REQ-012 fallan porque `orderHistory` no existe; los 41 actuales pasan) && npm run check:spec; aprobación del usuario del diff",
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido (almacenero y distribuidor): la aceptación lee por `orderHistory` en vez de la tabla y suma E8–E10. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. El diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto."
     },
     {
       "id": "T-27",
       "title": "Backend: una Lambda por dominio (catálogo, pedidos, panel) sin cambio de comportamiento",
-      "description": "DEC-019: tres handlers con el dominio compartido; AppSync asigna cada campo a su Lambda; permisos mínimos por función; contrato sin cambios. Requiere deploy (en autopilot: Pendiente deploy).",
+      "description": "DEC-019: tres handlers con el dominio compartido; AppSync asigna cada campo a su Lambda; permisos mínimos por función; contrato sin cambios en esta tarea (`orderHistory` llega en T-28 y va a `orders`). Requiere deploy (en autopilot: Pendiente deploy).",
       "reqs": [
         "REQ-012"
       ],
@@ -902,7 +902,7 @@
         "DEC-019"
       ],
       "depends_on": [],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "touches": [
         "backend/",
         "infra/"
@@ -911,12 +911,12 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario. REQ-012 E7 (REQ-001..011 sin cambios)."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios)."
     },
     {
       "id": "T-28",
-      "title": "Eventos de pedido: SNS, SQS con DLQ y Lambda de historial (REQ-012)",
-      "description": "DEC-020: tópico SNS order-events; publicación tras escribir en orders y distributor (sin publicar ante rechazos; error de publicación registrado sin romper la respuesta); cola SQS con DLQ (maxReceiveCount 3, retención 14 días); Lambda order-history idempotente en HISTORY#<orderId>/EVENT#<at>#<eventId>; limpieza de la aceptación extendida al historial de C-ACEPT-…. Requiere deploy.",
+      "title": "Eventos de pedido: SNS, SQS con DLQ, Lambda de historial y consulta orderHistory (REQ-012)",
+      "description": "DEC-020: tópico SNS order-events; publicación tras escribir en orders y distributor (sin publicar ante rechazos; error de publicación registrado sin romper la respuesta); cola SQS con DLQ (maxReceiveCount 3, retención 14 días); Lambda order-history idempotente en HISTORY#<orderId>/EVENT#<at>#<eventId>; limpieza de la aceptación extendida al historial de C-ACEPT-…. Contrato (S-29): `type OrderStatusEvent` (eventId, orderId, customerId, from opcional, to, at) y `Query.orderHistory(id: ID!): [OrderStatusEvent!]!` con @aws_auth para almaceneros y distribuidores, resuelta en la Lambda orders (DEC-019): almacenero solo eventos de su customerId (otro → []), distribuidor cualquiera, orden por at ascendente; codegen de tipos. Sin cambios en app/ salvo los tipos generados. Requiere deploy.",
       "reqs": [
         "REQ-012"
       ],
@@ -927,19 +927,21 @@
         "T-26",
         "T-27"
       ],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "touches": [
+        "spec/contracts/schema.graphql",
         "backend/",
         "infra/",
         "scripts/lib/acceptance-cleanup.ts",
         "scripts/acceptance-cleanup.ts",
-        "scripts/test/"
+        "scripts/test/",
+        "app/src/lib/generated/"
       ],
-      "verify": "npm run lint && npm run typecheck && npm test (backend: idempotencia, sin publicación ante rechazo, fallo de publicación; infra: suscripción, DLQ, permisos) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios) (REQ-012 E1–E4, E7 pasan) && npm run smoke && npm run check:spec",
+      "verify": "npm run lint && npm run typecheck && npm test (backend: idempotencia, sin publicación ante rechazo, fallo de publicación, orderHistory por rol y orden; infra: suscripción, DLQ, permisos, orderHistory → orders) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios; REQ-012 E1–E4, E7–E10 pasan) && npm run smoke && npm run check:spec",
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido: suma la consulta orderHistory (S-29). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot."
     },
     {
       "id": "T-29",
@@ -957,7 +959,7 @@
         "DEC-008"
       ],
       "depends_on": [],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "touches": [
         "app/"
       ],
@@ -965,13 +967,13 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí."
     },
     {
       "id": "T-30",
       "kind": "tooling",
       "title": "README de presentación en inglés para el equipo técnico, con CI y badges",
-      "description": "DEC-022. README.md en inglés para un equipo técnico que lo abre por primera vez: una frase de qué es; badges de CI; capturas de la app (S-36); diagrama de arquitectura en Mermaid (app → Cognito → AppSync → Lambdas por dominio → DynamoDB, y SNS → SQS → Lambda de historial con DLQ); tabla servicio AWS → para qué → decisión (enlace); diagrama de secuencia de crear pedido (incluye la publicación del evento); seguridad (Cognito por grupos, autorización por campo, IAM mínimo por Lambda, sin llaves largas para humanos, identidad acotada del autopilot); infraestructura como código (CDK); pruebas contra AWS real; cómo desplegar en una cuenta nueva (bootstrap, SSO, deploy, seed). Sin IDs internos en el texto: REQ/DEC solo como enlaces. Workflow .github/workflows/ci.yml (lint, typecheck, npm test, check:spec; sin AWS). Resumen gerencial actual a docs/resumen-ejecutivo.md (S-34).",
+      "description": "DEC-022. README.md en inglés para un equipo técnico que lo abre por primera vez: una frase de qué es; badges de CI; capturas de la app (S-36), incluido el detalle con su historial; diagrama de arquitectura en Mermaid (app → Cognito → AppSync → Lambdas por dominio → DynamoDB, y SNS → SQS → Lambda de historial con DLQ); tabla servicio AWS → para qué → decisión (enlace); diagrama de secuencia de crear pedido (incluye la publicación del evento); seguridad (Cognito por grupos, autorización por campo, IAM mínimo por Lambda, sin llaves largas para humanos, identidad acotada del autopilot); infraestructura como código (CDK); pruebas contra AWS real; cómo desplegar en una cuenta nueva (bootstrap, SSO, deploy, seed). Sin IDs internos en el texto: REQ/DEC solo como enlaces. Workflow .github/workflows/ci.yml (lint, typecheck, npm test, check:spec; sin AWS). Resumen gerencial actual a docs/resumen-ejecutivo.md (S-34).",
       "reqs": [],
       "decisions": [
         "DEC-022",
@@ -982,9 +984,10 @@
       "depends_on": [
         "T-27",
         "T-28",
-        "T-29"
+        "T-29",
+        "T-31"
       ],
-      "status": "proposed",
+      "status": "approved_for_impl",
       "touches": [
         "README.md",
         "docs/",
@@ -994,7 +997,33 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta como última tarea del corte 4; espera la aprobación del usuario y sus capturas de la app."
+      "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario."
+    },
+    {
+      "id": "T-31",
+      "title": "App: sección \"Historial\" en el detalle del pedido (almacenero y distribuidor)",
+      "description": "REQ-012 (E8, E9, E11, E12) y S-37: en order/[id] (almacenero) y dist/order/[id] (distribuidor), sección \"Historial\" debajo del estado y la fecha, con orderHistory en una consulta aparte del pedido (su falla no oculta el detalle): filas de la más antigua a la más reciente, \"Recibido\" para el evento inicial y \"<anterior> → <nuevo>\" con los nombres de S-17, fecha y hora es-CL; vacío \"Sin movimientos registrados todavía\"; error \"No se pudo cargar el historial\". Se pide al abrir el detalle y al deslizar hacia abajo; el detalle del distribuidor gana deslizar para refrescar el historial (el pedido sigue saliendo del panel cargado, S-19). Sin fila optimista tras cambiar el estado. Tema y componentes del corte 2 (DEC-012), estado con Zustand (DEC-021). Pruebas jest en app/test. Verificación manual en el teléfono (DEC-011): E8 y E9 con un pedido real.",
+      "reqs": [
+        "REQ-012"
+      ],
+      "decisions": [
+        "DEC-020",
+        "DEC-021",
+        "DEC-012"
+      ],
+      "depends_on": [
+        "T-28",
+        "T-29"
+      ],
+      "status": "approved_for_impl",
+      "touches": [
+        "app/"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test (app/test: E8, E9, E11, E12 en los dos detalles; las expectativas actuales sin cambios) && npx expo export --platform android && npm run check:spec; manual en el teléfono (DEC-011): E8 y E9",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: creada al aprobar el corte 4, por el cambio pedido por el usuario (historial visible en el detalle del pedido, almacenero y distribuidor). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot."
     }
   ]
 }

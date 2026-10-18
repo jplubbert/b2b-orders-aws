@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 4  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: approved  ·  Corte 4: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización); corte 4 funcionalidad mediana (servicios nuevos y refactor de backend y app sin cambio visible)
+Versión: 4  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: approved  ·  Corte 4: approved  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización); corte 4 funcionalidad mediana (servicios nuevos, refactor de backend y app, consulta aditiva y una sección nueva en el detalle del pedido)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -28,11 +28,12 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
   panel con todos los pedidos de todos los almacenes y filtro por estado (REQ-010); cambio de
   estado de un pedido desde la app (REQ-011). Responde Q-02 para la demo. El script
   `order:set-status` sigue existiendo para pruebas y soporte, pero la demo ya no lo usa.
-- Propuesto (corte 4, alinear al stack objetivo sin cambiar lo que ve el usuario): separar la Lambda única en una por
-  dominio (catálogo, pedidos, panel del distribuidor); al crear un pedido o cambiar su estado, publicar un evento en
-  SNS que una cola SQS (con DLQ) entrega a otra Lambda, que registra el historial de estados del pedido (REQ-012);
-  estado de la app (carrito, sesión y lista del panel) con Zustand. Todo con CDK. Sin cambios en pantallas, textos,
-  flujos ni contrato GraphQL.
+- Incluido (corte 4, alinear al stack objetivo): separar la Lambda única en una por dominio (catálogo, pedidos, panel
+  del distribuidor); al crear un pedido o cambiar su estado, publicar un evento en SNS que una cola SQS (con DLQ)
+  entrega a otra Lambda, que registra el historial de estados del pedido (REQ-012); estado de la app (carrito, sesión
+  y lista del panel) con Zustand. Todo con CDK. Único cambio visible: sección "Historial" en el detalle del pedido,
+  del almacenero y del distribuidor (REQ-012), con la consulta aditiva `orderHistory` en el contrato (S-29); el resto
+  de pantallas, textos y flujos no cambia.
 - Excluido explícitamente: auto-registro y recuperación de contraseña; pagos y facturación;
   control de stock; backoffice del distribuidor más allá del corte 3 (alta de usuarios, catálogo y precios desde la app); notificaciones push y suscripciones en tiempo
   real; modo offline; varios distribuidores; listas de precios por cliente; imágenes, búsqueda y
@@ -41,9 +42,9 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
   notificaciones de cambio de estado, varios usuarios por almacén.
 
 ## Restricciones
-- R-01 Stack: AWS Cognito, AppSync, Lambda, DynamoDB; cliente React Native — fuente: usuario
-  - Cambio propuesto (corte 4, pendiente de aprobación del usuario): agregar AWS SNS y SQS, y Zustand como librería
-    de estado del cliente — fuente: encargo del usuario del corte 4, LOG 2026-10-18 · DEC-020, DEC-021
+- R-01 Stack: AWS Cognito, AppSync, Lambda, DynamoDB, SNS, SQS; cliente React Native con Zustand para el estado — fuente: usuario
+  - Ampliación del corte 4: SNS, SQS y Zustand — fuente: encargo del usuario del corte 4, aprobada por José Pedro
+    Lübbert (Pepe), LOG 2026-10-18 · DEC-020, DEC-021
 - R-02 Es una demo: un entorno `dev`, sin recursos de costo fijo (todo serverless/on-demand) — fuente: usuario (demo) · DEC-001, DEC-006
 - R-03 Las decisiones técnicas las toma el agente y las registra sin preguntar — fuente: usuario, LOG 2026-10-17
 - R-04 Despliegue `dev` con el perfil AWS `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], credenciales temporales de IAM Identity Center: `aws sso login --sso-session pepe`, permission set `AdministratorAccess`) en `us-east-1` — fuente: usuario, LOG 2026-10-18 (antes: rol `OrganizationAccountAccessRole` asumido desde `default` — DEC-014; y antes, perfil `default` en [REDACTED_AWS_ACCOUNT_MAIN] — Q-01, LOG 2026-10-17; DEC-017)
@@ -222,13 +223,16 @@ Ejemplos (aceptación):
 | E7 negativo | el cambio falla por red en la app | mensaje "No se pudo cambiar el estado" y el detalle conserva el estado anterior |
 Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/acceptance/req_011_* (E1–E6 por API) + app/test (E1, E7) + manual en teléfono (criterio de éxito del corte 3)
 
-### REQ-012 Historial de estados del pedido · estado: proposed · prioridad: must · corte 4
+### REQ-012 Historial de estados del pedido · estado: approved_for_impl · prioridad: must · corte 4
 Cuando se confirma un pedido, el sistema deberá registrar en su historial un evento con el estado `RECIBIDO`.
 Cuando el distribuidor cambia el estado de un pedido, el sistema deberá registrar un evento con el estado anterior, el nuevo y el momento del cambio.
 El registro ocurre de forma asíncrona (SNS → SQS → Lambda): el evento queda guardado a más tardar 30 segundos después de la respuesta de la API, y la respuesta al usuario no cambia ni espera al registro.
 Si una operación es rechazada (validación de pedido, `ORDER_NOT_FOUND`, estado inválido), entonces el sistema no deberá registrar ningún evento.
 Si el mismo evento se entrega más de una vez, entonces el sistema deberá guardarlo una sola vez.
 Si el registro de un evento falla de forma repetida, entonces el sistema deberá apartarlo en una cola de mensajes fallidos (DLQ) sin afectar el pedido ni los eventos siguientes.
+Cuando el almacenero abre el detalle de uno de sus pedidos, o el distribuidor abre el detalle de cualquier pedido, el sistema deberá mostrar una sección "Historial" con los eventos del pedido, del más antiguo al más reciente, cada uno con su estado (y el anterior, si lo hay) y su fecha y hora (S-37).
+El sistema deberá mostrarle a un almacenero solo el historial de sus pedidos: el de otro almacén responde vacío, como REQ-004 E3.
+Mientras el pedido no tenga eventos registrados (retraso asíncrono), el sistema deberá mostrar "Sin movimientos registrados todavía" en la sección; si la carga del historial falla, "No se pudo cargar el historial", sin ocultar el resto del detalle.
 Ejemplos (aceptación):
 | caso | entrada / contexto | resultado esperado |
 |---|---|---|
@@ -238,8 +242,13 @@ Ejemplos (aceptación):
 | E4 negativo | `createOrder` rechazado (`EMPTY_ORDER`) o `setOrderStatus` con `ORDER_NOT_FOUND` | ningún evento nuevo para ningún pedido |
 | E5 borde | el mismo mensaje de SQS se entrega dos veces | un solo evento guardado |
 | E6 negativo | el registro falla siempre para un mensaje | el mensaje termina en la DLQ tras 3 intentos; el pedido y su estado no cambian |
-| E7 borde | todo el corte 4 desplegado | REQ-001..011 siguen pasando sin cambios en sus pruebas ni en el contrato |
-Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/acceptance/req_012_* (E1–E4, E7) + backend/test (E5) + infra/test (E6: DLQ y `maxReceiveCount`)
+| E7 borde | todo el corte 4 desplegado | REQ-001..011 siguen pasando sin cambios en sus pruebas; el contrato solo suma `orderHistory` y su tipo (aditivo) |
+| E8 positivo | almacen1 confirma un pedido, el distribuidor lo pasa a `ENVIADO` y almacen1 abre su detalle | sección "Historial" con 2 filas, de la más antigua a la más reciente: "Recibido" y "Recibido → Enviado", cada una con fecha y hora; `orderHistory` de almacen1 devuelve esos 2 eventos |
+| E9 positivo | el distribuidor abre ese pedido desde el panel | la misma sección "Historial" con las mismas 2 filas; `orderHistory` del distribuidor devuelve los mismos 2 eventos |
+| E10 negativo | almacen2 pide `orderHistory` de un pedido de almacen1 | lista vacía; sin error ni datos del otro almacén |
+| E11 borde | el detalle se abre antes de que llegue el primer evento | "Sin movimientos registrados todavía"; al deslizar hacia abajo, ya registrado, aparece "Recibido" |
+| E12 negativo | la carga del historial falla por red | "No se pudo cargar el historial"; número, líneas, total y estado del pedido siguen visibles |
+Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/acceptance/req_012_* (E1–E4, E7 y E8–E10 por API con `orderHistory`) + backend/test (E5) + infra/test (E6: DLQ y `maxReceiveCount`) + app/test (E8, E9, E11, E12) + manual en teléfono (E8, E9)
 
 ## Supuestos (no bloqueantes, con valor por defecto)
 | ID | creemos que… | valor por defecto | clase | disparador de revisión |
@@ -272,14 +281,15 @@ Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/accep
 | S-26 | volumen | el panel trae todos los pedidos sin paginar (demo: decenas) | reversible (paginación aditiva) | más de 1.000 pedidos (DEC-013) |
 | S-27 | aceptación de la UI del panel | como S-20: jest en `app/test/` + verificación manual en el teléfono (DEC-011); la API se prueba en `tests/acceptance/` (tarea de spec T-13) | reversible | — |
 | S-28 | textos de la UI del distribuidor | panel "Pedidos"; filtro "Todos" + los 5 nombres de S-17; detalle "Pedido <número>" con "Cambiar estado"; menú de cuenta igual al del almacenero (REQ-006) | reversible | — |
-| S-29 | "registra el evento" no es visible para el usuario | el historial se guarda en la tabla (DEC-020) y no se muestra en la app ni se agrega al contrato; la aceptación lo lee directo de la tabla, como ya hace con el catálogo (fixtures) | reversible (consulta `orderHistory` aditiva) | se pide ver el historial en la app |
+| S-29 | cómo se lee el historial (antes: no visible; el usuario pidió mostrarlo al aprobar el corte 4, LOG 2026-10-18) | consulta aditiva `orderHistory(id: ID!): [OrderStatusEvent!]!` para `almaceneros` (solo sus pedidos; otro → lista vacía) y `distribuidores` (cualquier pedido); la resuelve la Lambda `orders` con Query por `PK=HISTORY#<id>` (DEC-019, DEC-020); la aceptación lo lee por la API | reversible | se pide paginar o filtrar el historial |
 | S-30 | dominios de la separación | catálogo = `listProducts`; pedidos = `createOrder`, `myOrders`, `order`; panel del distribuidor = `allOrders`, `setOrderStatus`; más la Lambda consumidora del historial | reversible | aparece una operación que no encaja |
 | S-31 | "estado de la app (carrito, sesión)" incluye la lista del panel | también `PanelProvider` pasa a Zustand, para no dejar dos estilos de estado; los tokens siguen en Amplify (DEC-003): Zustand guarda rol, correo y estado de la sesión | reversible | — |
-| S-32 | "sin cambiar lo que ve el usuario" | mismas pantallas, textos, flujos y tiempos percibidos; si publicar el evento falla, el pedido igual se confirma o cambia (se registra el error) | no bloqueante | — |
+| S-32 | "sin cambiar lo que ve el usuario" (salvo la sección "Historial", REQ-012) | mismas pantallas, textos, flujos y tiempos percibidos; si publicar el evento falla, el pedido igual se confirma o cambia (se registra el error) y ese evento falta en el historial | no bloqueante | — |
 | S-33 | orden del historial | por el momento que fija la Lambda que publica (no por el orden de llegada a la cola) | reversible (FIFO) | se exige orden estricto de entrega |
 | S-34 | el README nuevo es para el equipo técnico | README.md pasa a inglés (DEC-022); el resumen gerencial en español se mueve a `docs/resumen-ejecutivo.md` y el README lo enlaza | reversible | — |
 | S-35 | "badges de CI" | un workflow de GitHub Actions corre lint, tipos, pruebas unitarias y check:spec en cada push, sin credenciales de AWS en GitHub; la aceptación contra AWS real sigue en el autopilot y en local, y el README lo dice | reversible (rol OIDC para aceptación en CI) | se pide la aceptación en CI |
 | S-36 | capturas de la app | las pone el usuario (fotos del teléfono); van en `docs/img/`; sin GIF si no se entrega video | no bloqueante | — |
+| S-37 | textos y carga de la sección "Historial" | título "Historial" debajo del estado y la fecha del pedido; evento inicial "Recibido"; cambio "<anterior> → <nuevo>" con los nombres de S-17 (también "Enviado → Enviado", E3); fecha y hora es-CL; vacío "Sin movimientos registrados todavía"; error "No se pudo cargar el historial". Se pide al abrir el detalle y al deslizar hacia abajo (como S-06), en una consulta aparte del pedido, para que su falla no oculte el detalle. Tras cambiar el estado desde el detalle del distribuidor no se agrega una fila optimista: aparece al refrescar | reversible | se pide el historial en tiempo real |
 
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
@@ -374,19 +384,22 @@ Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/accep
 - [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
 - [x] Sin preguntas bloqueantes (Q-02 respondida para la demo)
 
-## Plan (corte 4, stack objetivo sin cambio visible) — propuesto
+## Plan (corte 4, stack objetivo e historial de estados) — aprobado
 ### Diseño
 - Backend (DEC-019, supersede DEC-005): tres Lambdas de API (`catalog`, `orders`, `distributor`) con el dominio compartido de `backend/src/domain` y un handler por dominio; AppSync asigna cada campo a su Lambda; permisos mínimos por función (catálogo solo lee; pedidos escribe y lee su partición; panel hace Scan y UpdateItem). El contrato no cambia.
 - Eventos (DEC-020): tópico SNS estándar `order-events`; las Lambdas de pedidos y panel publican tras escribir en DynamoDB (`OrderCreated`, `OrderStatusChanged`, con id de evento); cola SQS suscrita (entrega cruda) con DLQ (`maxReceiveCount` 3, retención 14 días); Lambda `order-history` con fuente SQS (lotes con `ReportBatchItemFailures`) que guarda cada evento con escritura condicional por id (idempotente) en `PK=HISTORY#<orderId>`, `SK=EVENT#<momento>#<id>` (fuera de los Scan de `ORDER#` del panel). La limpieza de la aceptación también borra el historial de los clientes `C-ACEPT-…`.
+- Lectura del historial (S-29): contrato con `type OrderStatusEvent` (`eventId`, `orderId`, `customerId`, `from` opcional, `to`, `at`) y `Query.orderHistory(id)` para los dos grupos; la resuelve la Lambda `orders`: un almacenero solo recibe eventos con su `customerId`, el distribuidor los de cualquier pedido; orden por `at` ascendente.
 - App (DEC-021): stores de Zustand para carrito, sesión y lista del panel en lugar de `CartProvider`, `PanelProvider` y el estado de sesión local; mismas pantallas y textos; Amplify sigue guardando los tokens.
+- App (REQ-012, S-37): sección "Historial" en `order/[id]` (almacenero) y `dist/order/[id]` (distribuidor), con `orderHistory` en una consulta aparte; el detalle del distribuidor gana deslizar hacia abajo para refrescar el historial.
 - Despliegue: `npm run deploy:dev` tras T-27 y tras T-28 (en autopilot quedan como `- Pendiente deploy:`).
 
 ### Orden y dependencias
 1. T-26 Pruebas de aceptación REQ-012 (tarea de spec; el usuario aprueba el diff de tests/acceptance/) — sin dependencias
 2. T-27 Backend: una Lambda por dominio (DEC-019), sin cambio de comportamiento — **requiere deploy** — sin dependencias
-3. T-28 Eventos: SNS, SQS con DLQ y Lambda de historial (REQ-012, DEC-020) — **requiere deploy** — depende de T-26 y T-27
+3. T-28 Eventos: SNS, SQS con DLQ, Lambda de historial y consulta `orderHistory` (REQ-012, DEC-020) — **requiere deploy** — depende de T-26 y T-27
 4. T-29 App: estado con Zustand (DEC-021), sin cambio visible — solo app — sin dependencias
-5. T-30 README de presentación en inglés para el equipo técnico, con Mermaid, tabla de servicios, secuencia de crear pedido, seguridad, IaC, pruebas contra AWS real y despliegue en cuenta nueva; workflow de CI para los badges (DEC-022) — depende de T-27, T-28 y T-29 (describe la arquitectura final) y de las capturas del usuario
+5. T-31 App: sección "Historial" en el detalle del pedido, almacenero y distribuidor (REQ-012, S-37) — solo app — depende de T-28 (contrato y API desplegada) y T-29 (mismas pantallas)
+6. T-30 README de presentación en inglés para el equipo técnico, con Mermaid, tabla de servicios, secuencia de crear pedido, seguridad, IaC, pruebas contra AWS real y despliegue en cuenta nueva; workflow de CI para los badges (DEC-022) — depende de T-27, T-28, T-29 y T-31 (describe la arquitectura final) y de las capturas del usuario
 
 ### Riesgos
 | riesgo | mitigación |
@@ -395,11 +408,13 @@ Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/accep
 | publicar en SNS falla después de escribir el pedido y el evento se pierde | S-32: se registra el error y se acepta la pérdida en la demo; DEC-020 anota DynamoDB Streams como salida |
 | la aceptación de REQ-012 es inestable por la espera asíncrona | espera activa con tope de 30 s; el historial se lee por `PK` (Query, no Scan) |
 | Zustand cambia el ciclo de render y altera la UI | jest de app/test sin cambios de expectativas + verificación manual en el teléfono (DEC-011) |
+| el almacenero abre el detalle recién confirmado y el historial aún está vacío | texto "Sin movimientos registrados todavía" y refresco al deslizar (REQ-012 E11, S-37) |
+| un almacenero lee el historial de otro almacén | `orderHistory` filtra por el `customerId` del token; aceptación REQ-012 E10 |
 | el teardown de la aceptación borra eventos de otra corrida | igual que hoy con los pedidos: una corrida por vez (T-25 agrega el candado) |
 
 ## Criterio de cierre del corte 4
-- [ ] R-01 ampliada (SNS, SQS, Zustand), REQ-012 y S-29..S-33 aprobados por el responsable
-- [ ] DEC-019, DEC-020, DEC-021 y DEC-022 `accepted`; S-34..S-36 aprobados
+- [x] R-01 ampliada (SNS, SQS, Zustand), REQ-012 (con el historial visible en el detalle) y S-29..S-33, S-37 aprobados por el responsable (José Pedro Lübbert (Pepe), 2026-10-18)
+- [x] DEC-019, DEC-020, DEC-021 y DEC-022 `accepted`; S-34..S-36 aprobados
 - [ ] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
 - [ ] Sin preguntas bloqueantes
 - [ ] REQ-001..011 siguen pasando sin cambios en sus pruebas (REQ-012 E7)
