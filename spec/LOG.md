@@ -1008,3 +1008,14 @@
 - En curso / roto: T-24 queda `in_progress`: es tarea de spec y falta que el usuario apruebe el diff de tests/acceptance/ (2c607fa).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario revisa y aprueba (o devuelve) el diff de tests/acceptance/ de 2c607fa y las interpretaciones; con su aprobación, T-24 → verified_auto y revisión independiente.
+
+## 2026-10-18 18:19 · autopilot (scripts/autopilot.sh)
+- Hecho: T-24: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/; se salta en esta corrida. Corrida 2026-10-18_181110 (8 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_181110/.
+- Tokens (implementador, campo usage del evento result): T-24: entrada 54 · salida 27.535 · caché leída 2.085.089 · caché escrita 96.638; total de la corrida: entrada 54 · salida 27.535 · caché leída 2.085.089 · caché escrita 96.638.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 4266779.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-24).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
