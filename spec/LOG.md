@@ -486,3 +486,12 @@
 - Hecho: revisión independiente de T-07 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-07); salida íntegra en .autopilot/2026-10-18_034909/T-07-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Hecho (T-13, spec, REQ-009..011, commit 5916ae7): pruebas de aceptación con la forma de DEC-013. `tests/acceptance/req_009_roles` (E5 ×2, E6 ×3 y E3 por API como borde), `req_010_panel` (E1, E2, E5), `req_011_estado` (E1–E4, E5 ×2, E6): 16 casos nuevos. `support/fixtures.ts` gana `createDistributor` (`acept-dist-*@demo.test`, grupo `distribuidores`, sin `custom:customerId`), `createUngrouped` (`acept-nogrp-*`) y `allOrders`/`listAllOrders`/`changeOrderStatus`. Los campos del distribuidor van aparte de `ORDER_FIELDS` para que req_003/004 sigan pasando antes de T-14.
+- Interpretaciones: REQ-010 E1/E5 y REQ-011 usan clientes desechables en lugar de almacen1/almacen2 (S-14); REQ-010 E2 prepara el `ENVIADO` con `order:set-status` para no depender de REQ-011; REQ-010 E5 se mide en `allOrders` (el distribuidor no tiene `order(id)`); "sin pedido creado" (REQ-009 E6, REQ-011 E5) se mide con el largo de `allOrders`.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm run test:acceptance` 41 casos: 25 pasan (req_001..004), 3 fallan por `FieldUndefined` de `allOrders` y 13 se omiten por "Group not found" (grupo `distribuidores`), todo como se esperaba; `npm run smoke` 2/2; 0 usuarios `acept-*` restantes; `npm run check:spec` ok.
+- Pendiente deploy: ninguno para T-13 (no despliega). T-14 requerirá `npm run deploy:dev` y luego `npm run test:acceptance` y `npm run smoke`.
+- En curso / roto: T-13 `in_progress` hasta que el usuario apruebe el diff de tests/acceptance/ (5916ae7).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario aprueba (o corrige) el diff de tests/acceptance/ de T-13 → `verified_auto` y revisión independiente. T-14 depende de T-13 y espera esa aprobación.
