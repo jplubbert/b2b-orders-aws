@@ -186,3 +186,11 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: 2 fallos (tope 2).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-17 23:30 · Claude (claude-opus-5-5)
+- Hecho (T-08, pedido del usuario; Task: T-08, Req: N/A): `scripts/night-loop.sh` ya no informa `costo_usd`; informa tokens (entrada, salida, caché leída y caché escrita) tomados del campo `usage` del evento `result` de stream-json. `scripts/lib/night-stream.mjs` los muestra en la línea "■ fin" y, con `--tokens FILE`, deja una línea por invocación en `.night-loop/<corrida>/tokens.jsonl`; la orden nueva `tokens-summary FILE` los suma por tarea (con el número de invocaciones si hubo reintentos) y da el total de la corrida. El orquestador muestra los tokens de cada intento, el acumulado de la tarea y el total, en la terminal y en live.log; el resumen de LOG.md lleva una línea nueva "Tokens (implementador, …)". El revisor no se cuenta: codex y `claude -p --output-format text` no informan usage.
+- Pruebas: formato de "■ fin" con y sin usage; `tokensSummary` (por tarea, reintentos, total, sin invocaciones); CLI `--tokens` y `tokens-summary`; ciclo completo con los dobles (terminal, live.log, LOG.md y sin "costo"/"US$"); dos fallos → tokens sumados de los 2 intentos en terminal y LOG.md.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 83/83; `npm run check:spec` ok; `night-stream.mjs` sobre los .jsonl reales de la corrida 2026-10-17_230411 → T-04: entrada 50 · salida 12.904 · caché leída 1.342.826 · caché escrita 91.804 (2 invocaciones); `scripts/night-loop.sh --dry-run` → "total de la corrida: sin invocaciones del implementador".
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: la misma de la entrada anterior: el usuario verifica REQ-002 E3 de T-04 en el teléfono y decide `accepted` de T-03; revisión independiente de este cambio de T-08 si el usuario la quiere.

@@ -13,7 +13,9 @@
 #   2. Lanza el implementador: `claude -p "Lee AGENTS.md y ejecuta <ID>. Detente según las reglas de autoridad."`
 #      con permisos acotados al repositorio (sin red, sin push, sin instalar nada fuera de npm; AWS solo con el perfil
 #      `night-loop` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
-#      en la terminal y en .night-loop/<corrida>/live.log (`tail -f` desde otra terminal).
+#      en la terminal y en .night-loop/<corrida>/live.log (`tail -f` desde otra terminal). Tokens de cada invocación
+#      (entrada, salida, caché leída y escrita, del campo `usage` del evento `result`) por tarea y total de la corrida
+#      en la terminal, live.log y el resumen de LOG.md; el revisor no se cuenta (codex/claude en texto no los informan).
 #   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
 #      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
 #      TASKS.json (`review`; approved → reviewed) y a LOG.md.
@@ -63,6 +65,7 @@ tasks() { node "$ROOT/scripts/lib/night-tasks.mjs" --root "$ROOT" "$@"; }
 RUN_ID=$(date '+%Y-%m-%d_%H%M%S')
 RUN_DIR="$ROOT/.night-loop/$RUN_ID"
 LIVE="$RUN_DIR/live.log"
+TOKENS="$RUN_DIR/tokens.jsonl"   # una línea por invocación del implementador (night-stream.mjs --tokens)
 START=$(date +%s)
 DEADLINE=$((START + BUDGET))
 SUMMARY=()        # líneas "Hecho" del resumen
@@ -80,6 +83,7 @@ log() { # a la terminal y, en una corrida real, a live.log
   return 0
 }
 die() { echo "night-loop: $*" >&2; exit 1; }
+tokens_summary() { node "$ROOT/scripts/lib/night-stream.mjs" tokens-summary "$TOKENS"; }
 remaining() { echo $((DEADLINE - $(date +%s))); }
 now_stamp() { date '+%Y-%m-%d %H:%M'; }
 git_head() { git rev-parse --short HEAD; }
@@ -238,9 +242,13 @@ write_summary() {
   local hecho verificado
   hecho=$(printf '%s; ' "${SUMMARY[@]:-nada}"); hecho=${hecho%; }
   verificado=$(printf '%s; ' "${VERIFIED[@]:-sin comandos ejecutados}"); verificado=${verificado%; }
+  local tokens
+  tokens=$(tokens_summary | paste -sd ';' | sed 's/;/; /g')
+  log "tokens (implementador): $tokens"
   local body
   body=$(cat <<EOF
 - Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .night-loop/${RUN_ID}/.
+- Tokens (implementador, campo usage del evento result): ${tokens}.
 - Verificado y cómo: ${verificado}.
 - En curso / roto: $(git status --porcelain | grep -q . && echo "árbol de trabajo sucio (ver git status)" || echo "árbol limpio en $(git_head)").
 - Bloqueos nuevos: $(node -e 'const d=require(process.argv[1]);const b=d.tasks.filter(t=>t.status==="blocked").map(t=>`${t.id} (${t.blocked_by})`);console.log(b.length?b.join(", "):"ninguno")' "$ROOT/spec/TASKS.json").
@@ -322,15 +330,17 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   # shellcheck disable=SC2046
   eval timeout -k 30 "$(remaining)" "$(impl_cmd "$id")" 2>"$RUN_DIR/$id-impl-$attempt.err" \
     | node "$ROOT/scripts/lib/night-stream.mjs" --label "$id" \
-        --raw "$RUN_DIR/$id-impl-$attempt.jsonl" --result "$RUN_DIR/$id-impl-$attempt.json" \
+        --raw "$RUN_DIR/$id-impl-$attempt.jsonl" --result "$RUN_DIR/$id-impl-$attempt.json" --tokens "$TOKENS" \
     | tee -a "$LIVE"
   rc=${PIPESTATUS[0]}
   set -e
-  node -e '
-    const fs=require("fs");try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
-    fs.writeFileSync(process.argv[2],(r.result??"")+"\n");
-    console.log(`turnos=${r.num_turns} costo_usd=${r.total_cost_usd?.toFixed?.(2)} error=${r.is_error}`)}catch{console.log("(salida no JSON)")}' \
-    "$RUN_DIR/$id-impl-$attempt.json" "$RUN_DIR/$id-impl-$attempt.txt" | sed 's/^/  /'
+  log "  $(node --input-type=module -e '
+    import fs from "fs";const {usageOf,formatUsage}=await import(process.argv[3]);
+    try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+    fs.writeFileSync(process.argv[2],(r.result??"")+"\n");const u=usageOf(r);
+    console.log(`turnos=${r.num_turns} tokens: ${u?formatUsage(u):"sin usage"} error=${r.is_error}`)}catch{console.log("(salida no JSON)")}' \
+    "$RUN_DIR/$id-impl-$attempt.json" "$RUN_DIR/$id-impl-$attempt.txt" "$ROOT/scripts/lib/night-stream.mjs" </dev/null)"
+  log "tokens de $id en la corrida: $(tokens_summary | grep "^$id: " | sed "s/^$id: //" || echo "sin usage")"
   status=$(tasks status "$id" 2>/dev/null || echo "?")
   log "implementador terminó (código $rc); $id → $status; HEAD $head_before → $(git_head)"
 

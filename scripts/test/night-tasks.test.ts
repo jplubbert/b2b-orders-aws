@@ -332,8 +332,14 @@ describe('night-loop.sh', () => {
         expect(out).toMatch(/T-03 › Empiezo la tarea/);
         expect(out).toMatch(/T-03 ▸ Bash {2}npm run test:acceptance/);
         expect(out).toMatch(/T-03 {3}✓ 1 línea\(s\): Tests 25 passed/);
-        expect(out).toMatch(/T-03 ■ fin \(ok\): 5 turnos, US\$ 0\.42/);
+        expect(out).toContain('T-03 ■ fin (ok): 5 turnos, tokens: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481');
+        expect(out).toContain('tokens de T-03 en la corrida: entrada 44 · salida 11.440');
+        expect(out).toContain('tokens (implementador): T-03: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481; total de la corrida: entrada 44');
+        expect(out).not.toMatch(/costo|US\$/);
       }
+      expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain(
+        '- Tokens (implementador, campo usage del evento result): T-03: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481; total de la corrida: entrada 44 · salida 11.440 · caché leída 1.266.786 · caché escrita 64.481.',
+      );
       expect(live).toContain('veredicto sobre T-03: approved → estado reviewed');
       expect(readFileSync(join(runDir, 'T-03-impl-1.jsonl'), 'utf8').trim().split('\n')).toHaveLength(4);
       expect(JSON.parse(readFileSync(join(runDir, 'T-03-impl-1.json'), 'utf8'))).toMatchObject({ type: 'result', num_turns: 5 });
@@ -375,6 +381,8 @@ describe('night-loop.sh', () => {
       expect(r.status).toBe(1);
       expect(r.stdout).toContain('intento 2');
       expect(r.stdout).toContain('parada: 2 fallos (tope 2)');
+      expect(r.stdout).toContain('tokens de T-03 en la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000 (2 invocaciones)');
+      expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('total de la corrida: entrada 6 · salida 200 · caché leída 4.000 · caché escrita 1.000.');
       expect(t03().status).toBe('ready');
     });
   });
