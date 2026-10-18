@@ -290,3 +290,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-06 (la hace el orquestador en su próxima corrida: diff fd7e0c4, REQ-004, DEC-004, DEC-006, DEC-009); el usuario hace las verificaciones de "Pendiente manual" (T-04..T-07) y decide `accepted` en lote, junto con T-03.
+
+## 2026-10-18 00:45 · Claude (claude-opus-5-5)
+- Hecho (T-06, REQ-004): verificación manual en el teléfono informada por el usuario José Pedro Lübbert: "Demo completa OK en el teléfono: pedido NQBRC7CV pasó de RECIBIDO a ENVIADO". Es el recorrido del criterio de éxito (login almacen1 → pedido → RECIBIDO → `order:set-status` ENVIADO → refrescar → ENVIADO). El cambio de estado se hizo con `npm run order:set-status -- 01M56K2CFYJKVTEYBWNQBRC7CV ENVIADO` (salida `Pedido 01M56K2CFYJKVTEYBWNQBRC7CV → ENVIADO`, código 0; la tabla de `dev` lo confirma). Registrado en `evidence.manual_result` de T-06.
+- Interpretación: el informe no menciona REQ-004 E4 (almacen2 sin pedidos), así que queda como único pendiente manual de T-06. Tampoco cubre explícitamente los pasos propios de T-04, T-05 y T-07; siguen en "Pendiente manual" hasta que el usuario los confirme.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente manual: T-06 (REQ-004 E4): almacen2 → Mis pedidos → "Todavía no hiciste pedidos". T-04, T-05, T-07: sin cambios (ver la entrada del 2026-10-18 00:05 y la de T-04).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario confirma qué pasos de la checklist (T-04, T-05, T-07, T-06 E4) hizo; con eso se registran y el usuario decide `accepted` en lote (T-03..T-07). Revisión independiente de T-06 en la próxima corrida del orquestador.
