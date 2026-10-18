@@ -721,6 +721,21 @@
         "by": "José Pedro Lübbert (Pepe)",
         "date": "2026-10-18"
       }
+    },
+    {
+      "id": "T-21",
+      "kind": "tooling",
+      "title": "Autopilot: aviso ntfy al detenerse (motivo, hechas/fallidas, próxima acción; prioridad según intervención)",
+      "description": "Pedido del usuario 2026-10-18: al detenerse, scripts/autopilot.sh envía a https://ntfy.sh/$NTFY_TOPIC el motivo de parada, las tareas hechas/fallidas y la próxima acción. Prioridad alta y tag de alerta si requiere intervención (bloqueo, fallo, límite); normal si terminó bien. NTFY_TOPIC en autopilot.config.sh fuera del repo (es secreto). Si ntfy falla, el autopilot no se cae. Probar con un aviso real. Portar a sdd-base.",
+      "reqs": [],
+      "decisions": [
+        "DEC-016"
+      ],
+      "depends_on": [],
+      "status": "in_progress",
+      "verify": "npm run lint && npm run typecheck && npm test (scripts/test/autopilot-tasks.test.ts: aviso ntfy normal/alto/límite/deploy, ntfy caído, caída antes del resumen, config y --dry-run) && npm run check:spec && scripts/autopilot.sh (aviso real recibido en el tema)",
+      "blocked_by": null,
+      "notes": "2026-10-18: implementado; pendiente la corrida real del autopilot (necesita árbol limpio) y el port a sdd-base. Tema elegido por el usuario: guardado solo en ~/.config/autopilot/autopilot.config.sh (no se escribe en el repo ni en los registros)."
     }
   ]
 }

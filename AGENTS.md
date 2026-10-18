@@ -26,7 +26,7 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
 - Prueba de humo: `npm run smoke`
 - Pruebas: `npm test` | Aceptación: `npm run test:acceptance` | Lint/tipos: `npm run lint && npm run typecheck`
 - Validar protocolo: `npm run check:spec` (hook `commit-msg` en `.githooks/`, lo activa `npm ci` vía `prepare`)
-- Orquestador nocturno (autopilot, T-08): `scripts/autopilot.sh [--dry-run]` (nunca push, despliegue ni `accepted`; AWS solo con el perfil `autopilot` (usuario IAM `autopilot-tests`) para `test:acceptance`/`smoke`, DEC-010/DEC-015; progreso en `.autopilot/<corrida>/live.log`; tareas `"kind": "tooling"` usan `Req: N/A`)
+- Orquestador nocturno (autopilot, T-08): `scripts/autopilot.sh [--dry-run]` (nunca push, despliegue ni `accepted`; AWS solo con el perfil `autopilot` (usuario IAM `autopilot-tests`) para `test:acceptance`/`smoke`, DEC-010/DEC-015; progreso en `.autopilot/<corrida>/live.log`; tareas `"kind": "tooling"` usan `Req: N/A`; al detenerse avisa por ntfy si `NTFY_TOPIC` está en `~/.config/autopilot/autopilot.config.sh`, fuera de git, DEC-016)
   En autopilot la tarea que necesita desplegar queda `in_progress` con una línea `- Pendiente deploy:` en LOG.md (qué desplegar y qué correr después); autopilot sigue con la siguiente.
 - App: `npm run app` (Expo)
 

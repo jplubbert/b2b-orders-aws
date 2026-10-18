@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Doble de `curl` para las pruebas del aviso ntfy de scripts/autopilot.sh (T-21): anota cada llamada en $STUB_CURL_LOG
+# (argumentos separados por \x1f, llamada terminada en \x1e) y sale con $STUB_CURL_RC (0 por defecto; 7 = no conecta).
+{ printf '%s\x1f' "$@"; printf '\x1e'; } >>"${STUB_CURL_LOG:-/dev/null}"
+exit "${STUB_CURL_RC:-0}"

@@ -34,6 +34,10 @@
 #      Siempre deja un resumen en LOG.md (y lo confirma con Task: T-08 / Req: N/A, salvo que el árbol quede sucio).
 #      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
 #   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
+#   6. Al detenerse (también si se cae), si hay NTFY_TOPIC envía un aviso a $NTFY_URL/$NTFY_TOPIC (T-21): motivo de
+#      parada, tareas hechas/fallidas y próxima acción. Prioridad alta y tag de alerta si requiere intervención
+#      (bloqueo, fallo, límite de presupuesto, despliegue o aprobación pendiente); normal si terminó bien. Si ntfy falla
+#      solo se anota en el registro: la corrida no cambia su resultado. En --dry-run muestra el aviso sin enviarlo.
 #
 # Guardas mecánicas sobre los procesos hijos: solo el perfil AWS `autopilot` (usuario IAM autopilot-tests, DEC-010/DEC-015:
 # datos de la tabla y admin del user pool de PedidosB2B-dev) copiado a un AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE
@@ -43,12 +47,24 @@
 #
 # Variables: AUTOPILOT_MAX_TASKS (10), AUTOPILOT_BUDGET_SECONDS (21600), AUTOPILOT_MAX_FAILURES (2, por tarea), AUTOPILOT_REVIEWER (auto|codex|claude),
 #            AUTOPILOT_IMPL_MODEL, AUTOPILOT_REVIEW_MODEL, AUTOPILOT_MAX_USD (tope por invocación de claude, opcional),
-#            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
+#            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials),
+#            NTFY_TOPIC (sin valor: no se avisa), NTFY_URL (https://ntfy.sh).
+# Configuración local: AUTOPILOT_CONFIG (por defecto ~/.config/autopilot/autopilot.config.sh, fuera del repo porque el
+# tema de ntfy es secreto: quien lo conoce lee los avisos). Es un script de bash que puede fijar cualquiera de las
+# variables anteriores, p. ej. `NTFY_TOPIC=autopilot-xxxxxxxx`. Las variables no se pasan a los procesos hijos.
 # Registros de cada corrida: .autopilot/<fecha>/ (fuera de git).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
+
+# ---------- Configuración local (fuera de git) ----------
+AUTOPILOT_CONFIG=${AUTOPILOT_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/autopilot/autopilot.config.sh}
+NTFY_TOPIC=${NTFY_TOPIC:-}
+# shellcheck disable=SC1090
+if [ -r "$AUTOPILOT_CONFIG" ]; then . "$AUTOPILOT_CONFIG"; fi
+NTFY_URL=${NTFY_URL:-https://ntfy.sh}
+export -n NTFY_TOPIC NTFY_URL 2>/dev/null || true   # el tema no llega al implementador ni al revisor
 
 MAX_TASKS=${AUTOPILOT_MAX_TASKS:-10}
 BUDGET=${AUTOPILOT_BUDGET_SECONDS:-21600}
@@ -89,6 +105,9 @@ declare -A FAILS=()
 DEPLOY_PENDING=() # tareas que esperan un despliegue del usuario
 REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces)
 SKIPPED=""        # tareas que el implementador dejó sin cambios (separadas por comas; no se vuelven a elegir)
+ABANDONED=()      # tareas abandonadas por el tope de fallos
+USER_WAIT=()      # tareas de spec que esperan la aprobación del usuario
+NOTIFIED=0        # 1 = el aviso ntfy de la parada ya se intentó
 
 log() { # a la terminal y, en una corrida real, a live.log
   local line; line=$(printf '%s autopilot: %s' "$(date '+%H:%M:%S')" "$*")
@@ -107,6 +126,54 @@ deploy_pending_since() {
     | grep -qviE '^\+- Pendiente deploy:[[:space:]]*(ningun[oa]?|nada|no aplica|n/?a|—|-)([[:space:].,;:()]|$)'
 }
 
+# ---------- Aviso ntfy al detenerse (T-21) ----------
+ntfy_send() { # $1 = prioridad (high|default), $2 = tags, $3 = título, $4 = mensaje. Nunca falla.
+  NOTIFIED=1
+  [ -n "$NTFY_TOPIC" ] || return 0
+  if [ "$DRY_RUN" = 1 ]; then
+    printf '\n== Aviso ntfy que se enviaría (no enviado: --dry-run; prioridad %s, tags %s) ==\n%s\n%s\n' "$1" "$2" "$3" "$4"
+    return 0
+  fi
+  local err=/dev/null rc=0
+  [ -d "$RUN_DIR" ] && err="$RUN_DIR/ntfy.err"
+  curl -fsS --max-time 15 -o /dev/null -H "Title: $3" -H "Priority: $1" -H "Tags: $2" \
+    --data-binary "${4:0:3800}" "$NTFY_URL/$NTFY_TOPIC" 2>>"$err" || rc=$?
+  if [ "$rc" = 0 ]; then log "aviso ntfy enviado (prioridad $1)"
+  else log "aviso: ntfy falló (código $rc); la corrida no cambia su resultado"; fi
+  return 0
+}
+notify_stop() { # aviso de la parada normal (tras write_summary)
+  local repo intervention=0 next
+  repo=$(basename "$ROOT")
+  [ "$ABNORMAL" = 1 ] && intervention=1
+  case "$STOP_REASON" in presupuesto*) intervention=1 ;; esac
+  [ "${#DEPLOY_PENDING[@]}" -gt 0 ] && intervention=1
+  [ "${#USER_WAIT[@]}" -gt 0 ] && intervention=1
+  if [ "$(node -e 'console.log(require(process.argv[1]).tasks.some(t=>t.status==="blocked"))' "$ROOT/spec/TASKS.json")" = true ]; then
+    intervention=1; next="resolver el bloqueo (${STOP_REASON}) y relanzar el autopilot"
+  elif [ "${#ABANDONED[@]}" -gt 0 ]; then next="revisar los fallos de ${ABANDONED[*]} en .autopilot/${RUN_ID}/ y relanzar"
+  elif [ "$ABNORMAL" = 1 ]; then next="revisar a mano: ${STOP_REASON}"
+  elif [ "${#DEPLOY_PENDING[@]}" -gt 0 ]; then next="correr npm run deploy:dev (${DEPLOY_PENDING[*]}) y relanzar el autopilot"
+  elif [ "${#USER_WAIT[@]}" -gt 0 ]; then next="aprobar el diff de tests/acceptance/ de ${USER_WAIT[*]}"
+  elif [ "$intervention" = 1 ]; then next="relanzar el autopilot para seguir (límite alcanzado)"
+  else next="revisar el resumen en spec/LOG.md y los veredictos en TASKS.json; decidir accepted"; fi
+  local hecho; hecho=$(printf '%s; ' "${SUMMARY[@]:-nada}"); hecho=${hecho%; }
+  local fallidas="${FAILURES} fallo(s)"; [ "${#ABANDONED[@]}" -gt 0 ] && fallidas+="; abandonadas: ${ABANDONED[*]}"
+  local msg
+  msg=$(printf 'Motivo de parada: %s\nHechas: %s tarea(s). %s\nFallidas: %s\nPróxima acción: %s\nCorrida %s (registros en .autopilot/%s/)' \
+    "$STOP_REASON" "$TASKS_DONE" "$hecho" "$fallidas" "$next" "$RUN_ID" "$RUN_ID")
+  if [ "$intervention" = 1 ]; then ntfy_send high warning,rotating_light "autopilot $repo: requiere tu intervención" "$msg"
+  else ntfy_send default white_check_mark "autopilot $repo: terminó bien" "$msg"; fi
+}
+on_exit() { # $1 = código de salida; si la corrida se cae antes del aviso normal, avisa igual
+  rm -rf "${AWS_SANDBOX:-}"
+  if [ "$NOTIFIED" = 0 ] && [ "$1" != 0 ]; then
+    ntfy_send high warning,rotating_light "autopilot $(basename "$ROOT"): se detuvo inesperadamente" \
+      "El autopilot terminó con código $1 antes de anotar su resumen${STOP_REASON:+ (motivo: $STOP_REASON)}.
+Próxima acción: revisar la terminal y .autopilot/${RUN_ID}/ (live.log, ntfy.err) y git status; relanzar el autopilot."
+  fi
+}
+
 # ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
 export AUTOPILOT=1
 export CI=1
@@ -115,7 +182,7 @@ AUTOPILOT_AWS_PROFILE=${AUTOPILOT_AWS_PROFILE:-autopilot}
 AWS_SOURCE=${AUTOPILOT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
 unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE AWS_DEFAULT_REGION
 AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/autopilot-aws.XXXXXX")
-trap 'rm -rf "$AWS_SANDBOX"' EXIT
+trap 'on_exit $?' EXIT
 aws_profile_key() { # $1 = clave; lee la sección [$AUTOPILOT_AWS_PROFILE] del archivo de credenciales de origen
   [ -r "$AWS_SOURCE" ] || return 0
   awk -v sec="[$AUTOPILOT_AWS_PROFILE]" -v key="$1" '
@@ -493,7 +560,7 @@ while :; do
     if [ "$rc" -eq 3 ] || [ "$rc" -eq 4 ] || [ "$rc" -eq 5 ]; then
       SKIPPED="$SKIPPED$ID,"
       if [ "$rc" -eq 4 ]; then DEPLOY_PENDING+=("$ID"); log "$ID espera un despliegue (Pendiente deploy): no cuenta como fallo; se pasa a la siguiente tarea independiente"
-      elif [ "$rc" -eq 5 ]; then log "$ID espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo; se pasa a la siguiente tarea independiente"
+      elif [ "$rc" -eq 5 ]; then USER_WAIT+=("$ID"); log "$ID espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo; se pasa a la siguiente tarea independiente"
       else log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"; fi
       continue
     fi
@@ -501,7 +568,7 @@ while :; do
     log "fallo ${FAILS[$ID]}/$MAX_FAILURES en $ID"
     if [ "${FAILS[$ID]}" -lt "$MAX_FAILURES" ]; then RETRY=$ID
     else
-      SKIPPED="$SKIPPED$ID,"; ABNORMAL=1
+      SKIPPED="$SKIPPED$ID,"; ABNORMAL=1; ABANDONED+=("$ID")
       SUMMARY+=("$ID abandonada en esta corrida tras ${FAILS[$ID]} fallos (tope por tarea $MAX_FAILURES)")
       log "$ID llegó al tope de $MAX_FAILURES fallos: se abandona en esta corrida; se pasa a la siguiente tarea independiente"
     fi
@@ -510,5 +577,6 @@ done
 
 log "parada: $STOP_REASON"
 write_summary
+notify_stop
 [ "$DRY_RUN" = 1 ] && rmdir "$RUN_DIR" 2>/dev/null
 exit "$ABNORMAL"   # 1 si la parada requiere intervención

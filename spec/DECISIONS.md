@@ -269,3 +269,19 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: 2026-10-18, en [REDACTED_AWS_ACCOUNT_DEMO]: `sts get-caller-identity --profile autopilot` → `arn:aws:iam::[REDACTED_AWS_ACCOUNT_DEMO]:user/autopilot-tests`; `dynamodb list-tables`, `s3 ls`, `iam get-user-policy` → AccessDenied; `AWS_PROFILE=autopilot npm run smoke` 2/2; `scripts/autopilot.sh --dry-run` ok (guardas: `AWS_PROFILE=autopilot`, llave [REDACTED_ACCESS_KEY_ID_3]); llave vieja [REDACTED_ACCESS_KEY_ID_4] Inactive → borrada; usuario `night-loop-tests` → NoSuchEntity tras el despliegue final.
 - Confirmación: infra/test/stack.test.ts (`autopilot-tests`, acciones exactas, sin AccessKey); scripts/test/autopilot-tasks.test.ts (el hijo solo ve `[autopilot]`).
 - Revisar si: se pasa a credenciales temporales (rol asumido) en lugar de la llave larga.
+
+## DEC-016 Avisos del autopilot por ntfy.sh, con el tema fuera del repo
+- Estado: proposed
+- Alcance: global (tooling)
+- Fecha: 2026-10-18 · Aprobador: pendiente (pedido por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Problema: el autopilot corre de noche sin supervisión; el usuario solo se entera del resultado al abrir LOG.md. Pidió un aviso push al detenerse, con más urgencia si hace falta que intervenga. ntfy.sh es un servicio externo fuera de R-01 (R-01 es el stack del producto; esto es tooling del protocolo, pedido expresamente por el usuario).
+- Impulsores: T-08, T-21
+- Alternativas consideradas:
+  1. POST a `https://ntfy.sh/$NTFY_TOPIC` con `curl` desde el orquestador (no desde el implementador) — a favor: sin cuenta ni llaves, app móvil gratuita, prioridad y tags nativos; en contra: el tema es la única protección (quien lo conoce lee los avisos) y los mensajes pasan por un servidor público.
+  2. Correo o Slack — a favor: canales conocidos; en contra: credenciales, más configuración y sin prioridad push.
+- Decisión: Usaremos la alternativa 1. `NTFY_TOPIC` (y opcionalmente `NTFY_URL`) se leen de `AUTOPILOT_CONFIG` (por defecto `~/.config/autopilot/autopilot.config.sh`, fuera de git; `autopilot.config.sh` además en `.gitignore`); no se exportan a los procesos hijos ni se escriben en LOG.md ni en los registros. El mensaje lleva motivo de parada, tareas hechas/fallidas y próxima acción; no lleva diffs, código ni credenciales. Prioridad `high` + tags `warning,rotating_light` si la parada requiere intervención (código 1, tarea bloqueada o abandonada, límite de presupuesto, despliegue o aprobación pendiente, caída antes del resumen); `default` + `white_check_mark` si terminó bien. `curl --max-time 15`; si falla, solo se anota en el registro de la corrida y el resultado de la corrida no cambia. En `--dry-run` se muestra el aviso sin enviarlo.
+  No usaremos la alternativa 2 porque exige credenciales y no distingue urgencia en el teléfono.
+- Consecuencias: buenas: el usuario sabe al despertar si debe intervenir. Malas: dependencia de un servicio público (si cae, no hay aviso; LOG.md sigue siendo la fuente). Neutrales: el implementador sigue sin red (`curl` denegado).
+- Dependencias: depende de DEC-010 (guardas de los hijos) · afecta a scripts/autopilot.sh, scripts/test/autopilot-tasks.test.ts, AGENTS.md, .gitignore, T-21
+- Confirmación: scripts/test/autopilot-tasks.test.ts (`aviso ntfy al detenerse (T-21)`, con doble de curl; ninguna prueba lee la configuración real).
+- Revisar si: los avisos necesitan más detalle, o se quiere un servidor ntfy propio o autenticado.

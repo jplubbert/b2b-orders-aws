@@ -8,3 +8,5 @@ dist/
 !app/src/app/dist/
 *.tsbuildinfo
 .autopilot/
+# configuración local del autopilot (tema de ntfy: secreto); va en ~/.config/autopilot/
+autopilot.config.sh

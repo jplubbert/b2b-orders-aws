@@ -14,7 +14,7 @@ case ",${STUB_NOOP:-}," in *",$id,"*) mode=noop ;; esac   # STUB_NOOP=T-03,…: 
 case ",${STUB_FAIL:-}," in *",$id,"*) mode=fail ;; esac   # STUB_FAIL=T-03,…: falla solo en esas tareas
 case ",${STUB_DEPLOY:-}," in *",$id,"*) mode=deploy ;; esac   # STUB_DEPLOY=T-03,…: in_progress + Pendiente deploy
 case ",${STUB_WAIT:-}," in *",$id,"*) mode=wait ;; esac   # STUB_WAIT=T-03,…: in_progress + "Pendiente deploy: ninguno"
-{ echo "AWS_PROFILE=$AWS_PROFILE"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".autopilot/stub-env-$id.txt"
+{ echo "AWS_PROFILE=$AWS_PROFILE"; echo "NTFY_TOPIC=${NTFY_TOPIC:-}"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".autopilot/stub-env-$id.txt"
 echo '{"type":"system","subtype":"init","model":"stub","session_id":"s1"}'
 echo '{"type":"assistant","message":{"content":[{"type":"text","text":"Empiezo la tarea"},{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"npm run test:acceptance"}}]}}'
 echo '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"u1","content":"Tests 25 passed"}]}}'
