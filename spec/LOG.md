@@ -178,3 +178,11 @@
 - En curso / roto: falta la parte manual del `verify` de T-04: REQ-002 E3 en el teléfono. No se hizo: requiere el teléfono y desactivar el catálogo de `dev`, fuera del alcance de esta sesión.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario verifica E3 en el teléfono: `npm run app`, login almacen1 → ve Arroz y Yerba con presentación y `$1.300`/`$4.500`; desactivar ambos productos (`active=false` en la tabla de `dev`), deslizar hacia abajo → "No hay productos disponibles"; `npm run seed` y deslizar → vuelven. Con el resultado registrado en LOG, evidencia de T-04 → `verified_auto` y revisión independiente (diff del commit `Task: T-04`, REQ-002, DEC-005, DEC-006).
+
+## 2026-10-17 23:07 · night-loop (scripts/night-loop.sh)
+- Hecho: T-04: el implementador terminó en in_progress (código 0); T-04: el implementador terminó en in_progress (código 0). Corrida 2026-10-17_230411 (3 min, 0 tarea(s) completada(s), 2 fallo(s)); registros en .night-loop/2026-10-17_230411/.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en 6303d58.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: 2 fallos (tope 2).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
