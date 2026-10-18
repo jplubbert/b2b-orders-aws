@@ -251,3 +251,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: correr `scripts/night-loop.sh` (revisa T-05 y T-07, luego T-06); el usuario decide `accepted` de T-03 y, al aceptar en lote, hace las verificaciones de "Pendiente manual" (T-04, T-05, T-07).
+
+## 2026-10-18 00:08 · revisor independiente (codex exec codex-cli 0.162.0) vía night-loop
+- Hecho: revisión independiente de T-05 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-05); salida íntegra en .night-loop/2026-10-18_000738/T-05-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
