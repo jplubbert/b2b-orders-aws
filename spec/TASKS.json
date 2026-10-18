@@ -617,7 +617,7 @@
         "DEC-010"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "aws sts get-caller-identity --profile pedidos-demo (cuenta [REDACTED_AWS_ACCOUNT_DEMO]) && npm run bootstrap:dev && npm run deploy:dev && npm run smoke && npm run test:acceptance && npm run check:spec; luego autopilot con night-loop en la cuenta nueva y scripts/autopilot.sh --dry-run",
       "blocked_by": null,
       "notes": "2026-10-18: perfil pedidos-demo en ~/.aws/config; bootstrap (CDKToolkit) + deploy:dev (pila PedidosB2B-dev, cuenta [REDACTED_AWS_ACCOUNT_DEMO]) + seed ok; smoke 2/2 y aceptación 41/41 contra la cuenta nueva. package.json: bootstrap/deploy con pedidos-demo; seed, order:set-status, smoke y test:acceptance usan `${AWS_PROFILE:-pedidos-demo}` (respeta night-loop). La pila de [REDACTED_AWS_ACCOUNT_MAIN] sigue intacta (UPDATE_COMPLETE). Pendiente: autopilot (perfil night-loop apunta aún a la cuenta principal), a la espera del visto bueno del usuario. 2026-10-18 (aprobado por el usuario, con cambio: desactivar la llave vieja en vez de guardarla): llave nueva de night-loop-tests en [REDACTED_AWS_ACCOUNT_DEMO] en [night-loop]; la de [REDACTED_AWS_ACCOUNT_MAIN] → Inactive. Verificado; DEC-014 aceptada por José Pedro Lübbert (Pepe). verified_auto; pendiente revisión independiente. 2026-10-18: el usuario verificó el demo en el teléfono contra [REDACTED_AWS_ACCOUNT_DEMO] y pidió limpiar la cuenta principal: borradas en [REDACTED_AWS_ACCOUNT_MAIN] la llave inactiva y el usuario night-loop-tests, la pila PedidosB2B-dev y CDKToolkit con su bucket (ver LOG).",
@@ -625,6 +625,13 @@
         "command": "aws sts get-caller-identity --profile pedidos-demo && npm run bootstrap:dev && npm run deploy:dev && npm run smoke && npm run test:acceptance && aws sts get-caller-identity --profile night-loop && AWS_PROFILE=night-loop npm run smoke && scripts/autopilot.sh --dry-run && npm run check:spec",
         "result": "pedidos-demo → assumed-role/OrganizationAccountAccessRole en [REDACTED_AWS_ACCOUNT_DEMO]; bootstrap ok; deploy:dev ok (PedidosB2B-dev + seed); smoke 2/2; aceptación 41/41; night-loop → user/night-loop-tests en [REDACTED_AWS_ACCOUNT_DEMO], dynamodb list-tables/s3 ls/iam get-user-policy AccessDenied; llave anterior de [REDACTED_AWS_ACCOUNT_MAIN] Inactive; smoke con night-loop 2/2; autopilot --dry-run ok (llave de la cuenta nueva); check:spec ok. Pila de [REDACTED_AWS_ACCOUNT_MAIN] intacta.",
         "commit": "7a6897c"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Comprobaciones locales satisfactorias: 301 pruebas, lint, typecheck y check:spec. Operaciones AWS y autorizaciones posteriores no verificadas independientemente. b07e5fc amplía el alcance original con una limpieza cuya autorización solo consta en el registro del implementador; evidence.result conserva además la afirmación anterior de que la pila principal está intacta.",
+        "date": "2026-10-18"
       }
     },
     {
