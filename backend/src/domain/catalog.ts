@@ -1,13 +1,9 @@
-/** Producto del catálogo; `unitPrice` en pesos CLP enteros (DEC-006). */
-export interface Product {
-  productId: string;
-  name: string;
-  presentation: string;
-  unitPrice: number;
-  active: boolean;
-}
+import type { Product as CatalogItem } from '../generated/graphql.js';
 
-export type CatalogItem = Omit<Product, 'active'>;
+export type { CatalogItem };
+
+/** Producto guardado: el `Product` del contrato (DEC-002) más `active`; `unitPrice` en pesos CLP enteros (DEC-006). */
+export type Product = CatalogItem & { active: boolean };
 
 const byName = new Intl.Collator('es-CL', { sensitivity: 'base', numeric: true });
 
