@@ -605,3 +605,15 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Verifiqué el corte 3 en el teléfono: almacen1 pide, el distribuidor lo pasa a Enviado desde el panel y almacen1 lo ve Enviado. Regístralo y acepto en lote T-13 a T-17: José Pedro Lübbert. Lleva también el arreglo de T-17 a sdd-base y haz push allá."
+- Hecho: registro de la verificación manual del corte 3 (`evidence.manual_result` en T-15 y T-16; sale `manual_pending`) y de la aceptación en lote (solo spec/TASKS.json y esta bitácora; sin código). El arreglo de T-17 (85082f4) se llevó a sdd-base: commit e7998b4, push a origin/master (npm test 80/80; las 2 pruebas nuevas fallan sin el cambio).
+- Verificación manual (DEC-011): José Pedro Lübbert, 2026-10-18, en el teléfono: criterio de éxito del corte 3 OK (almacen1 pide → el distribuidor lo pasa a Enviado desde el panel → almacen1 lo ve Enviado). De la lista de T-15 no se mencionaron expresamente el filtro por estado, la reapertura de Expo Go sin credenciales ni REQ-009 E3 (usuario sin grupo).
+- Aceptación: **José Pedro Lübbert**, 2026-10-18 — acepta en lote T-13, T-14, T-15, T-16 y T-17 → `accepted` (campo `acceptance` en TASKS.json). Corte 3 cerrado.
+- Verificado y cómo: `npm run check:spec` ok; `autopilot-tasks manual-pending` ya no lista T-15 ni T-16.
+- Pendiente manual (de cortes anteriores, siguen en TASKS.json): T-04, T-05, T-06, T-07.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: ninguna tarea elegible; el usuario propone el siguiente corte o cierra las verificaciones manuales pendientes de T-04..T-07. Sin push (main va 23 commits por delante de origin/main).

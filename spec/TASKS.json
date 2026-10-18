@@ -438,7 +438,7 @@
         "DEC-013"
       ],
       "depends_on": [],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance: un caso por ejemplo de API citado; req_001..004 siguen pasando; los nuevos fallan por la razón esperada (campo inexistente o grupo inexistente)",
       "evidence": {
         "command": "npm run lint; npm run typecheck; npm run test:acceptance (perfil night-loop fijado por el orquestador, DEC-010, contra PedidosB2B-dev); npm run smoke",
@@ -447,12 +447,16 @@
         "user_approval": "2026-10-18, José Pedro Lübbert: \"Apruebo el diff de tests/acceptance/ (5916ae7) y esas interpretaciones\" (interpretaciones de REQ-010 E1/E2/E5, REQ-009 E6 y REQ-011 E5 registradas en notes)."
       },
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: pruebas escritas (commit 5916ae7): req_009_roles (E5 ×2, E6 ×3, E3 por API como borde con el usuario sin grupo), req_010_panel (E1, E2, E5), req_011_estado (E1–E4, E5 ×2: id inexistente y customerId de otro almacén, E6); 16 casos nuevos. Interpretaciones: REQ-010 E1 y E5 usan clientes desechables en lugar de almacen1/almacen2 (S-14); REQ-010 E2 prepara el ENVIADO con order:set-status para no depender de REQ-011; REQ-010 E5 se verifica en allOrders (el distribuidor no tiene order(id), el detalle sale del panel cargado); \"sin pedido creado\" de REQ-009 E6 y REQ-011 E5 se mide con el largo de allOrders del distribuidor. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario José Pedro Lübbert aprueba el diff de tests/acceptance/ (5916ae7) y las interpretaciones → verified_auto. Pendiente: revisión independiente.",
+      "notes": "Corte 3. Propuesta 2026-10-18. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: pruebas escritas (commit 5916ae7): req_009_roles (E5 ×2, E6 ×3, E3 por API como borde con el usuario sin grupo), req_010_panel (E1, E2, E5), req_011_estado (E1–E4, E5 ×2: id inexistente y customerId de otro almacén, E6); 16 casos nuevos. Interpretaciones: REQ-010 E1 y E5 usan clientes desechables en lugar de almacen1/almacen2 (S-14); REQ-010 E2 prepara el ENVIADO con order:set-status para no depender de REQ-011; REQ-010 E5 se verifica en allOrders (el distribuidor no tiene order(id), el detalle sale del panel cargado); \"sin pedido creado\" de REQ-009 E6 y REQ-011 E5 se mide con el largo de allOrders del distribuidor. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario José Pedro Lübbert aprueba el diff de tests/acceptance/ (5916ae7) y las interpretaciones → verified_auto. Pendiente: revisión independiente. 2026-10-18: aceptada en lote por José Pedro Lübbert (T-13..T-17) → accepted.",
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "approved",
         "findings": [],
         "notes": "Cobertura revisada para el alcance de spec de T-13. Lint, typecheck, check:spec y npm test pasan. No ejecuté aceptación contra AWS; los resultados declarados de req_001..004 y los fallos esperados de los nuevos casos no quedaron corroborados independientemente. Sin hallazgos de alcance ni violaciones de las DEC citadas. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
     },
@@ -474,10 +478,10 @@
       "depends_on": [
         "T-13"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm test + npm run deploy:dev (en autopilot: `- Pendiente deploy:` en LOG) + npm run test:acceptance completo (req_001..004 y req_009..011) + npm run smoke",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 (autopilot): implementada en ef9c531; antes del deploy: lint ok, typecheck ok, npm test vitest 162/162 + jest 105/105; test:acceptance contra el dev sin desplegar 25 pasan (req_001..004), 3 fallan y 13 se omiten igual que en T-13 (falta el grupo `distribuidores` y allOrders/setOrderStatus); smoke 2/2. Queda in_progress hasta `npm run deploy:dev` + test:acceptance completo + smoke. 2026-10-18: a pedido de José Pedro Lübbert, deploy:dev desde la sesión interactiva (perfil default, us-east-1, R-04); test:acceptance 41/41, smoke 2/2 → verified_auto. Pendiente: revisión independiente.",
+      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 (autopilot): implementada en ef9c531; antes del deploy: lint ok, typecheck ok, npm test vitest 162/162 + jest 105/105; test:acceptance contra el dev sin desplegar 25 pasan (req_001..004), 3 fallan y 13 se omiten igual que en T-13 (falta el grupo `distribuidores` y allOrders/setOrderStatus); smoke 2/2. Queda in_progress hasta `npm run deploy:dev` + test:acceptance completo + smoke. 2026-10-18: a pedido de José Pedro Lübbert, deploy:dev desde la sesión interactiva (perfil default, us-east-1, R-04); test:acceptance 41/41, smoke 2/2 → verified_auto. Pendiente: revisión independiente. 2026-10-18: aceptada en lote por José Pedro Lübbert (T-13..T-17) → accepted.",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test (autopilot, d2f16a3) + npm run deploy:dev (perfil default, us-east-1) + npm run test:acceptance + npm run smoke",
         "result": "lint ok; typecheck ok; vitest 162/162 + jest 105/105 (autopilot). deploy:dev ok 2026-10-18 (PedidosB2B-dev, 58,8 s; .env.dev escrito; seed: Yerba 1 kg, Arroz 1 kg, almacen1, almacen2, distribuidor@demo.test). test:acceptance 7 archivos, 41/41 pasan (req_001..004 sin regresión; req_009 E5–E6 y usuario sin grupo, req_010 E1/E2/E5, req_011 E1–E6). smoke 2/2.",
@@ -488,6 +492,10 @@
         "verdict": "approved",
         "findings": [],
         "notes": "Revisión limitada al backend de T-14. Comprobaciones locales satisfactorias: lint, typecheck, check:spec y npm test (162 Vitest y 105 Jest). No se corroboraron de forma independiente el despliegue, la aceptación contra AWS ni el humo declarados. Sin cambios fuera de alcance ni violaciones observadas de las decisiones citadas. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
     },
@@ -507,21 +515,25 @@
       "depends_on": [
         "T-14"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + REQ-009 E1, E4 y panel con filtro en el teléfono (manual, DEC-011)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 1add24d → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: AllOrders trae las líneas para el detalle de T-16 (S-19); las filas aún no navegan (T-16); excepción de `dist/` en .gitignore raíz y eslint.config.js para la ruta app/src/app/dist.",
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 1add24d → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: AllOrders trae las líneas para el detalle de T-16 (S-19); las filas aún no navegan (T-16); excepción de `dist/` en .gitignore raíz y eslint.config.js para la ruta app/src/app/dist. 2026-10-18: verificación manual del corte 3 en el teléfono OK (evidence.manual_result). 2026-10-18: aceptada en lote por José Pedro Lübbert (T-13..T-17) → accepted.",
       "evidence": {
         "command": "npm run codegen; timeout 40 npm exec -w app -- expo start --offline (regenera tipos de rutas); npm run lint; npm run typecheck; npm test; npm exec -w app -- expo export --platform android; npm run test:acceptance y npm run smoke (perfil fijado por el orquestador, DEC-010, contra PedidosB2B-dev)",
         "result": "codegen: solo cambia app/src/lib/generated. lint ok; typecheck ok; vitest 162/162 (incluye codegen al día) + jest 125/125 (antes 105; nuevos: session.test REQ-009 E1–E4, E3 al reabrir y S-25; startup.test distribuidor con sesión → /dist con el router real; dist.test REQ-010 E1–E4, filtro de 6 opciones, carga, error, refresco con filtro, respuesta vieja descartada, menú de cuenta). expo export android ok (2461 módulos). test:acceptance 41/41 y smoke 2/2 (sin regresión; T-15 no toca backend).",
         "commit": "1add24d",
-        "manual_pending": "REQ-009 E1, E3, E4 y REQ-010 en el teléfono: npm run app, login distribuidor@demo.test → panel \"Pedidos\" con los pedidos de almacen1/almacen2 (N°, \"Almacén C-ALMACEN…\", fecha, total, estado); tocar \"Enviado\" → solo los ENVIADO (o \"No hay pedidos en este estado\"); \"Todos\" → vuelven todos; cerrar y reabrir Expo Go → panel sin pedir credenciales; menú de cuenta → \"Cerrar sesión\" → inicio; login almacen1 → catálogo como antes. (E3 sin grupo solo si se crea a mano un usuario sin grupo en Cognito: \"Tu usuario no tiene acceso a la app\" y sigue en inicio.)"
+        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono: \"Verifiqué el corte 3 en el teléfono: almacen1 pide, el distribuidor lo pasa a Enviado desde el panel y almacen1 lo ve Enviado.\" Cubre el acceso del distribuidor a su panel \"Pedidos\" (REQ-009 E1) y del almacenero a su flujo, con cambio de usuario. No se mencionaron expresamente el filtro por estado, la reapertura de Expo Go sin credenciales ni E3 (usuario sin grupo)."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "approved",
         "findings": [],
         "notes": "Verificación local: lint, typecheck y check:spec correctos; Vitest 162/162 y Jest 125/125. Pendiente validación manual en teléfono. No se ejecutaron aceptación contra AWS ni exportación Android. REQ-009 E5/E6 y REQ-010 E5 quedan fuera del alcance de implementación de T-15. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
     },
@@ -541,21 +553,25 @@
       "depends_on": [
         "T-15"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + criterio de éxito del corte 3 en el teléfono (manual, DEC-011)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 7d3b7ca → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: la lista del panel pasa a PanelProvider (compartida con el detalle; el panel la vacía al montarse); id fuera de la lista → \"Pedido no encontrado\" + \"Volver a Pedidos\" (como REQ-008 E5); botones de estado deshabilitados mientras se guarda; elegir el estado actual llama igual a setOrderStatus (S-24, no es error). README.md nuevo (no existía) con el guion de demo del corte 3.",
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 7d3b7ca → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: la lista del panel pasa a PanelProvider (compartida con el detalle; el panel la vacía al montarse); id fuera de la lista → \"Pedido no encontrado\" + \"Volver a Pedidos\" (como REQ-008 E5); botones de estado deshabilitados mientras se guarda; elegir el estado actual llama igual a setOrderStatus (S-24, no es error). README.md nuevo (no existía) con el guion de demo del corte 3. 2026-10-18: verificación manual del corte 3 en el teléfono OK (evidence.manual_result). 2026-10-18: aceptada en lote por José Pedro Lübbert (T-13..T-17) → accepted.",
       "evidence": {
         "command": "npm run codegen; timeout 40 npm exec -w app -- expo start --offline (regenera tipos de rutas); npm run lint; npm run typecheck; npm test; npm exec -w app -- expo export --platform android; npm run test:acceptance y npm run smoke (perfil fijado por el orquestador, DEC-010, contra PedidosB2B-dev)",
         "result": "codegen: solo cambia app/src/lib/generated (SetOrderStatus). lint ok; typecheck ok; vitest 162/162 + jest 137/137 (antes 125; nuevos: dist-order.test REQ-010 E5 (título \"Pedido <número>\", almacén, líneas $4.500/$1.300, total $15.500, sin consulta nueva), id fuera del panel, 5 botones con el actual marcado, REQ-011 E1 en detalle y en el panel montado debajo sin consulta nueva, S-06 al volver, E3 mismo estado sin error, E7 \"No se pudo cambiar el estado\" conservando el anterior, reintento quita el error, un cambio a la vez; dist.test: fila → /dist/order/[id] y ruta declarada en el layout). Mutación (replaceOrder anulado) → 4 casos fallan; revertida. expo export android ok (2463 módulos). test:acceptance 41/41 y smoke 2/2 (sin regresión; T-16 no toca backend).",
         "commit": "7d3b7ca",
-        "manual_pending": "Criterio de éxito del corte 3 en el teléfono (guion en README.md): npm run app; login almacen1@demo.test → confirmar 2 Yerba + 5 Arroz → Mis pedidos lo muestra \"Recibido\"; Cerrar sesión; login distribuidor@demo.test → filtro \"Recibido\" → tocar el pedido → \"Pedido <N°>\" con Almacén C-ALMACEN1, líneas $4.500 y $1.300, total $15.500 → \"Enviado\" (sin confirmación) → la etiqueta cambia; volver: con \"Recibido\" ya no aparece, con \"Todos\" figura \"Enviado\"; Cerrar sesión; login almacen1 → Mis pedidos, deslizar → \"Enviado\". Sin order:set-status. (E7 opcional: modo avión en el detalle → tocar un estado → \"No se pudo cambiar el estado\" y conserva el anterior.)"
+        "manual_result": "2026-10-18, José Pedro Lübbert, en el teléfono: \"Verifiqué el corte 3 en el teléfono: almacen1 pide, el distribuidor lo pasa a Enviado desde el panel y almacen1 lo ve Enviado.\" (criterio de éxito del corte 3, REQ-010/REQ-011)."
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "approved",
         "findings": [],
         "notes": "Comprobaciones locales satisfactorias. No se verificaron la demo en teléfono, la exportación Android ni la aceptación contra AWS; la evidencia declarada por el implementador no se considera ejecución independiente.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
     },
@@ -569,10 +585,10 @@
         "DEC-011"
       ],
       "depends_on": [],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm test (autopilot-tasks: casos nuevos de \"Pendiente deploy: ninguno\" en tarea de spec y de implementación) && npm run check:spec && scripts/autopilot.sh --dry-run",
       "blocked_by": null,
-      "notes": "Pedida por José Pedro Lübbert el 2026-10-18 como tarea de tooling. 2026-10-18: implementada en 85082f4 → verified_auto; pendiente revisión independiente (la hace el autopilot).",
+      "notes": "Pedida por José Pedro Lübbert el 2026-10-18 como tarea de tooling. 2026-10-18: implementada en 85082f4 → verified_auto; pendiente revisión independiente (la hace el autopilot). 2026-10-18: aceptada en lote por José Pedro Lübbert (T-13..T-17) → accepted. El mismo arreglo se llevó a sdd-base (e7998b4, push a origin/master).",
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm run check:spec && scripts/autopilot.sh --dry-run",
         "result": "lint ok; typecheck ok; vitest 139/139 (autopilot-tasks 41/41, con 2 casos nuevos: tarea de spec con \"Pendiente deploy: ninguno\" → \"espera que el usuario apruebe el diff\", sin fallo, resumen con Pendiente deploy \"ninguna\"; tarea tooling con la misma línea → fallo 1/2, no despliegue) + jest 105/105; los 2 casos nuevos fallan con el scripts/autopilot.sh anterior (HEAD 4b6ca3f); check:spec ok; --dry-run ok (revisaría T-13).",
@@ -583,6 +599,10 @@
         "verdict": "approved",
         "findings": [],
         "notes": "Sin hallazgos bloqueantes. Pasaron lint, typecheck, check:spec, 139 pruebas Vitest y 105 Jest. Los cinco valores vacíos pedidos fueron comprobados contra el filtro. --dry-run no pudo verificarse por la restricción de escritura en /tmp. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert",
         "date": "2026-10-18"
       }
     }
