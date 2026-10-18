@@ -550,3 +550,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-14).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Sí, despliega dev, corre aceptación y humo, registra la evidencia y pasa T-14 a verified_auto. Después vuelve a lanzar el autopilot para T-15 y T-16."
+- Hecho (T-14): `npm run deploy:dev` (perfil `default`, `us-east-1`, R-04) ok: PedidosB2B-dev con el contrato nuevo y el grupo `distribuidores`; seed con `distribuidor@demo.test`. T-14 → `verified_auto` con la evidencia.
+- Verificado y cómo: `npm run test:acceptance` 41/41 (req_001..004 sin regresión, req_009..011 completos); `npm run smoke` 2/2; `npm run check:spec`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: relanzar `scripts/autopilot.sh`: revisión independiente de T-14, luego T-15 y T-16 (solo app).
