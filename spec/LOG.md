@@ -94,3 +94,11 @@
 - En curso / roto: nada roto. T-01 `verified_auto`, pendiente de revisión independiente.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: (1) revisión independiente de T-01 con contexto limpio (diff dec433c..f9124a3, REQ-001, REQ-002, DEC-001..008) → `reviewed`; (2) aceptación del usuario; con T-01 cerrada, T-03 (tarea de spec) queda elegible.
+
+## 2026-10-17 22:10 · Claude (claude-opus-5-5)
+- Revisión independiente de T-01 (Codex), según lo transcrito por el usuario: **rejected**. Hallazgo: incumple DEC-002, los tipos GraphQL se escribieron a mano en vez de generarse desde `spec/contracts/schema.graphql`. Registrado en `review` de T-01.
+- Hecho (corrección, 8a6dbc7): `npm run codegen` (GraphQL Code Generator, `codegen.ts`) genera `backend/src/generated/graphql.ts` (plugin `typescript`) y `app/src/lib/generated/graphql.ts` (`typescript` + `typescript-operations` sobre las consultas `/* GraphQL */` de `app/src`). Reemplazados los tipos manuales: en el backend, el `Product` del dominio = `Product` del contrato + `active`, y los resolvers de Query se tipan con `Query[campo]`; en la app, `api.ts` usa `Product` y `ListProductsQuery` generados. `scripts/codegen/appsync.graphql` declara directivas y escalares de AppSync solo para la generación. Salida versionada; `scripts/test/codegen.test.ts` corre `graphql-codegen --check` y falla si quedó desactualizada. Dependencias de desarrollo nuevas en la raíz: `@graphql-codegen/cli` 7.4.6, `@graphql-codegen/typescript` 6.1.2, `@graphql-codegen/typescript-operations` 6.1.10, `graphql` 16.14.2 (ya estaba como transitiva).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` 64/64; `graphql-codegen --check` → exit 1 con un archivo generado alterado y exit 0 tras regenerar; `npx expo export --platform android` ok; `npm run check:spec` ok. No redesplegué ni repetí el smoke: el cambio es solo de tipos, sin cambio de comportamiento.
+- En curso / roto: T-01 `verified_auto` (evidencia actualizada, commit 8a6dbc7), pendiente de nueva revisión.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: (1) nueva revisión independiente de T-01 con contexto limpio (diff dec433c..8a6dbc7, REQ-001, REQ-002, DEC-001..008) → `reviewed`; (2) aceptación del usuario.
