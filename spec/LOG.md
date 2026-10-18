@@ -362,3 +362,13 @@
 - Hecho: revisión independiente de T-10 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-10); salida íntegra en .night-loop/2026-10-18_014651/T-10-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 02:10 · Claude (claude-opus-5-5)
+- Hecho (T-11, REQ-008, REQ-007, commit 9e64dbd): ruta `app/src/app/product/[id].tsx` con recuadro de la inicial (S-18), nombre, presentación, precio, `QuantityStepper` sobre el mismo carrito, subtotal y `CartBar`; id fuera del catálogo cargado → "Este producto ya no está disponible" (`StateMessage`) + "Volver al catálogo", sin − / +. El catálogo cargado queda en `CartProvider` (`catalog`/`setCatalog`, S-19); en el catálogo, tocar la fila (fuera de − / +) abre el detalle. Prueba `app/test/product.test.tsx` (REQ-008 E1–E5); `theme.test.tsx` suma la pantalla a E1 y la fila a E4. T-11 → `verified_auto` con evidencia.
+- Interpretaciones (detalles internos): "Volver al catálogo" hace `back` si hay historial y, si no (enlace directo), `replace('/catalog')`; con el catálogo aún sin cargar también rige E5 (sin consulta nueva, S-19); título de la pila "Producto"; navegación con href tipado. Los tipos de rutas de Expo (`app/.expo/types/router.d.ts`, fuera de git) estaban viejos y `typecheck` fallaba con la ruta nueva: se regeneraron arrancando `expo start` unos segundos (en un clon nuevo no aplica).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 + jest 88/88; `npm exec -w app -- expo export --platform android` ok (2459 módulos); `npm run test:acceptance` 25/25; `npm run smoke` 2/2; `npm run check:spec` ok (hook). Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.
+- Pendiente manual: T-11: REQ-008 E1–E2 en el teléfono (Android, Expo Go 57): npm run app, login almacen1 → tocar el nombre de "Arroz 1 kg" → detalle con "A", "Arroz 1 kg", presentación, $1.300, cantidad 0; + dos veces → cantidad 2, subtotal $2.600, barra "Ver carrito · 2 u. · $2.600"; volver → catálogo con 2 en Arroz y la misma barra.
+- Pendiente deploy: ninguno (solo app).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-11 (diff 9e64dbd, REQ-008, REQ-007, DEC-003, DEC-008, DEC-012); T-12 puede tomarse (depende solo de T-09).

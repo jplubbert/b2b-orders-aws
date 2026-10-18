@@ -350,8 +350,13 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "approved_for_impl",
-      "evidence": null,
+      "status": "verified_auto",
+      "evidence": {
+        "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t11-export && npm run test:acceptance && npm run smoke && git show --stat 9e64dbd",
+        "result": "lint ok; typecheck ok; vitest 137/137 + jest 88/88 (app/test/product.test.tsx: REQ-008 E1 tocar \"Arroz 1 kg\" → detalle con nombre, presentación, $1.300, cantidad 0 y recuadro con la inicial (S-18), − / + del catálogo no abre el detalle; E2 + dos veces → cantidad 2, subtotal $2.600 y al volver catálogo y barra con 2 u.; E3 Yerba con 3 → cantidad 3, subtotal $13.500; E4 bajar de 1 a 0 → sale del carrito (\"Carrito vacío\"); E5 id fuera del catálogo o catálogo sin cargar → \"Este producto ya no está disponible\" en StateMessage, sin − / +, \"Volver al catálogo\" (back, o replace a /catalog sin historial); theme.test.tsx E1 con product/[id].tsx y E4 de la fila del catálogo); expo export android ok (2459 módulos); test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
+        "commit": "9e64dbd",
+        "manual_pending": "REQ-008 E1–E2 en el teléfono (Android, Expo Go 57): npm run app, login almacen1 → tocar el nombre de \"Arroz 1 kg\" (no los − / +) → detalle \"Producto\" con recuadro \"A\", \"Arroz 1 kg\", su presentación, $1.300 y cantidad 0; + dos veces → cantidad 2 y subtotal $2.600, barra inferior \"Ver carrito · 2 u. · $2.600\"; volver → el catálogo muestra 2 en Arroz y la misma barra."
+      },
       "review": null,
       "blocked_by": null,
       "depends_on": [
@@ -359,7 +364,7 @@
         "T-10"
       ],
       "verify": "npm run lint && npm run typecheck && npm test && npx expo export --platform android + REQ-008 E1–E2 en el teléfono (manual, DEC-011)",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 02:10: implementada y verificada → verified_auto; único pendiente: verificación manual en el teléfono (DEC-011, evidence.manual_pending). Detalles internos: catalog/setCatalog en CartProvider; \"Volver al catálogo\" con back o replace a /catalog; título \"Producto\"; href tipado { pathname: '/product/[id]', params }; los tipos de rutas (.expo/types, fuera de git) se regeneran con expo start."
     },
     {
       "id": "T-12",
