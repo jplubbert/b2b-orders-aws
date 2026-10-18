@@ -1085,3 +1085,13 @@
 - En curso / roto: T-26 `in_progress` a la espera de que el usuario apruebe el diff de tests/acceptance/ (8ab4a0f).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario revisa y aprueba (o corrige) el diff de tests/acceptance/ de 8ab4a0f y las interpretaciones → T-26 `verified_auto`; el autopilot sigue con T-27 y T-29 (sin dependencias).
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Lee AGENTS.md y ejecuta T-27 […]. Si la tarea necesita deploy, no lo intentes: déjala in_progress, agrega una línea `- Pendiente deploy:` […] y haz commit."
+- Hecho: T-27 (DEC-019, S-30): una Lambda por dominio. backend/src/domains.ts asigna cada campo del contrato a `catalog`, `orders` o `distributor`; backend/src/handlers/ tiene un handler por dominio que solo atiende sus campos, con el router y el dominio compartidos; se borra backend/src/handler.ts. La pila crea tres funciones y tres data sources de AppSync (la `api` desaparece) con acciones IAM exactas sobre la tabla: catalog GetItem/Query solo en la partición CATALOG (`dynamodb:LeadingKeys`), orders PutItem/Query/GetItem, distributor Scan/UpdateItem. El contrato no cambia. Commit c598b01.
+- Interpretaciones (en `notes` de T-27): catalog conserva GetItem porque DEC-019 lo nombra, aunque el código solo usa Query; orders no lleva condición de partición porque lee CUSTOMER#… y CATALOG (y en T-28 HISTORY#…).
+- Verificado y cómo: línea base `npm test` vitest 177/177 y app 137/137; después `npm run lint` ok, `npm run typecheck` ok, `npm test` vitest 186/186 y app 137/137; `npm run test:acceptance` contra el dev desplegado (todavía con la Lambda única): 41 pasan, 5 fallan y 3 se omiten, todos de REQ-012 por `orderHistory` (igual que T-26); `npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente deploy: T-27 (commit c598b01) — el usuario corre `npm run deploy:dev` (perfil `pedidos-demo`, us-east-1; reemplaza la Lambda `api` por CatalogFunction, OrdersFunction y DistributorFunction) y después `npm run test:acceptance` (esperado: los 41 casos de REQ-001..011 pasan sin cambios; los 8 de REQ-012 siguen fallando u omitiéndose hasta T-28) y `npm run smoke` (2/2); con eso, evidencia de T-27 → `verified_auto` y revisión independiente.
+- En curso / roto: T-27 `in_progress` a la espera del deploy. T-26 sigue esperando que el usuario apruebe el diff de tests/acceptance/ (8ab4a0f).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario hace el deploy de T-27 y corre aceptación y humo (línea `Pendiente deploy` de arriba); el autopilot sigue con T-29 (sin dependencias). T-28 espera T-26 y T-27.

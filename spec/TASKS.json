@@ -906,16 +906,20 @@
         "DEC-019"
       ],
       "depends_on": [],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "touches": [
         "backend/",
         "infra/"
       ],
       "verify": "npm run lint && npm run typecheck && npm test (infra/test: cada campo → su Lambda, IAM exacto por función) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios) && npm run smoke && npm run check:spec",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test (línea base); npm run lint; npm run typecheck; npm test; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit). Sin deploy (pendiente)",
+        "result": "línea base: vitest 177/177, app 137/137. Después: lint ok; typecheck ok; vitest 186/186 (router: cada resolver en un solo dominio, cada dominio responde solo sus campos y fuera de ellos da 'No resolver for field', mismo comportamiento que el router compartido; infra/test: cada campo del contrato → data source de su dominio (catalog, orders, distributor), 3 Lambdas, acciones IAM exactas por función sobre la tabla sin '*' ni índices, catalog limitada a la partición CATALOG); app 137/137. Contra el dev desplegado (todavía con la Lambda única; esta tarea no está desplegada): aceptación 49 pruebas, 41 pasan, 5 fallan y 3 se omiten, igual que la evidencia de T-26 (todas de REQ-012 por `orderHistory` inexistente, llega en T-28); humo 2/2; check:spec ok. Falta: npm run deploy:dev y repetir aceptación (41 actuales sin cambios) y humo con la pila nueva.",
+        "commit": "c598b01"
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios)."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios). 2026-10-18: implementada (commit c598b01): backend/src/domains.ts (campo → dominio, S-30, sin imports para que la infra lo lea), backend/src/lambda.ts (`domainHandler`) y backend/src/handlers/{catalog,orders,distributor}.ts; se borra backend/src/handler.ts. La pila crea CatalogFunction, OrdersFunction y DistributorFunction con data sources `catalog`, `orders`, `distributor` (la `api` desaparece) y falla al sintetizar si un campo del contrato no tiene dominio. Detalles internos: catalog con GetItem y Query como dice DEC-019 aunque el código solo usa Query, limitada por `dynamodb:LeadingKeys` = CATALOG; orders PutItem/Query/GetItem sin condición de partición (lee CUSTOMER#… y CATALOG; en T-28 suma HISTORY#…); distributor Scan/UpdateItem (UpdateItem con ReturnValues ALL_NEW, sin GetItem). Las tres funciones construyen los dos repositorios (no hacen llamadas): el rol IAM es el que limita. Queda in_progress: falta deploy (Pendiente deploy en LOG.md)."
     },
     {
       "id": "T-28",
