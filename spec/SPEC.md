@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 3  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización)
+Versión: 3  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: approved  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -166,7 +166,7 @@ Ejemplos (aceptación):
 | E5 negativo | ruta `/product/<id>` con un id que no está en el catálogo cargado | "Este producto ya no está disponible", sin − / +, con botón "Volver al catálogo" |
 Trazas: §Alcance corte 2 · decisiones: DEC-003, DEC-012 · prueba: app/test/product.test.tsx (S-20) + manual en teléfono
 
-### REQ-009 Acceso por rol · estado: proposed · prioridad: must · corte 3
+### REQ-009 Acceso por rol · estado: approved_for_impl · prioridad: must · corte 3
 Cuando un usuario del grupo `distribuidores` inicia sesión, el sistema deberá abrir el panel "Pedidos" en lugar del catálogo.
 Cuando un usuario del grupo `almaceneros` inicia sesión, el sistema deberá abrir el catálogo como hasta ahora (REQ-001).
 Cuando un usuario vuelve a abrir la app con una sesión vigente, el sistema deberá abrir la pantalla de su rol sin pedir credenciales.
@@ -183,7 +183,7 @@ Ejemplos (aceptación):
 | E6 negativo | distribuidor llama `myOrders`, `order` o `createOrder` | error `Unauthorized`; sin datos ni pedido creado |
 Trazas: §Alcance corte 3 · decisiones: DEC-004, DEC-013 · prueba: tests/acceptance/req_009_* (E5, E6) + app/test (E1–E4, S-27) + manual E1, E4
 
-### REQ-010 Panel de pedidos del distribuidor · estado: proposed · prioridad: must · corte 3
+### REQ-010 Panel de pedidos del distribuidor · estado: approved_for_impl · prioridad: must · corte 3
 Cuando el distribuidor abre el panel, el sistema deberá listar los pedidos de todos los almacenes del más reciente al más antiguo con número, almacén, fecha, total y estado.
 Cuando el distribuidor elige un estado en el filtro, el sistema deberá mostrar solo los pedidos en ese estado; "Todos" quita el filtro.
 Cuando el distribuidor abre un pedido, el sistema deberá mostrar el almacén, sus líneas con precios congelados, el total y el estado actual.
@@ -198,7 +198,7 @@ Ejemplos (aceptación):
 | E5 positivo | abrir un pedido de almacen1 de 2 Yerba + 5 Arroz | almacén, 2 líneas con $4.500 y $1.300, total $15.500 y estado |
 Trazas: §Alcance corte 3 · decisiones: DEC-006, DEC-013 · prueba: tests/acceptance/req_010_* (E1, E2, E5 por API) + app/test (E2–E5) + manual en teléfono
 
-### REQ-011 Cambiar estado de un pedido · estado: proposed · prioridad: must · corte 3
+### REQ-011 Cambiar estado de un pedido · estado: approved_for_impl · prioridad: must · corte 3
 Cuando el distribuidor elige un estado nuevo en el detalle de un pedido, el sistema deberá guardar ese estado y mostrarlo en el detalle y en el panel.
 Cuando el almacenero dueño del pedido refresca "Mis pedidos" o el detalle, el sistema deberá mostrar el estado nuevo (REQ-004).
 El sistema deberá cambiar solo el estado: líneas, precios, total, número y fecha quedan iguales.
@@ -335,7 +335,7 @@ Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/accep
 | Una sola persona con un teléfono hace de los dos roles | la demo cierra sesión entre roles (menú de cuenta); con dos teléfonos se omite |
 
 ## Criterio de cierre del corte 3
-- [ ] REQ-009..011 y S-22..S-28 aprobados por el responsable
-- [ ] DEC-013 `accepted`
+- [x] REQ-009..011 y S-22..S-28 aprobados por el responsable (José Pedro Lübbert, 2026-10-18)
+- [x] DEC-013 `accepted`
 - [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
 - [x] Sin preguntas bloqueantes (Q-02 respondida para la demo)

@@ -472,3 +472,12 @@
 - En curso / roto: nada. Corte 1 (T-03..T-07) sigue esperando checklist manual y aceptación en lote, independiente del corte 3.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario aprueba (o corrige) el corte 3. Con su aprobación: REQ-009..011 → `approved_for_impl`, DEC-013 → `accepted`, T-13..T-16 → `approved_for_impl`, aprobación nominal en esta bitácora; luego T-13 (el usuario aprueba su diff de tests/acceptance/), T-14 con `npm run deploy:dev`, T-15, T-16.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Aprobación (punto de control del corte 3): **José Pedro Lübbert**, 2026-10-18 — "Apruebo REQ-009..011, S-22..S-28 y DEC-013". REQ-009..011 → `approved_for_impl`; S-22..S-28 aprobados; DEC-013 → `accepted`; T-13..T-16 → `approved_for_impl` (T-13 sin dependencias; T-14..T-16 esperan las suyas). Corte 3 → approved.
+- Instrucción del usuario: no implementar en esta sesión; la implementación la hace el orquestador (`scripts/autopilot.sh`).
+- Verificado y cómo: `npm run check:spec`.
+- En curso / roto: nada. Corte 1 (T-03..T-07) sigue esperando checklist manual y aceptación en lote.
+- Bloqueos nuevos: ninguno.
+- Pendiente deploy: ninguno todavía; T-14 lo requerirá (`npm run deploy:dev` y luego `npm run test:acceptance` y `npm run smoke`).
+- Próxima acción autorizada: el autopilot toma T-13 (el diff de tests/acceptance/ queda para aprobación del usuario), luego T-14 (queda `in_progress` con `- Pendiente deploy:`), T-15 y T-16 según dependencias.

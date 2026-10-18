@@ -438,10 +438,10 @@
         "DEC-013"
       ],
       "depends_on": [],
-      "status": "specified",
+      "status": "approved_for_impl",
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance: un caso por ejemplo de API citado; req_001..004 siguen pasando; los nuevos fallan por la razón esperada (campo inexistente o grupo inexistente)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18."
+      "notes": "Corte 3. Propuesta 2026-10-18. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-14",
@@ -461,10 +461,10 @@
       "depends_on": [
         "T-13"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "verify": "npm run lint && npm run typecheck && npm test + npm run deploy:dev (en autopilot: `- Pendiente deploy:` en LOG) + npm run test:acceptance completo (req_001..004 y req_009..011) + npm run smoke",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy."
+      "notes": "Corte 3. Propuesta 2026-10-18. Única tarea del corte que requiere deploy. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-15",
@@ -482,10 +482,10 @@
       "depends_on": [
         "T-14"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + REQ-009 E1, E4 y panel con filtro en el teléfono (manual, DEC-011)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Solo app."
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     },
     {
       "id": "T-16",
@@ -503,10 +503,10 @@
       "depends_on": [
         "T-15"
       ],
-      "status": "specified",
+      "status": "approved_for_impl",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + criterio de éxito del corte 3 en el teléfono (manual, DEC-011)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Solo app."
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
     }
   ]
 }

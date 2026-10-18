@@ -219,9 +219,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: el usuario trae una marca con componentes propios o se pide modo oscuro.
 
 ## DEC-013 Rol distribuidor: grupo Cognito, autorización por campo y acceso a todos los pedidos
-- Estado: proposed
+- Estado: accepted
 - Alcance: global
-- Fecha: 2026-10-18 · Aprobador: pendiente (propuesta por el agente, R-03) · Confianza: media
+- Fecha: 2026-10-18 · Aprobador: José Pedro Lübbert (2026-10-18, aprobación del corte 3; propuesta por el agente, R-03) · Confianza: media
 - Problema: el corte 3 agrega un segundo actor que ve y modifica pedidos de todos los almacenes. Hay que decidir cómo se identifica, cómo se autoriza cada operación sin abrir los pedidos ajenos a un almacenero (DEC-004) y cómo se leen todos los pedidos de una tabla particionada por cliente (DEC-006).
 - Impulsores: REQ-009, REQ-010, REQ-011, S-22, S-26, DEC-004, DEC-005, DEC-006, DEC-009
 - Alternativas consideradas:
