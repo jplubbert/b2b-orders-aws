@@ -908,3 +908,8 @@
 - En curso / roto: nada. Para desplegar o administrar, `aws sso login --sso-session pepe` cuando venza la sesión (8 h).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-22 (la hace el autopilot); tras el período de prueba, el usuario confirma (o no) borrar la llave [REDACTED_ACCESS_KEY_ID_1] y el usuario `[REDACTED_IAM_USER]`, en una tarea nueva.
+
+## 2026-10-18 16:38 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-22 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-22); salida íntegra en .autopilot/2026-10-18_163653/T-22-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.

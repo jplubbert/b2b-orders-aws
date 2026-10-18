@@ -764,7 +764,7 @@
         "DEC-017"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "aws sts get-caller-identity --profile principal y --profile pedidos-demo (AWSReservedSSO_AdministratorAccess en cada cuenta) && cdk diff con pedidos-demo sin diferencias && npm run smoke && npm run seed; luego llave de [REDACTED_IAM_USER] Inactive y los mismos comandos sin ella",
       "blocked_by": null,
       "notes": "2026-10-18: paso 1 hecho por el usuario en la consola (instancia ssoins-7223fd44129b674d, identity store [REDACTED_SSO_DIRECTORY_ID], portal [REDACTED_SSO_START_URL]; las asignaciones de cuentas faltaban y el usuario las completó tras el primer intento). Paso 2: ~/.aws/config con [sso-session pepe], [profile principal] ([REDACTED_AWS_ACCOUNT_MAIN]) y [profile pedidos-demo] ([REDACTED_AWS_ACCOUNT_DEMO]) por SSO; respaldo en ~/.aws/config.bak-2026-10-18-pre-sso; [default] y [autopilot] sin cambios. Verificado: principal → assumed-role/AWSReservedSSO_AdministratorAccess_…/pepe en [REDACTED_AWS_ACCOUNT_MAIN]; pedidos-demo → idem en [REDACTED_AWS_ACCOUNT_DEMO]; cdk diff sin diferencias; smoke 2/2; seed ok. Pendiente: paso 3 (desactivar la llave de [REDACTED_IAM_USER]), a la espera del usuario. 2026-10-18: paso 3 autorizado por el usuario sin guardar el secreto: llave Inactive y quitada de ~/.aws/credentials; verificación sin ella ok. DEC-017 aceptada por José Pedro Lübbert (Pepe). verified_auto. El borrado de la llave y del usuario [REDACTED_IAM_USER] queda fuera de esta tarea: tras el período de prueba, con confirmación aparte del usuario (tarea nueva). Reversión: llave nueva de [REDACTED_IAM_USER] desde la consola (o reactivar esta con principal) y ~/.aws/config.bak-2026-10-18-pre-sso.",
@@ -772,6 +772,13 @@
         "command": "aws iam update-access-key --user-name [REDACTED_IAM_USER] --access-key-id [REDACTED_ACCESS_KEY_ID_1] --status Inactive --profile principal; aws sts get-caller-identity --profile default|principal|pedidos-demo|autopilot; cdk diff (pedidos-demo); npm run smoke; npm run seed; AWS_PROFILE=autopilot npm run smoke; scripts/autopilot.sh --dry-run; npm run check:spec",
         "result": "llave de [REDACTED_IAM_USER] Inactive y fuera de ~/.aws/credentials (queda solo [autopilot]; secreto no guardado, por decisión del usuario); default → NoCredentials; principal → assumed-role/AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe ([REDACTED_AWS_ACCOUNT_MAIN]); pedidos-demo → AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe ([REDACTED_AWS_ACCOUNT_DEMO]); cdk diff sin diferencias; smoke 2/2; seed ok; autopilot → user/autopilot-tests, smoke 2/2, --dry-run ok; check:spec ok.",
         "commit": "8576923"
+      },
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Aprobación limitada al diff y comprobaciones locales. Sin verificación independiente de perfiles SSO, MFA, duración de sesión, llave Inactive, ausencia de credenciales default ni conservación del perfil autopilot; tampoco se ejecutaron STS, cdk diff, smoke o seed. Pasaron npm test (314 pruebas), lint, typecheck y check:spec. No se evaluaron estilo ni preferencias.",
+        "date": "2026-10-18"
       }
     }
   ]
