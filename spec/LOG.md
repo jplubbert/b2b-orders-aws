@@ -814,3 +814,14 @@
 - Hecho: revisión independiente de T-21 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **rejected** → estado `verified_auto`. Hallazgos: DEC-016: ntfy_body no respeta AUTOPILOT_NTFY_MAX cuando los campos fijos superan el límite: devuelve fixed completo si room <= 0. Confirmado ejecutando la función del commit 2896295: con máximo 100 produce 235 caracteres; con el máximo predeterminado 3000 y 500 tareas rechazadas produce 3124. Las revisiones pendientes no están limitadas por MAX_TASKS. La prueba de recorte existente solo cubre campos fijos que caben..
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-21); salida íntegra en .autopilot/2026-10-18_145343/T-21-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 14:55 · autopilot (scripts/autopilot.sh)
+- Hecho: T-21 revisada por codex: rejected → verified_auto (commit d23f355). Corrida 2026-10-18_145343 (1 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_145343/.
+- Tokens (implementador, campo usage del evento result): total de la corrida: sin invocaciones del implementador.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en d23f355.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
