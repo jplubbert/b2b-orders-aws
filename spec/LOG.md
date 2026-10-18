@@ -511,3 +511,12 @@
 - Aprobación (T-13, tarea de spec): **José Pedro Lübbert**, 2026-10-18 — "Apruebo el diff de tests/acceptance/ (5916ae7) y esas interpretaciones". T-13 → `verified_auto` (`evidence.user_approval`). Pendiente: revisión independiente (la hace el autopilot).
 - Verificado y cómo: `npm run check:spec`.
 - Próxima acción autorizada: T-17 (tooling, encargo del usuario) y relanzar `scripts/autopilot.sh`: revisa T-13 y sigue con T-14.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Corrige también el bug del autopilot que detecta "Pendiente deploy" aunque la línea diga "ninguno", como tarea de tooling."
+- Hecho (T-17, tooling, commit 85082f4): `scripts/autopilot.sh` solo toma como despliegue pendiente una línea `- Pendiente deploy:` que pida algo (`deploy_pending_since`; "ninguno", "nada", "no aplica", "N/A" no cuentan). Al corregirlo, T-13 habría pasado a contar como fallo (spec `in_progress` esperando la aprobación del diff), así que ese caso se salta con su propio mensaje ("espera que el usuario apruebe el diff de tests/acceptance/"), sin fallo. Subcomando `autopilot-tasks.mjs kind`; doble de claude con `STUB_WAIT`.
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 139/139 + jest 105/105 (los 2 casos nuevos fallan con el script anterior); `npm run check:spec` ok; `scripts/autopilot.sh --dry-run` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: relanzar `scripts/autopilot.sh` (pedido del usuario): revisa T-13 y T-17, luego T-14 (quedará con `- Pendiente deploy:`).
