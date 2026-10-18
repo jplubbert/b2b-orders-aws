@@ -19,7 +19,7 @@ function* rootFieldDefs(path: string): Generator<[typeName: string, field: Field
   }
 }
 
-/** The contract's root fields as [type, field] pairs; each one gets an `api` resolver. */
+/** The contract's root fields as [type, field] pairs; each one gets a resolver on its domain Lambda (DEC-019). */
 export function rootFields(path = SCHEMA_PATH): Array<[typeName: string, fieldName: string]> {
   return [...rootFieldDefs(path)].map(([typeName, f]) => [typeName, f.name.value]);
 }

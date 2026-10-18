@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Order } from '../src/domain/order.js';
-import { route, type Deps, type ResolverEvent } from '../src/router.js';
+import { DOMAINS, DOMAIN_FIELDS } from '../src/domains.js';
+import { domainResolvers, resolvers, route, type Deps, type ResolverEvent } from '../src/router.js';
 
 // In-memory order repository, per customer.
 function makeDeps() {
@@ -74,6 +75,34 @@ describe('route', () => {
 
   it('fails on a field without a resolver', async () => {
     await expect(route(makeDeps().deps, event(store1, 'nope'))).rejects.toThrow('No resolver for field');
+  });
+});
+
+describe('domain Lambdas (DEC-019)', () => {
+  it('S-30: every resolver belongs to exactly one domain', () => {
+    const fields = DOMAINS.flatMap((d) => [...DOMAIN_FIELDS[d]]);
+    expect(new Set(fields).size).toBe(fields.length);
+    expect(fields.sort()).toEqual(Object.keys(resolvers).sort());
+  });
+
+  it.each(DOMAINS)('%s answers only its own fields', async (domain) => {
+    const available = domainResolvers(domain);
+    expect(Object.keys(available).sort()).toEqual([...DOMAIN_FIELDS[domain]].sort());
+    for (const key of Object.keys(resolvers).filter((k) => !(k in available))) {
+      const [parent, field] = key.split('.') as [string, string];
+      await expect(route(makeDeps().deps, event(distributor, field, parent), available)).rejects.toThrow(
+        `No resolver for field: ${key}`,
+      );
+    }
+  });
+
+  it('a domain resolver behaves like the shared one', async () => {
+    const { deps } = makeDeps();
+    const orders = domainResolvers('orders');
+    const created = (await route(deps, createOrder(store1, [{ productId: 'yerba', quantity: 1 }]), orders)) as Order;
+    expect(await route(deps, event(store1, 'myOrders'), orders)).toEqual([created]);
+    expect(await route(deps, allOrders(distributor), domainResolvers('distributor'))).toEqual([created]);
+    expect(((await route(deps, event(store1), domainResolvers('catalog'))) as unknown[]).length).toBe(2);
   });
 });
 

@@ -2,6 +2,7 @@ import { activeCatalog } from './domain/catalog.js';
 import { identityFromClaims, requireCustomer, requireDistributor, type Identity } from './domain/identity.js';
 import { OrderNotFoundError, buildOrder } from './domain/order.js';
 import { ulid, ulidTime } from './domain/ulid.js';
+import { DOMAIN_FIELDS, type Domain } from './domains.js';
 import type { CatalogRepo } from './data/catalogRepo.js';
 import type { OrderRepo } from './data/orderRepo.js';
 import type {
@@ -44,7 +45,7 @@ const asDistributor =
 type QueryResolvers = { [F in keyof Query as `Query.${F & string}`]: Resolver<Query[F]> };
 type MutationResolvers = { [F in keyof Mutation as `Mutation.${F & string}`]: Resolver<Mutation[F]> };
 
-// One contract field = one entry (DEC-005). The template test requires all of them to use `api`.
+// One contract field = one entry; DOMAIN_FIELDS says which Lambda serves it (DEC-019).
 const queryResolvers: QueryResolvers = {
   'Query.listProducts': asCustomer(async (deps) => activeCatalog(await deps.catalog.listProducts())),
   'Query.myOrders': asCustomer(async (deps, customerId) => deps.orders.listOrders(customerId)),
@@ -79,12 +80,23 @@ const mutationResolvers: MutationResolvers = {
   }),
 };
 
-export const resolvers: Record<string, Resolver> = { ...queryResolvers, ...mutationResolvers };
+const allResolvers: QueryResolvers & MutationResolvers = { ...queryResolvers, ...mutationResolvers };
+export const resolvers: Record<string, Resolver> = allResolvers;
 
-export async function route(deps: Deps, event: ResolverEvent): Promise<unknown> {
+/** Only the domain's fields: any other field fails as if it had no resolver (DEC-019). */
+export function domainResolvers(domain: Domain): Record<string, Resolver> {
+  const fields: readonly (keyof typeof allResolvers)[] = DOMAIN_FIELDS[domain];
+  return Object.fromEntries(fields.map((key) => [key, allResolvers[key]]));
+}
+
+export async function route(
+  deps: Deps,
+  event: ResolverEvent,
+  available: Record<string, Resolver> = resolvers,
+): Promise<unknown> {
   const identity = identityFromClaims(event.identity?.claims);
   const key = `${event.info.parentTypeName}.${event.info.fieldName}`;
-  const resolver = resolvers[key];
+  const resolver = available[key];
   if (!resolver) throw new Error(`No resolver for field: ${key}`);
   return resolver(deps, identity, event.arguments);
 }

@@ -8,6 +8,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import type { Construct } from 'constructs';
+import { CATALOG_PK } from '../../backend/src/data/keys.js';
+import { DOMAINS, DOMAIN_FIELDS, type Domain } from '../../backend/src/domains.js';
 import { SCHEMA_PATH, rootFields } from './contract.js';
 
 export const CUSTOMER_GROUP = 'almaceneros';
@@ -24,11 +26,24 @@ export const TEST_RUNNER_USER_POOL_ACTIONS = [
   'cognito-idp:AdminDeleteUser', 'cognito-idp:ListUsers',
 ];
 
+/**
+ * DEC-019: exact table actions of each domain Lambda. `catalog` only reads the `CATALOG` partition;
+ * `orders` writes and reads its customer's partition and reads the catalog; `distributor` scans and changes status.
+ */
+export const DOMAIN_TABLE_ACTIONS: Record<Domain, string[]> = {
+  catalog: ['dynamodb:GetItem', 'dynamodb:Query'],
+  orders: ['dynamodb:PutItem', 'dynamodb:Query', 'dynamodb:GetItem'],
+  distributor: ['dynamodb:Scan', 'dynamodb:UpdateItem'],
+};
+
+/** Construct id prefix and AppSync data source name of each domain Lambda. */
+export const domainFunctionId = (domain: Domain) => `${domain[0]!.toUpperCase()}${domain.slice(1)}Function`;
+
 export interface PedidosStackProps extends StackProps {
   stage: string;
 }
 
-/** `PedidosB2B-<stage>` stack (DEC-001): Cognito + AppSync + `api` Lambda + single table. */
+/** `PedidosB2B-<stage>` stack (DEC-001): Cognito + AppSync + one Lambda per domain (DEC-019) + single table. */
 export class PedidosStack extends Stack {
   constructor(scope: Construct, id: string, props: PedidosStackProps) {
     super(scope, id, props);
@@ -71,22 +86,36 @@ export class PedidosStack extends Stack {
       removalPolicy,
     });
 
-    // DEC-005: one `api` Lambda for every field.
-    const apiFn = new NodejsFunction(this, 'ApiFunction', {
-      entry: fileURLToPath(new URL('../../backend/src/handler.ts', import.meta.url)),
-      handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_24_X,
-      architecture: lambda.Architecture.ARM_64,
-      memorySize: 512,
-      timeout: Duration.seconds(10),
-      environment: { TABLE_NAME: table.tableName },
-      bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
-      logGroup: new logs.LogGroup(this, 'ApiLogs', {
-        retention: logs.RetentionDays.ONE_WEEK,
-        removalPolicy,
-      }),
-    });
-    table.grantReadWriteData(apiFn); // includes Scan (allOrders) and UpdateItem (setOrderStatus), DEC-013
+    // DEC-019: one Lambda per domain, each with only its own table actions.
+    const functions = {} as Record<Domain, NodejsFunction>;
+    for (const domain of DOMAINS) {
+      const id = domainFunctionId(domain);
+      const fn = new NodejsFunction(this, id, {
+        entry: fileURLToPath(new URL(`../../backend/src/handlers/${domain}.ts`, import.meta.url)),
+        handler: 'handler',
+        runtime: lambda.Runtime.NODEJS_24_X,
+        architecture: lambda.Architecture.ARM_64,
+        memorySize: 512,
+        timeout: Duration.seconds(10),
+        environment: { TABLE_NAME: table.tableName },
+        bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true },
+        logGroup: new logs.LogGroup(this, `${id}Logs`, {
+          retention: logs.RetentionDays.ONE_WEEK,
+          removalPolicy,
+        }),
+      });
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: DOMAIN_TABLE_ACTIONS[domain],
+          resources: [table.tableArn],
+          // The catalog Lambda can't read orders: only keys whose partition is CATALOG.
+          ...(domain === 'catalog'
+            ? { conditions: { 'ForAllValues:StringEquals': { 'dynamodb:LeadingKeys': [CATALOG_PK] } } }
+            : {}),
+        }),
+      );
+      functions[domain] = fn;
+    }
 
     const api = new appsync.GraphqlApi(this, 'Api', {
       name: `pedidos-b2b-${props.stage}`,
@@ -98,9 +127,14 @@ export class PedidosStack extends Stack {
         },
       },
     });
-    const source = api.addLambdaDataSource('api', apiFn);
+    const sources = Object.fromEntries(
+      DOMAINS.map((domain) => [domain, api.addLambdaDataSource(domain, functions[domain])]),
+    ) as Record<Domain, appsync.LambdaDataSource>;
     for (const [typeName, fieldName] of rootFields()) {
-      source.createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
+      const key = `${typeName}.${fieldName}`;
+      const domain = DOMAINS.find((d) => (DOMAIN_FIELDS[d] as readonly string[]).includes(key));
+      if (!domain) throw new Error(`Contract field without a domain Lambda (DEC-019): ${key}`);
+      sources[domain].createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
     }
 
     // DEC-010/DEC-015: the autopilot's identity for acceptance and smoke, only on this table and user pool.

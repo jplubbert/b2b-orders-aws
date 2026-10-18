@@ -1,9 +1,12 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { DOMAINS, type Domain } from '../../backend/src/domains.js';
 import { rootFieldGroups, rootFields } from '../lib/contract.js';
 import {
+  DOMAIN_TABLE_ACTIONS,
   PedidosStack,
+  domainFunctionId,
   TEST_RUNNER_TABLE_ACTIONS,
   TEST_RUNNER_USER,
   TEST_RUNNER_USER_POOL_ACTIONS,
@@ -17,21 +20,75 @@ beforeAll(() => {
   template = Template.fromStack(stack);
 });
 
+type Statement = { Action: string | string[]; Resource: unknown; Effect: string; Condition?: unknown };
+
+// Statements of every policy attached to the role of the domain's Lambda.
+function roleStatements(t: Template, domain: Domain): Statement[] {
+  const fnRole = Object.keys(t.findResources('AWS::IAM::Role')).find((id) => id.startsWith(domainFunctionId(domain)));
+  expect(fnRole).toBeDefined();
+  return Object.values(t.findResources('AWS::IAM::Policy'))
+    .filter((p) => JSON.stringify(p.Properties.Roles ?? []).includes(fnRole!))
+    .flatMap((p) => p.Properties.PolicyDocument.Statement as Statement[]);
+}
+
 describe('PedidosStack', () => {
-  it('DEC-005: every root field of the contract uses the `api` data source', () => {
+  it('DEC-019: each root field of the contract uses the data source of its domain Lambda', () => {
     const fields = rootFields();
-    expect(fields).toContainEqual(['Query', 'listProducts']);
-    expect(fields).toContainEqual(['Mutation', 'createOrder']);
+    expect(fields).toHaveLength(6);
     const resolvers = template.findResources('AWS::AppSync::Resolver');
     expect(Object.keys(resolvers)).toHaveLength(fields.length);
+    const expected: Record<string, string> = {
+      'Query.listProducts': 'catalog',
+      'Query.myOrders': 'orders',
+      'Query.order': 'orders',
+      'Mutation.createOrder': 'orders',
+      'Query.allOrders': 'distributor',
+      'Mutation.setOrderStatus': 'distributor',
+    };
     for (const [typeName, fieldName] of fields) {
       template.hasResourceProperties('AWS::AppSync::Resolver', {
         TypeName: typeName,
         FieldName: fieldName,
-        DataSourceName: 'api',
+        DataSourceName: expected[`${typeName}.${fieldName}`],
       });
     }
-    template.hasResourceProperties('AWS::AppSync::DataSource', { Name: 'api', Type: 'AWS_LAMBDA' });
+    const sources = Object.values(template.findResources('AWS::AppSync::DataSource'));
+    expect(sources.map((s) => s.Properties.Name).sort()).toEqual(['catalog', 'distributor', 'orders']);
+    for (const s of sources) {
+      expect(s.Properties.Type).toBe('AWS_LAMBDA');
+      expect(JSON.stringify(s.Properties.LambdaConfig)).toContain(domainFunctionId(s.Properties.Name));
+    }
+  });
+
+  it('DEC-019: three API Lambdas, one per domain handler', () => {
+    template.resourceCountIs('AWS::Lambda::Function', 3);
+    for (const domain of DOMAINS) {
+      const fns = Object.keys(template.findResources('AWS::Lambda::Function')).filter((id) =>
+        id.startsWith(domainFunctionId(domain)),
+      );
+      expect(fns).toHaveLength(1);
+    }
+  });
+
+  it.each(DOMAINS)('DEC-019: the %s Lambda has exactly its table actions, on the table, without "*"', (domain) => {
+    const statements = roleStatements(template, domain);
+    expect(statements.flatMap((s) => [s.Action].flat()).sort()).toEqual([...DOMAIN_TABLE_ACTIONS[domain]].sort());
+    for (const s of statements) {
+      expect(s.Effect).toBe('Allow');
+      expect(JSON.stringify(s.Resource)).not.toContain('"*"');
+      expect(JSON.stringify(s.Resource)).toMatch(/Table/);
+      expect(JSON.stringify(s.Resource)).not.toMatch(/index/);
+    }
+  });
+
+  it('DEC-019: the catalog Lambda reaches only the CATALOG partition; the action sets are the approved ones', () => {
+    const [catalog] = roleStatements(template, 'catalog');
+    expect(catalog!.Condition).toEqual({ 'ForAllValues:StringEquals': { 'dynamodb:LeadingKeys': ['CATALOG'] } });
+    expect(DOMAIN_TABLE_ACTIONS).toEqual({
+      catalog: ['dynamodb:GetItem', 'dynamodb:Query'],
+      orders: ['dynamodb:PutItem', 'dynamodb:Query', 'dynamodb:GetItem'],
+      distributor: ['dynamodb:Scan', 'dynamodb:UpdateItem'],
+    });
   });
 
   it('DEC-004: user pool without self sign-up, almaceneros group and AppSync with user pool', () => {
@@ -56,17 +113,6 @@ describe('PedidosStack', () => {
     });
   });
 
-  it('DEC-013: the api Lambda can Scan and UpdateItem on the table', () => {
-    const fnRole = Object.keys(template.findResources('AWS::IAM::Role')).find((id) => id.startsWith('ApiFunction'));
-    const policies = Object.values(template.findResources('AWS::IAM::Policy')).filter((p) =>
-      JSON.stringify(p.Properties.Roles ?? []).includes(fnRole!),
-    );
-    const actions = policies.flatMap((p) =>
-      (p.Properties.PolicyDocument.Statement as Array<{ Action: string | string[] }>).flatMap((s) => [s.Action].flat()),
-    );
-    expect(actions).toEqual(expect.arrayContaining(['dynamodb:Scan', 'dynamodb:UpdateItem']));
-  });
-
   it('DEC-006: single PK/SK on-demand table', () => {
     template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
       BillingMode: 'PAY_PER_REQUEST',
@@ -77,11 +123,11 @@ describe('PedidosStack', () => {
     });
   });
 
-  it('DEC-005: api Lambda on Node.js 24 with TABLE_NAME', () => {
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      Runtime: 'nodejs24.x',
-      Environment: { Variables: { TABLE_NAME: Match.anyValue() } },
+  it('DEC-019: every domain Lambda on Node.js 24 with TABLE_NAME', () => {
+    const fns = template.findResources('AWS::Lambda::Function', {
+      Properties: { Runtime: 'nodejs24.x', Environment: { Variables: { TABLE_NAME: Match.anyValue() } } },
     });
+    expect(Object.keys(fns)).toHaveLength(3);
   });
 
   it('exposes the outputs scripts/write-env.ts uses', () => {
