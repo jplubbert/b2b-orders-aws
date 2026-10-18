@@ -316,3 +316,71 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Dependencias: afecta a AGENTS.md, todo el código, T-23, T-24 y sdd-base
 - Confirmación: revisión de T-23 y T-24; `npm test`, aceptación y humo sin cambios de resultado.
 - Revisar si: la app necesita otro idioma para el usuario final.
+
+## DEC-019 Una Lambda por dominio detrás de AppSync (supersede DEC-005)
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (encargo del corte 4 de José Pedro Lübbert; falta su `accepted`) · Confianza: alta
+- Supersede a: DEC-005 (la Lambda única `api`); se mantienen el contrato en `spec/contracts/schema.graphql`, los errores de negocio como `errorType` y el dominio puro probado con Vitest.
+- Problema: DEC-005 eligió una sola Lambda con todos los permisos y aceptó como contra la falta de permisos mínimos. El usuario pide alinear la demo a un stack objetivo con una función por dominio.
+- Impulsores: encargo del corte 4; DEC-005 (alternativa 3 descartada entonces por costo de recursos); DEC-013 (la Lambda ganó Scan y UpdateItem para el panel)
+- Alternativas consideradas:
+  1. Tres Lambdas por dominio (`catalog`: `listProducts`; `orders`: `createOrder`, `myOrders`, `order`; `distributor`: `allOrders`, `setOrderStatus`), con el dominio compartido y un handler por dominio; cada campo de AppSync apunta a su Lambda — a favor: permisos mínimos y despliegue por dominio; en contra: tres arranques en frío y más recursos.
+  2. Una Lambda por operación (6) — a favor: permisos aún más finos; en contra: más recursos sin beneficio visible para la demo.
+  3. Mantener la Lambda única — en contra: contradice el encargo.
+- Decisión: Usaremos la alternativa 1 (S-30). Permisos: `catalog` solo `GetItem`/`Query` sobre `CATALOG`; `orders` `PutItem`/`Query`/`GetItem` y lectura de catálogo, más `sns:Publish` al tópico de DEC-020; `distributor` `Scan`/`UpdateItem` y `sns:Publish`. El ruteo por `fieldName` queda dentro de cada handler. El contrato no cambia.
+  No usaremos la 2 porque multiplica recursos sin cambiar la seguridad efectiva de una demo, ni la 3 porque contradice el encargo.
+- Consecuencias: buenas: un error o permiso de un dominio no alcanza a los otros. Malas: tres arranques en frío. Neutrales: misma cantidad de despliegues (una pila).
+- Dependencias: supersede DEC-005 · depende de DEC-001, DEC-004, DEC-006, DEC-013 · afecta a infra/lib/pedidos-stack.ts, backend/src, T-27
+- Confirmación: infra/test (cada campo del contrato → la Lambda de su dominio; acciones IAM exactas por función, sin `*`); `npm run test:acceptance` completo sin cambios (REQ-012 E7).
+- Revisar si: la primera respuesta supera 3 s (DEC-005) o aparece un dominio nuevo.
+
+## DEC-020 Eventos de pedido asíncronos: SNS → SQS con DLQ → Lambda de historial
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (encargo del corte 4 de José Pedro Lübbert; falta su `accepted` y la ampliación de R-01) · Confianza: media
+- Problema: el encargo pide un flujo asíncrono: al crear o cambiar de estado un pedido, publicar en SNS, consumir con una cola SQS (con DLQ) y registrar el evento, por ejemplo el historial de estados (REQ-012). SNS y SQS están fuera de R-01: requieren ampliarla.
+- Impulsores: REQ-012, R-01, R-02 (sin costo fijo: SNS y SQS se cobran por uso), DEC-006
+- Alternativas consideradas:
+  1. Publicar desde las Lambdas de pedidos y panel después de escribir en DynamoDB, en un tópico SNS estándar; cola SQS estándar suscrita con entrega cruda y DLQ; Lambda consumidora idempotente — a favor: es lo pedido; simple; en contra: si la publicación falla después de escribir, el evento se pierde (sin outbox).
+  2. DynamoDB Streams → EventBridge Pipes → SNS/SQS (outbox implícito) — a favor: ningún evento se pierde; en contra: no publica "al crear o cambiar" desde la API como pide el encargo y agrega Streams y Pipes, fuera del stack pedido.
+  3. SNS y SQS FIFO — a favor: orden estricto; en contra: deduplicación por grupo y límites de throughput sin necesidad para la demo.
+- Decisión: Usaremos la alternativa 1. Mensajes `OrderCreated` y `OrderStatusChanged` con `eventId` (ULID), `orderId`, `customerId`, `from` (nulo al crear), `to` y `at` (momento fijado por quien publica, S-33). La publicación ocurre después de la escritura correcta; un rechazo de negocio no publica (REQ-012 E4); si la publicación falla, la operación igual responde bien y se registra el error en el log (S-32). Cola con DLQ: `maxReceiveCount` 3, retención de la DLQ 14 días, visibilidad 6× el timeout de la consumidora. Consumidora con fuente SQS en lotes y `ReportBatchItemFailures`; guarda cada evento con `PutItem` condicional (`attribute_not_exists`) en `PK=HISTORY#<orderId>`, `SK=EVENT#<at>#<eventId>`, en la tabla de DEC-006: fuera de la partición del cliente y del filtro `ORDER#` de los Scan del panel. La limpieza de la aceptación (T-19) borra también el historial de los clientes `C-ACEPT-…`.
+  No usaremos la 2 porque no es el flujo pedido (queda como salida si se exige no perder eventos), ni la 3 porque la demo no necesita orden estricto.
+- Consecuencias: buenas: el historial no agrega latencia al usuario; los fallos quedan apartados en la DLQ. Malas: un evento puede perderse si SNS falla justo después de la escritura; el historial llega con retraso (≤30 s según REQ-012). Neutrales: el usuario `autopilot-tests` (DEC-010) ya tiene `Query` sobre la tabla para que la aceptación lea el historial.
+- Dependencias: depende de DEC-006, DEC-019 · requiere ampliar R-01 · afecta a REQ-012, infra/lib/pedidos-stack.ts, backend/src, scripts/lib/acceptance-cleanup.ts, T-26, T-28
+- Confirmación: tests/acceptance/req_012_* contra `dev`; backend/test (idempotencia, sin publicación ante rechazo, error de publicación no rompe la respuesta); infra/test (suscripción cruda, DLQ con `maxReceiveCount` 3, permisos exactos de publicación y consumo).
+- Revisar si: se exige no perder eventos (pasar a la alternativa 2) o se necesita orden estricto (alternativa 3).
+
+## DEC-021 Estado del cliente con Zustand
+- Estado: proposed
+- Alcance: global (app)
+- Fecha: 2026-10-18 · Aprobador: pendiente (encargo del corte 4 de José Pedro Lübbert; falta su `accepted` y la ampliación de R-01) · Confianza: alta
+- Problema: el carrito y la lista del panel viven en Context de React (`CartProvider`, `PanelProvider`) y la sesión en estado local de las pantallas. El encargo pide Zustand para el estado de la app.
+- Impulsores: encargo del corte 4; DEC-003 (Amplify guarda los tokens); DEC-008 (Expo Go SDK 57); DEC-012 (sin dependencias nuevas en el corte 2, solo para el tema)
+- Alternativas consideradas:
+  1. Zustand: un store por área (`cart`, `session`, `panel`), sin persistencia (el carrito sigue solo en memoria, S-09) — a favor: JavaScript puro, compatible con Expo Go 57; menos código que los providers; se prueba sin renderizar; en contra: una dependencia nueva.
+  2. Mantener Context — en contra: contradice el encargo.
+- Decisión: Usaremos la alternativa 1 (S-31): la sesión guarda rol, correo, `customerId` y su estado de carga, y se hidrata desde `fetchAuthSession`; los tokens siguen en Amplify (DEC-003); cerrar sesión vacía el carrito y la lista del panel como hoy (REQ-005 E2). Se quitan `CartProvider` y `PanelProvider`. Pantallas, textos y flujos no cambian.
+- Consecuencias: buenas: estado legible y testeable sin componentes. Malas: una dependencia más en app/package.json. Neutrales: ninguna pantalla cambia.
+- Dependencias: depende de DEC-003, DEC-008 · requiere ampliar R-01 · afecta a app/src/lib, app/src/app, app/test, T-29
+- Confirmación: app/test (jest) con las mismas expectativas de comportamiento y pruebas nuevas de los stores; `expo export` ok; verificación manual en el teléfono del guion del README (DEC-011).
+- Revisar si: se pide conservar el carrito entre sesiones (persistencia de Zustand) o Expo Go deja de soportarlo.
+
+## DEC-022 README técnico en inglés y CI en GitHub Actions (supersede la interpretación (b) de DEC-018 para README.md)
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (encargo del usuario, última tarea del corte 4; falta su `accepted`) · Confianza: alta
+- Supersede a: DEC-018 solo en su interpretación (b) para README.md (AGENTS.md sigue en español; el resto de DEC-018 sigue vigente).
+- Problema: el usuario pide un README de presentación en inglés para un equipo técnico, con badges de CI. DEC-018 dejó README.md en español, y el repositorio no tiene CI.
+- Impulsores: encargo del corte 4; DEC-018; DEC-007 (aceptación contra `dev` real)
+- Alternativas consideradas:
+  1. README.md en inglés; el resumen gerencial en español pasa a `docs/resumen-ejecutivo.md`; CI en GitHub Actions con lint, tipos, pruebas unitarias y check:spec, sin credenciales de AWS — a favor: lo pedido; CI sin secretos; en contra: el badge no cubre la aceptación contra AWS.
+  2. Igual, con un rol OIDC de GitHub en la cuenta del demo para correr la aceptación en CI — a favor: el badge cubre todo; en contra: una identidad nueva con acceso a `dev` desde fuera de la máquina y otro recurso de IAM que mantener.
+  3. Mantener el README en español — en contra: contradice el encargo.
+- Decisión: Usaremos la alternativa 1 (S-34, S-35). El README dice explícitamente qué cubre el badge y dónde corre la aceptación contra AWS real.
+  No usaremos la 2 todavía, porque agrega una identidad con acceso al entorno sin que el encargo lo pida (queda como salida); ni la 3.
+- Consecuencias: buenas: entrada clara para el equipo técnico; CI sin secretos. Malas: dos documentos de presentación (técnico y gerencial) que mantener. Neutrales: minutos de GitHub Actions del repositorio privado.
+- Dependencias: supersede DEC-018 (b) para README.md · afecta a README.md, docs/, .github/workflows/, T-30
+- Confirmación: workflow en verde en GitHub; README revisado en la vista de GitHub (Mermaid dibujado, enlaces que resuelven).
+- Revisar si: se pide la aceptación en CI (alternativa 2).

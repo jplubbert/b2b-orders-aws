@@ -1054,3 +1054,13 @@
 - En curso / roto: nada. T-24 en `reviewed`, espera `accepted` del usuario.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario revisa el README y decide `accepted` de T-24; activar Cost Explorer si quiere la cifra real de costo.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Nuevo corte 4 para alinear el demo al stack objetivo, sin cambiar lo que ve el usuario: 1. Separar la Lambda única en una por dominio (catálogo, pedidos, panel distribuidor). 2. Flujo asíncrono: al crear o cambiar estado de un pedido, publicar en SNS; una cola SQS (con DLQ) suscrita la consume con otra Lambda que registra el evento (por ejemplo, historial de estados del pedido). 3. Estado de la app (carrito, sesión) con Zustand. Todo con CDK, pruebas de aceptación incluidas. Propón REQ, DEC (supersede DEC-005 si corresponde) y tareas; no implementes hasta que apruebe." Luego: "Última tarea del corte 4: README de presentación, en inglés, para un equipo técnico que lo abre por primera vez […]".
+- Hecho (solo propuesta, sin implementación): SPEC.md v4 con el corte 4 `proposed`: cambio propuesto de R-01 (SNS, SQS, Zustand; requiere aprobación del usuario), REQ-012 (historial de estados, asíncrono, idempotente, con DLQ y REQ-001..011 sin cambios), S-29..S-36, plan y criterio de cierre. DEC-019 (una Lambda por dominio, supersede DEC-005), DEC-020 (SNS → SQS con DLQ → Lambda de historial), DEC-021 (Zustand), DEC-022 (README técnico en inglés y CI; supersede DEC-018 (b) para README.md), todas `proposed`. Tareas `proposed`: T-26 (spec: aceptación de REQ-012), T-27 (Lambdas por dominio), T-28 (eventos), T-29 (Zustand), T-30 (README técnico y CI).
+- Interpretaciones: el historial no se muestra en la app ni cambia el contrato; la aceptación lo lee de la tabla (S-29). La lista del panel también pasa a Zustand (S-31). Si publicar el evento falla, la operación responde igual (S-32). El repositorio no tiene CI: los badges requieren un workflow nuevo, sin credenciales de AWS (S-35).
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario aprueba (o corrige) la ampliación de R-01, REQ-012, S-29..S-36, DEC-019..022 y las tareas T-26..T-30, y entrega las capturas de la app para T-30. Nada se implementa antes.

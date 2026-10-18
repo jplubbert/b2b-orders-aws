@@ -867,6 +867,134 @@
       "verify": "npm run lint && npm run typecheck && npm test && npm run check:spec && npm run test:acceptance && npm run smoke && scripts/autopilot.sh --dry-run",
       "blocked_by": null,
       "notes": "2026-10-18: creada como etapa 5 del plan de sdd-base. Queda proposed hasta que el usuario la revise y sdd-base cierre T-01..T-04."
+    },
+    {
+      "id": "T-26",
+      "kind": "spec",
+      "title": "Pruebas de aceptación de REQ-012 (historial de estados por eventos)",
+      "description": "tests/acceptance/req_012_historial.test.ts: E1–E4 y E7 contra dev, leyendo el historial de la tabla (`PK=HISTORY#<orderId>`, Query) con espera activa de hasta 30 s (S-29); fixtures para leer el historial; los 41 casos actuales no cambian. Antes del corte fallan por la razón esperada (sin historial). El usuario aprueba el diff de tests/acceptance/ antes de verified_auto.",
+      "reqs": [
+        "REQ-012"
+      ],
+      "decisions": [
+        "DEC-007",
+        "DEC-020"
+      ],
+      "depends_on": [],
+      "status": "proposed",
+      "touches": [
+        "tests/acceptance/"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm run test:acceptance (casos nuevos de REQ-012 fallan por falta de historial; los 41 actuales pasan) && npm run check:spec; aprobación del usuario del diff",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+    },
+    {
+      "id": "T-27",
+      "title": "Backend: una Lambda por dominio (catálogo, pedidos, panel) sin cambio de comportamiento",
+      "description": "DEC-019: tres handlers con el dominio compartido; AppSync asigna cada campo a su Lambda; permisos mínimos por función; contrato sin cambios. Requiere deploy (en autopilot: Pendiente deploy).",
+      "reqs": [
+        "REQ-012"
+      ],
+      "decisions": [
+        "DEC-019"
+      ],
+      "depends_on": [],
+      "status": "proposed",
+      "touches": [
+        "backend/",
+        "infra/"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test (infra/test: cada campo → su Lambda, IAM exacto por función) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios) && npm run smoke && npm run check:spec",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario. REQ-012 E7 (REQ-001..011 sin cambios)."
+    },
+    {
+      "id": "T-28",
+      "title": "Eventos de pedido: SNS, SQS con DLQ y Lambda de historial (REQ-012)",
+      "description": "DEC-020: tópico SNS order-events; publicación tras escribir en orders y distributor (sin publicar ante rechazos; error de publicación registrado sin romper la respuesta); cola SQS con DLQ (maxReceiveCount 3, retención 14 días); Lambda order-history idempotente en HISTORY#<orderId>/EVENT#<at>#<eventId>; limpieza de la aceptación extendida al historial de C-ACEPT-…. Requiere deploy.",
+      "reqs": [
+        "REQ-012"
+      ],
+      "decisions": [
+        "DEC-020"
+      ],
+      "depends_on": [
+        "T-26",
+        "T-27"
+      ],
+      "status": "proposed",
+      "touches": [
+        "backend/",
+        "infra/",
+        "scripts/lib/acceptance-cleanup.ts",
+        "scripts/acceptance-cleanup.ts",
+        "scripts/test/"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test (backend: idempotencia, sin publicación ante rechazo, fallo de publicación; infra: suscripción, DLQ, permisos) && npm run deploy:dev && npm run test:acceptance (REQ-001..012; los 41 casos actuales sin cambios) (REQ-012 E1–E4, E7 pasan) && npm run smoke && npm run check:spec",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+    },
+    {
+      "id": "T-29",
+      "title": "App: estado con Zustand (carrito, sesión y panel) sin cambio visible",
+      "description": "DEC-021: stores cart, session y panel; se quitan CartProvider y PanelProvider; tokens en Amplify; cerrar sesión vacía carrito y panel como hoy. Mismas pantallas y textos. Verificación manual en el teléfono del guion del README (DEC-011).",
+      "reqs": [
+        "REQ-001",
+        "REQ-003",
+        "REQ-005",
+        "REQ-010"
+      ],
+      "decisions": [
+        "DEC-021",
+        "DEC-003",
+        "DEC-008"
+      ],
+      "depends_on": [],
+      "status": "proposed",
+      "touches": [
+        "app/"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test (app/test: mismas expectativas + pruebas de los stores) && npx expo export --platform android && npm run check:spec; manual en el teléfono (DEC-011)",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: propuesta del corte 4; espera la aprobación del usuario."
+    },
+    {
+      "id": "T-30",
+      "kind": "tooling",
+      "title": "README de presentación en inglés para el equipo técnico, con CI y badges",
+      "description": "DEC-022. README.md en inglés para un equipo técnico que lo abre por primera vez: una frase de qué es; badges de CI; capturas de la app (S-36); diagrama de arquitectura en Mermaid (app → Cognito → AppSync → Lambdas por dominio → DynamoDB, y SNS → SQS → Lambda de historial con DLQ); tabla servicio AWS → para qué → decisión (enlace); diagrama de secuencia de crear pedido (incluye la publicación del evento); seguridad (Cognito por grupos, autorización por campo, IAM mínimo por Lambda, sin llaves largas para humanos, identidad acotada del autopilot); infraestructura como código (CDK); pruebas contra AWS real; cómo desplegar en una cuenta nueva (bootstrap, SSO, deploy, seed). Sin IDs internos en el texto: REQ/DEC solo como enlaces. Workflow .github/workflows/ci.yml (lint, typecheck, npm test, check:spec; sin AWS). Resumen gerencial actual a docs/resumen-ejecutivo.md (S-34).",
+      "reqs": [],
+      "decisions": [
+        "DEC-022",
+        "DEC-019",
+        "DEC-020",
+        "DEC-021"
+      ],
+      "depends_on": [
+        "T-27",
+        "T-28",
+        "T-29"
+      ],
+      "status": "proposed",
+      "touches": [
+        "README.md",
+        "docs/",
+        ".github/workflows/"
+      ],
+      "verify": "Mermaid válido (GitHub lo dibuja: comprobado en la vista del repositorio); enlaces de REQ/DEC resuelven; workflow de CI en verde en GitHub (gh run list); npm run check:spec; las instrucciones de cuenta nueva se siguen en una cuenta limpia o se revisan paso a paso contra package.json e infra/",
+      "evidence": null,
+      "review": null,
+      "blocked_by": null,
+      "notes": "2026-10-18: propuesta como última tarea del corte 4; espera la aprobación del usuario y sus capturas de la app."
     }
   ]
 }

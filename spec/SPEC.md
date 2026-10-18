@@ -1,5 +1,5 @@
 # SPEC — Pedidos B2B (demo)
-Versión: 3  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: approved  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización)
+Versión: 4  ·  Corte 1: approved  ·  Corte 2: approved  ·  Corte 3: approved  ·  Corte 4: proposed  ·  Nivel de riesgo (10.4): corte 1 funcionalidad mediana; corte 2 bajo (solo app, sin backend ni deploy); corte 3 funcionalidad mediana (rol nuevo, contrato y autorización); corte 4 funcionalidad mediana (servicios nuevos y refactor de backend y app sin cambio visible)
 
 ## Objetivo (≤1 página)
 Para el **almacenero**, que necesita reponer mercadería de su distribuidor sin depender de llamadas
@@ -28,6 +28,11 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
   panel con todos los pedidos de todos los almacenes y filtro por estado (REQ-010); cambio de
   estado de un pedido desde la app (REQ-011). Responde Q-02 para la demo. El script
   `order:set-status` sigue existiendo para pruebas y soporte, pero la demo ya no lo usa.
+- Propuesto (corte 4, alinear al stack objetivo sin cambiar lo que ve el usuario): separar la Lambda única en una por
+  dominio (catálogo, pedidos, panel del distribuidor); al crear un pedido o cambiar su estado, publicar un evento en
+  SNS que una cola SQS (con DLQ) entrega a otra Lambda, que registra el historial de estados del pedido (REQ-012);
+  estado de la app (carrito, sesión y lista del panel) con Zustand. Todo con CDK. Sin cambios en pantallas, textos,
+  flujos ni contrato GraphQL.
 - Excluido explícitamente: auto-registro y recuperación de contraseña; pagos y facturación;
   control de stock; backoffice del distribuidor más allá del corte 3 (alta de usuarios, catálogo y precios desde la app); notificaciones push y suscripciones en tiempo
   real; modo offline; varios distribuidores; listas de precios por cliente; imágenes, búsqueda y
@@ -37,6 +42,8 @@ pasa ese pedido a "Enviado"; el almacenero vuelve a entrar, refresca y lo ve "En
 
 ## Restricciones
 - R-01 Stack: AWS Cognito, AppSync, Lambda, DynamoDB; cliente React Native — fuente: usuario
+  - Cambio propuesto (corte 4, pendiente de aprobación del usuario): agregar AWS SNS y SQS, y Zustand como librería
+    de estado del cliente — fuente: encargo del usuario del corte 4, LOG 2026-10-18 · DEC-020, DEC-021
 - R-02 Es una demo: un entorno `dev`, sin recursos de costo fijo (todo serverless/on-demand) — fuente: usuario (demo) · DEC-001, DEC-006
 - R-03 Las decisiones técnicas las toma el agente y las registra sin preguntar — fuente: usuario, LOG 2026-10-17
 - R-04 Despliegue `dev` con el perfil AWS `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], credenciales temporales de IAM Identity Center: `aws sso login --sso-session pepe`, permission set `AdministratorAccess`) en `us-east-1` — fuente: usuario, LOG 2026-10-18 (antes: rol `OrganizationAccountAccessRole` asumido desde `default` — DEC-014; y antes, perfil `default` en [REDACTED_AWS_ACCOUNT_MAIN] — Q-01, LOG 2026-10-17; DEC-017)
@@ -215,6 +222,25 @@ Ejemplos (aceptación):
 | E7 negativo | el cambio falla por red en la app | mensaje "No se pudo cambiar el estado" y el detalle conserva el estado anterior |
 Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/acceptance/req_011_* (E1–E6 por API) + app/test (E1, E7) + manual en teléfono (criterio de éxito del corte 3)
 
+### REQ-012 Historial de estados del pedido · estado: proposed · prioridad: must · corte 4
+Cuando se confirma un pedido, el sistema deberá registrar en su historial un evento con el estado `RECIBIDO`.
+Cuando el distribuidor cambia el estado de un pedido, el sistema deberá registrar un evento con el estado anterior, el nuevo y el momento del cambio.
+El registro ocurre de forma asíncrona (SNS → SQS → Lambda): el evento queda guardado a más tardar 30 segundos después de la respuesta de la API, y la respuesta al usuario no cambia ni espera al registro.
+Si una operación es rechazada (validación de pedido, `ORDER_NOT_FOUND`, estado inválido), entonces el sistema no deberá registrar ningún evento.
+Si el mismo evento se entrega más de una vez, entonces el sistema deberá guardarlo una sola vez.
+Si el registro de un evento falla de forma repetida, entonces el sistema deberá apartarlo en una cola de mensajes fallidos (DLQ) sin afectar el pedido ni los eventos siguientes.
+Ejemplos (aceptación):
+| caso | entrada / contexto | resultado esperado |
+|---|---|---|
+| E1 positivo | un almacenero confirma un pedido | en ≤30 s el historial del pedido tiene 1 evento: `RECIBIDO` (sin estado anterior), con `customerId`, `orderId` y momento |
+| E2 positivo | el distribuidor pasa ese pedido a `ENVIADO` y luego a `ENTREGADO` | en ≤30 s el historial tiene 3 eventos en orden de momento: `RECIBIDO`, `RECIBIDO → ENVIADO`, `ENVIADO → ENTREGADO` |
+| E3 borde | el distribuidor elige el mismo estado (`ENVIADO` → `ENVIADO`, REQ-011 E3) | se registra un evento `ENVIADO → ENVIADO` (el cambio se pidió y se aceptó) |
+| E4 negativo | `createOrder` rechazado (`EMPTY_ORDER`) o `setOrderStatus` con `ORDER_NOT_FOUND` | ningún evento nuevo para ningún pedido |
+| E5 borde | el mismo mensaje de SQS se entrega dos veces | un solo evento guardado |
+| E6 negativo | el registro falla siempre para un mensaje | el mensaje termina en la DLQ tras 3 intentos; el pedido y su estado no cambian |
+| E7 borde | todo el corte 4 desplegado | REQ-001..011 siguen pasando sin cambios en sus pruebas ni en el contrato |
+Trazas: §Alcance corte 4 · decisiones: DEC-019, DEC-020 · prueba: tests/acceptance/req_012_* (E1–E4, E7) + backend/test (E5) + infra/test (E6: DLQ y `maxReceiveCount`)
+
 ## Supuestos (no bloqueantes, con valor por defecto)
 | ID | creemos que… | valor por defecto | clase | disparador de revisión |
 |---|---|---|---|---|
@@ -246,6 +272,14 @@ Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/accep
 | S-26 | volumen | el panel trae todos los pedidos sin paginar (demo: decenas) | reversible (paginación aditiva) | más de 1.000 pedidos (DEC-013) |
 | S-27 | aceptación de la UI del panel | como S-20: jest en `app/test/` + verificación manual en el teléfono (DEC-011); la API se prueba en `tests/acceptance/` (tarea de spec T-13) | reversible | — |
 | S-28 | textos de la UI del distribuidor | panel "Pedidos"; filtro "Todos" + los 5 nombres de S-17; detalle "Pedido <número>" con "Cambiar estado"; menú de cuenta igual al del almacenero (REQ-006) | reversible | — |
+| S-29 | "registra el evento" no es visible para el usuario | el historial se guarda en la tabla (DEC-020) y no se muestra en la app ni se agrega al contrato; la aceptación lo lee directo de la tabla, como ya hace con el catálogo (fixtures) | reversible (consulta `orderHistory` aditiva) | se pide ver el historial en la app |
+| S-30 | dominios de la separación | catálogo = `listProducts`; pedidos = `createOrder`, `myOrders`, `order`; panel del distribuidor = `allOrders`, `setOrderStatus`; más la Lambda consumidora del historial | reversible | aparece una operación que no encaja |
+| S-31 | "estado de la app (carrito, sesión)" incluye la lista del panel | también `PanelProvider` pasa a Zustand, para no dejar dos estilos de estado; los tokens siguen en Amplify (DEC-003): Zustand guarda rol, correo y estado de la sesión | reversible | — |
+| S-32 | "sin cambiar lo que ve el usuario" | mismas pantallas, textos, flujos y tiempos percibidos; si publicar el evento falla, el pedido igual se confirma o cambia (se registra el error) | no bloqueante | — |
+| S-33 | orden del historial | por el momento que fija la Lambda que publica (no por el orden de llegada a la cola) | reversible (FIFO) | se exige orden estricto de entrega |
+| S-34 | el README nuevo es para el equipo técnico | README.md pasa a inglés (DEC-022); el resumen gerencial en español se mueve a `docs/resumen-ejecutivo.md` y el README lo enlaza | reversible | — |
+| S-35 | "badges de CI" | un workflow de GitHub Actions corre lint, tipos, pruebas unitarias y check:spec en cada push, sin credenciales de AWS en GitHub; la aceptación contra AWS real sigue en el autopilot y en local, y el README lo dice | reversible (rol OIDC para aceptación en CI) | se pide la aceptación en CI |
+| S-36 | capturas de la app | las pone el usuario (fotos del teléfono); van en `docs/img/`; sin GIF si no se entrega video | no bloqueante | — |
 
 ## Preguntas abiertas
 | ID | pregunta | clase | bloquea a | responsable | vence |
@@ -339,3 +373,33 @@ Trazas: §Alcance corte 3 · decisiones: DEC-005, DEC-013 · prueba: tests/accep
 - [x] DEC-013 `accepted`
 - [x] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
 - [x] Sin preguntas bloqueantes (Q-02 respondida para la demo)
+
+## Plan (corte 4, stack objetivo sin cambio visible) — propuesto
+### Diseño
+- Backend (DEC-019, supersede DEC-005): tres Lambdas de API (`catalog`, `orders`, `distributor`) con el dominio compartido de `backend/src/domain` y un handler por dominio; AppSync asigna cada campo a su Lambda; permisos mínimos por función (catálogo solo lee; pedidos escribe y lee su partición; panel hace Scan y UpdateItem). El contrato no cambia.
+- Eventos (DEC-020): tópico SNS estándar `order-events`; las Lambdas de pedidos y panel publican tras escribir en DynamoDB (`OrderCreated`, `OrderStatusChanged`, con id de evento); cola SQS suscrita (entrega cruda) con DLQ (`maxReceiveCount` 3, retención 14 días); Lambda `order-history` con fuente SQS (lotes con `ReportBatchItemFailures`) que guarda cada evento con escritura condicional por id (idempotente) en `PK=HISTORY#<orderId>`, `SK=EVENT#<momento>#<id>` (fuera de los Scan de `ORDER#` del panel). La limpieza de la aceptación también borra el historial de los clientes `C-ACEPT-…`.
+- App (DEC-021): stores de Zustand para carrito, sesión y lista del panel en lugar de `CartProvider`, `PanelProvider` y el estado de sesión local; mismas pantallas y textos; Amplify sigue guardando los tokens.
+- Despliegue: `npm run deploy:dev` tras T-27 y tras T-28 (en autopilot quedan como `- Pendiente deploy:`).
+
+### Orden y dependencias
+1. T-26 Pruebas de aceptación REQ-012 (tarea de spec; el usuario aprueba el diff de tests/acceptance/) — sin dependencias
+2. T-27 Backend: una Lambda por dominio (DEC-019), sin cambio de comportamiento — **requiere deploy** — sin dependencias
+3. T-28 Eventos: SNS, SQS con DLQ y Lambda de historial (REQ-012, DEC-020) — **requiere deploy** — depende de T-26 y T-27
+4. T-29 App: estado con Zustand (DEC-021), sin cambio visible — solo app — sin dependencias
+5. T-30 README de presentación en inglés para el equipo técnico, con Mermaid, tabla de servicios, secuencia de crear pedido, seguridad, IaC, pruebas contra AWS real y despliegue en cuenta nueva; workflow de CI para los badges (DEC-022) — depende de T-27, T-28 y T-29 (describe la arquitectura final) y de las capturas del usuario
+
+### Riesgos
+| riesgo | mitigación |
+|---|---|
+| la separación de Lambdas rompe permisos o el ruteo de algún campo | REQ-012 E7: `test:acceptance` completo; prueba de plantilla en infra/test (cada campo → su Lambda, permisos por función) |
+| publicar en SNS falla después de escribir el pedido y el evento se pierde | S-32: se registra el error y se acepta la pérdida en la demo; DEC-020 anota DynamoDB Streams como salida |
+| la aceptación de REQ-012 es inestable por la espera asíncrona | espera activa con tope de 30 s; el historial se lee por `PK` (Query, no Scan) |
+| Zustand cambia el ciclo de render y altera la UI | jest de app/test sin cambios de expectativas + verificación manual en el teléfono (DEC-011) |
+| el teardown de la aceptación borra eventos de otra corrida | igual que hoy con los pedidos: una corrida por vez (T-25 agrega el candado) |
+
+## Criterio de cierre del corte 4
+- [ ] R-01 ampliada (SNS, SQS, Zustand), REQ-012 y S-29..S-33 aprobados por el responsable
+- [ ] DEC-019, DEC-020, DEC-021 y DEC-022 `accepted`; S-34..S-36 aprobados
+- [ ] Cada REQ con ≥1 ejemplo positivo y ≥1 negativo/borde (hecho en la propuesta)
+- [ ] Sin preguntas bloqueantes
+- [ ] REQ-001..011 siguen pasando sin cambios en sus pruebas (REQ-012 E7)
