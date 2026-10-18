@@ -1,6 +1,6 @@
-// REQ-003 Armar y confirmar pedido — ejemplos de API (DEC-007). Los pedidos los hace un cliente
-// desechable para no ensuciar el historial de almacen1 en la demo. El botón deshabilitado de E5, el
-// carrito vacío tras confirmar y el subtotal en pantalla son manuales (LOG).
+// REQ-003 Build and confirm an order — API examples (DEC-007). Orders are placed by a throwaway
+// customer so almacen1's history stays clean for the demo. The disabled button of E5, the empty cart
+// after confirming and the on-screen subtotal are manual (LOG).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Product } from '../../backend/src/domain/catalog.ts';
 import type { StageEnv } from '../../scripts/lib/env.ts';
@@ -21,7 +21,7 @@ import {
 } from './support/fixtures.ts';
 
 const YERBA = 'yerba-1kg';
-const ARROZ = 'arroz-1kg';
+const RICE = 'arroz-1kg';
 
 let env: StageEnv;
 let customer: TempCustomer;
@@ -55,7 +55,7 @@ afterAll(async () => {
   if (customer) await deleteCustomers(env, [customer]);
 }, 60_000);
 
-/** El pedido se rechaza con `code`, sin datos, y el cliente sigue con los mismos pedidos. */
+/** The order is rejected with `code`, with no data, and the customer keeps the same orders. */
 async function expectRejected(lines: LineInput[], code: string): Promise<string> {
   const before = await myOrders(env, customer.token);
   const res = await createOrder(env, customer.token, lines);
@@ -66,22 +66,22 @@ async function expectRejected(lines: LineInput[], code: string): Promise<string>
 }
 
 describe('REQ-003', () => {
-  it('E1: 2 × Yerba + 5 × Arroz → pedido RECIBIDO, total 15500, con número', async () => {
+  it('E1: 2 × Yerba + 5 × Arroz → RECIBIDO order, total 15500, with a number', async () => {
     const order = await placeOrder(env, customer.token, [
       { productId: YERBA, quantity: 2 },
-      { productId: ARROZ, quantity: 5 },
+      { productId: RICE, quantity: 5 },
     ]);
     expect(order.status).toBe('RECIBIDO');
     expect(order.total).toBe(15500);
     expect(order.number).toBe(order.id.slice(-8).toUpperCase()); // S-11
     const byId = Object.fromEntries(order.lines.map((l) => [l.productId, l]));
     expect(byId[YERBA]).toMatchObject({ name: 'Yerba 1 kg', quantity: 2, unitPrice: 4500, subtotal: 9000 });
-    expect(byId[ARROZ]).toMatchObject({ name: 'Arroz 1 kg', quantity: 5, unitPrice: 1300, subtotal: 6500 });
+    expect(byId[RICE]).toMatchObject({ name: 'Arroz 1 kg', quantity: 5, unitPrice: 1300, subtotal: 6500 });
     expect((await myOrders(env, customer.token)).map((o) => o.id)).toContain(order.id);
   });
 
-  it('E2: el cliente no puede fijar el precio; el pedido usa $4.500', async () => {
-    // La entrada no tiene campo de precio (DEC-009): un precio enviado no llega al servidor.
+  it('E2: the customer cannot set the price; the order uses $4.500', async () => {
+    // The input has no price field (DEC-009): a price sent by the client never reaches the server.
     const before = await myOrders(env, customer.token);
     const withPrice = await createOrder(env, customer.token, [{ productId: YERBA, quantity: 1, unitPrice: 1 }]);
     expect(withPrice.data?.createOrder ?? null).toBeNull();
@@ -93,33 +93,33 @@ describe('REQ-003', () => {
     expect(order.total).toBe(4500);
   });
 
-  it('E3: cantidad 0 → INVALID_QUANTITY; sin pedido', async () => {
+  it('E3: quantity 0 → INVALID_QUANTITY; no order', async () => {
     await expectRejected([{ productId: YERBA, quantity: 0 }], 'INVALID_QUANTITY');
   });
 
-  it('E3: cantidad 1000 → INVALID_QUANTITY; sin pedido', async () => {
+  it('E3: quantity 1000 → INVALID_QUANTITY; no order', async () => {
     await expectRejected([{ productId: YERBA, quantity: 1000 }], 'INVALID_QUANTITY');
   });
 
-  it('E3 (borde): cantidades 1 y 999 se aceptan', async () => {
+  it('E3 (edge): quantities 1 and 999 are accepted', async () => {
     const order = await placeOrder(env, customer.token, [
       { productId: YERBA, quantity: 1 },
-      { productId: ARROZ, quantity: 999 },
+      { productId: RICE, quantity: 999 },
     ]);
     expect(order.total).toBe(4500 + 999 * 1300);
   });
 
-  it('E3 (borde): una línea válida invalida el pedido entero si otra no lo es', async () => {
+  it('E3 (edge): one invalid line invalidates the whole order even if another line is valid', async () => {
     await expectRejected(
       [
-        { productId: ARROZ, quantity: 2 },
+        { productId: RICE, quantity: 2 },
         { productId: YERBA, quantity: 0 },
       ],
       'INVALID_QUANTITY',
     );
   });
 
-  it('E4: producto inactivo → PRODUCT_UNAVAILABLE con el productId; sin pedido', async () => {
+  it('E4: inactive product → PRODUCT_UNAVAILABLE with the productId; no order', async () => {
     const message = await expectRejected(
       [
         { productId: YERBA, quantity: 1 },
@@ -130,43 +130,43 @@ describe('REQ-003', () => {
     expect(message).toContain(inactive.productId);
   });
 
-  it('E4: producto inexistente → PRODUCT_UNAVAILABLE con el productId; sin pedido', async () => {
+  it('E4: nonexistent product → PRODUCT_UNAVAILABLE with the productId; no order', async () => {
     const missing = 'acept-no-existe';
     const message = await expectRejected([{ productId: missing, quantity: 1 }], 'PRODUCT_UNAVAILABLE');
     expect(message).toContain(missing);
   });
 
-  it('E5: carrito vacío → EMPTY_ORDER; sin pedido', async () => {
+  it('E5: empty cart → EMPTY_ORDER; no order', async () => {
     await expectRejected([], 'EMPTY_ORDER');
   });
 
-  it('E6: el mismo producto en dos líneas (2 y 3) se fusiona en una línea de 5', async () => {
+  it('E6: the same product on two lines (2 and 3) is merged into one line of 5', async () => {
     const order = await placeOrder(env, customer.token, [
-      { productId: ARROZ, quantity: 2 },
-      { productId: ARROZ, quantity: 3 },
+      { productId: RICE, quantity: 2 },
+      { productId: RICE, quantity: 3 },
     ]);
-    expect(order.lines).toEqual([expect.objectContaining({ productId: ARROZ, quantity: 5, subtotal: 6500 })]);
+    expect(order.lines).toEqual([expect.objectContaining({ productId: RICE, quantity: 5, subtotal: 6500 })]);
     expect(order.total).toBe(6500);
   });
 
-  it('E6 (borde): la fusión ocurre antes de validar (500 + 500 → INVALID_QUANTITY)', async () => {
+  it('E6 (edge): merging happens before validation (500 + 500 → INVALID_QUANTITY)', async () => {
     await expectRejected(
       [
-        { productId: ARROZ, quantity: 500 },
-        { productId: ARROZ, quantity: 500 },
+        { productId: RICE, quantity: 500 },
+        { productId: RICE, quantity: 500 },
       ],
       'INVALID_QUANTITY',
     );
   });
 
-  it('E7: 51 productos distintos, cantidad 1 → TOO_MANY_LINES; sin pedido', async () => {
+  it('E7: 51 distinct products, quantity 1 → TOO_MANY_LINES; no order', async () => {
     await expectRejected(
       many.map((p) => ({ productId: p.productId, quantity: 1 })),
       'TOO_MANY_LINES',
     );
   });
 
-  it('E7 (borde): 50 productos distintos se aceptan', async () => {
+  it('E7 (edge): 50 distinct products are accepted', async () => {
     const order = await placeOrder(
       env,
       customer.token,

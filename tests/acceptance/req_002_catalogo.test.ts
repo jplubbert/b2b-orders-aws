@@ -1,4 +1,4 @@
-// REQ-002 Ver catálogo — ejemplos de API (DEC-007). El mensaje de E3 en pantalla es manual (LOG).
+// REQ-002 View catalog — API examples (DEC-007). The on-screen message of E3 is manual (LOG).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Product } from '../../backend/src/domain/catalog.ts';
 import type { StageEnv } from '../../scripts/lib/env.ts';
@@ -13,7 +13,7 @@ type CatalogItem = Omit<Product, 'active'>;
 
 let env: StageEnv;
 let token: string;
-let aceite: Product;
+let oil: Product;
 
 async function listProducts(): Promise<CatalogItem[]> {
   const res = await gql<{ listProducts: CatalogItem[] }>(env, LIST_PRODUCTS, {}, token);
@@ -25,7 +25,7 @@ beforeAll(async () => {
   env = stageEnv();
   await sweepProducts(env);
   token = await login(env, SEED_USERS[0]!.email);
-  aceite = await createProduct(env, {
+  oil = await createProduct(env, {
     name: 'Aceite 900 ml',
     presentation: 'Botella 900 ml',
     unitPrice: 2900,
@@ -34,34 +34,34 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
-  if (aceite) await deleteProducts(env, [aceite.productId]);
+  if (oil) await deleteProducts(env, [oil.productId]);
 });
 
 describe('REQ-002', () => {
-  it('E1: lista "Arroz 1 kg" y luego "Yerba 1 kg" con presentación y precio unitario', async () => {
+  it('E1: lists "Arroz 1 kg" and then "Yerba 1 kg" with presentation and unit price', async () => {
     const products = await listProducts();
-    const arroz = products.findIndex((p) => p.name === 'Arroz 1 kg');
+    const rice = products.findIndex((p) => p.name === 'Arroz 1 kg');
     const yerba = products.findIndex((p) => p.name === 'Yerba 1 kg');
-    expect(arroz).toBeGreaterThanOrEqual(0);
-    expect(yerba).toBeGreaterThan(arroz);
-    expect(products[arroz]).toMatchObject({ presentation: 'Paquete 1 kg', unitPrice: 1300 });
+    expect(rice).toBeGreaterThanOrEqual(0);
+    expect(yerba).toBeGreaterThan(rice);
+    expect(products[rice]).toMatchObject({ presentation: 'Paquete 1 kg', unitPrice: 1300 });
     expect(products[yerba]).toMatchObject({ presentation: 'Paquete 1 kg', unitPrice: 4500 });
   });
 
-  it('E1 (borde): toda la lista está ordenada por nombre', async () => {
+  it('E1 (edge): the whole list is sorted by name', async () => {
     const names = (await listProducts()).map((p) => p.name);
     const collator = new Intl.Collator('es-CL', { sensitivity: 'base', numeric: true });
     expect(names).toEqual([...names].sort(collator.compare));
   });
 
-  it('E2: "Aceite 900 ml" con active=false no aparece', async () => {
+  it('E2: "Aceite 900 ml" with active=false does not appear', async () => {
     const products = await listProducts();
-    expect(products.map((p) => p.productId)).not.toContain(aceite.productId);
+    expect(products.map((p) => p.productId)).not.toContain(oil.productId);
     expect(products.map((p) => p.name)).not.toContain('Aceite 900 ml');
   });
 
-  it('E3: sin productos activos → lista vacía', async () => {
-    // Desactiva todo el catálogo de `dev` y lo restaura tal cual (si se interrumpe: `npm run seed`).
+  it('E3: no active products → empty list', async () => {
+    // Deactivates the whole `dev` catalog and restores it as it was (if interrupted: `npm run seed`).
     const original = await catalogItems(env);
     try {
       await putItems(

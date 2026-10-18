@@ -1,4 +1,4 @@
-// REQ-001 Inicio de sesión — ejemplos de API (DEC-007). E1–E3 son de UI: manuales, registrados en LOG.
+// REQ-001 Sign-in — API examples (DEC-007). E1–E3 are UI examples: manual, recorded in LOG.
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { StageEnv } from '../../scripts/lib/env.ts';
 import { gql, stageEnv } from '../lib/api.ts';
@@ -13,13 +13,13 @@ beforeAll(() => {
 });
 
 describe('REQ-001', () => {
-  it('E4: listProducts sin cabecera Authorization → Unauthorized y sin datos', async () => {
+  it('E4: listProducts without an Authorization header → Unauthorized and no data', async () => {
     const res = await gql<{ listProducts: unknown[] }>(env, LIST_PRODUCTS);
     expect(res.data ?? null).toBeNull();
     expect(res.errors?.[0]?.errorType).toMatch(/Unauthorized/);
   });
 
-  it('E4 (borde): token inválido → Unauthorized y sin datos', async () => {
+  it('E4 (edge): invalid token → Unauthorized and no data', async () => {
     const res = await gql<{ listProducts: unknown[] }>(env, LIST_PRODUCTS, {}, 'eyJhbGciOiJub25lIn0.e30.x');
     expect(res.data ?? null).toBeNull();
     expect(res.errors?.[0]?.errorType).toMatch(/Unauthorized/);

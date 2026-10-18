@@ -1,7 +1,7 @@
-// Preparación de datos para la aceptación contra `dev` (DEC-007). No hay API de catálogo, así que los
-// productos de prueba se escriben directo en la tabla (claves de DEC-006) y los usuarios desechables
-// (clientes, distribuidores y sin grupo) se crean en Cognito como lo hace el seed. Todo lleva el
-// prefijo `acept-` y se borra al terminar; `sweep*` limpia restos de corridas interrumpidas.
+// Data setup for acceptance against `dev` (DEC-007). There is no catalog API, so test products are
+// written straight to the table (DEC-006 keys) and the throwaway users (customers, distributors and
+// ungrouped) are created in Cognito the way the seed does it. Everything carries the `acept-` prefix
+// and is deleted at the end; `sweep*` cleans up leftovers from interrupted runs.
 import { spawnSync } from 'node:child_process';
 import {
   AdminAddUserToGroupCommand,
@@ -36,7 +36,7 @@ const clients = (env: StageEnv) => ({
 
 const rand = () => Math.random().toString(36).slice(2, 10);
 
-// --- Catálogo -------------------------------------------------------------------------------
+// --- Catalog --------------------------------------------------------------------------------
 
 export async function catalogItems(env: StageEnv): Promise<Array<Record<string, unknown>>> {
   const { doc } = clients(env);
@@ -68,7 +68,7 @@ export async function putItems(env: StageEnv, items: Array<Record<string, unknow
   }
 }
 
-/** Crea productos de prueba con `productId` único (prefijo `acept-`). */
+/** Creates test products with a unique `productId` (`acept-` prefix). */
 export async function createProducts(
   env: StageEnv,
   specs: Array<Omit<Product, 'productId'> & { productId?: string }>,
@@ -112,7 +112,7 @@ export async function sweepProducts(env: StageEnv): Promise<void> {
   await deleteProducts(env, leftovers);
 }
 
-// --- Usuarios desechables -------------------------------------------------------------------
+// --- Throwaway users ------------------------------------------------------------------------
 
 export interface TempUser {
   email: string;
@@ -123,7 +123,7 @@ export interface TempCustomer extends TempUser {
   customerId: string;
 }
 
-/** Crea el usuario con la contraseña de demo; si `group` no existe, lo borra y relanza el error. */
+/** Creates the user with the demo password; if `group` doesn't exist, deletes the user and rethrows. */
 async function createUser(
   env: StageEnv,
   email: string,
@@ -158,7 +158,7 @@ async function createUser(
   return { email, token: await login(env, email) };
 }
 
-/** Usuario nuevo del grupo `almaceneros` con su propio `custom:customerId` (DEC-004), sin pedidos. */
+/** New user in the `almaceneros` group with its own `custom:customerId` (DEC-004) and no orders. */
 export async function createCustomer(env: StageEnv): Promise<TempCustomer> {
   const id = rand();
   const customerId = `C-ACEPT-${id.toUpperCase()}`;
@@ -171,12 +171,12 @@ export async function createCustomer(env: StageEnv): Promise<TempCustomer> {
   return { ...user, customerId };
 }
 
-/** Usuario nuevo del grupo `distribuidores`, sin `custom:customerId` (S-22, DEC-013). */
+/** New user in the `distribuidores` group, without `custom:customerId` (S-22, DEC-013). */
 export async function createDistributor(env: StageEnv): Promise<TempUser> {
   return createUser(env, `${PREFIX}dist-${rand()}@demo.test`, [], DISTRIBUTOR_GROUP);
 }
 
-/** Usuario válido sin grupo; tiene `custom:customerId` para que lo único que falte sea el grupo. */
+/** Valid user with no group; it has `custom:customerId` so the group is the only thing missing. */
 export async function createUngrouped(env: StageEnv): Promise<TempUser> {
   const id = rand();
   return createUser(env, `${PREFIX}nogrp-${id}@demo.test`, [
@@ -201,7 +201,7 @@ export async function sweepCustomers(env: StageEnv): Promise<void> {
   }
 }
 
-// --- API de pedidos (forma según DEC-009) ---------------------------------------------------
+// --- Orders API (shape per DEC-009) ---------------------------------------------------------
 
 export const ORDER_FIELDS = /* GraphQL */ `
   id number createdAt total status
@@ -242,22 +242,22 @@ export function createOrder(env: StageEnv, token: string, lines: LineInput[]) {
   return gql<{ createOrder: Order | null }>(env, CREATE_ORDER, { input: { lines } }, token);
 }
 
-/** `myOrders` del cliente; falla la prueba si la API responde con errores. */
+/** The customer's `myOrders`; fails the test if the API responds with errors. */
 export async function myOrders(env: StageEnv, token: string): Promise<OrderSummary[]> {
   const res = await gql<{ myOrders: OrderSummary[] }>(env, MY_ORDERS, {}, token);
-  if (res.errors?.length || !res.data) throw new Error(`myOrders falló: ${JSON.stringify(res.errors)}`);
+  if (res.errors?.length || !res.data) throw new Error(`myOrders failed: ${JSON.stringify(res.errors)}`);
   return res.data.myOrders;
 }
 
-/** Crea un pedido válido; falla la prueba si la API lo rechaza. */
+/** Creates a valid order; fails the test if the API rejects it. */
 export async function placeOrder(env: StageEnv, token: string, lines: LineInput[]): Promise<Order> {
   const res = await createOrder(env, token, lines);
-  if (res.errors?.length || !res.data?.createOrder) throw new Error(`createOrder falló: ${JSON.stringify(res.errors)}`);
+  if (res.errors?.length || !res.data?.createOrder) throw new Error(`createOrder failed: ${JSON.stringify(res.errors)}`);
   return res.data.createOrder;
 }
 
-// --- API del distribuidor (forma según DEC-013) ---------------------------------------------
-// Campos aparte de ORDER_FIELDS: `customerId` no existe antes de T-14 y req_003/004 deben seguir pasando.
+// --- Distributor API (shape per DEC-013) ----------------------------------------------------
+// Fields kept apart from ORDER_FIELDS: `customerId` doesn't exist before T-14 and req_003/004 must keep passing.
 
 const DIST_ORDER_FIELDS = `customerId ${ORDER_FIELDS}`;
 
@@ -276,10 +276,10 @@ export function allOrders(env: StageEnv, token: string, status?: string) {
   return gql<{ allOrders: DistOrder[] | null }>(env, ALL_ORDERS, status ? { status } : {}, token);
 }
 
-/** `allOrders` del distribuidor; falla la prueba si la API responde con errores. */
+/** The distributor's `allOrders`; fails the test if the API responds with errors. */
 export async function listAllOrders(env: StageEnv, token: string, status?: string): Promise<DistOrder[]> {
   const res = await allOrders(env, token, status);
-  if (res.errors?.length || !res.data?.allOrders) throw new Error(`allOrders falló: ${JSON.stringify(res.errors)}`);
+  if (res.errors?.length || !res.data?.allOrders) throw new Error(`allOrders failed: ${JSON.stringify(res.errors)}`);
   return res.data.allOrders;
 }
 
@@ -291,9 +291,9 @@ export function changeOrderStatus(
   return gql<{ setOrderStatus: DistOrder | null }>(env, SET_ORDER_STATUS, target, token);
 }
 
-// --- Script del distribuidor ----------------------------------------------------------------
+// --- Distributor script ---------------------------------------------------------------------
 
-/** `npm run order:set-status -- <id> <estado>` (SPEC §Plan, DEC-009). */
+/** `npm run order:set-status -- <id> <status>` (SPEC §Plan, DEC-009). */
 export function setOrderStatus(orderId: string, status: string) {
   return spawnSync('npm', ['run', '--silent', 'order:set-status', '--', orderId, status], {
     cwd: ROOT,

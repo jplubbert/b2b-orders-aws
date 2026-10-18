@@ -1,7 +1,7 @@
-// REQ-010 Panel de pedidos del distribuidor — ejemplos de API (DEC-007, DEC-013). Los pedidos los
-// hacen dos clientes desechables en lugar de almacen1/almacen2 (S-14). Los mensajes de E3–E4 y la
-// pantalla de detalle son de la app (app/test + manual, S-27). El estado de E2 se prepara con el
-// script order:set-status para no depender de REQ-011.
+// REQ-010 Distributor order panel — API examples (DEC-007, DEC-013). Orders are placed by two
+// throwaway customers instead of almacen1/almacen2 (S-14). The messages of E3–E4 and the detail
+// screen belong to the app (app/test + manual, S-27). The status for E2 is set up with the
+// order:set-status script so it doesn't depend on REQ-011.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { StageEnv } from '../../scripts/lib/env.ts';
 import { stageEnv } from '../lib/api.ts';
@@ -35,7 +35,7 @@ afterAll(async () => {
 }, 60_000);
 
 describe('REQ-010', () => {
-  it('E1: pedidos de dos almacenes; primero el más reciente, cada uno con su almacén', async () => {
+  it('E1: orders from two stores; most recent first, each with its store', async () => {
     const first = await placeOrder(env, store1.token, [{ productId: 'arroz-1kg', quantity: 1 }]);
     await new Promise((r) => setTimeout(r, 1100));
     const second = await placeOrder(env, store2.token, [{ productId: 'yerba-1kg', quantity: 1 }]);
@@ -62,7 +62,7 @@ describe('REQ-010', () => {
     });
   });
 
-  it('E2: allOrders(status: ENVIADO) trae solo los ENVIADO; sin filtro trae ambos', async () => {
+  it('E2: allOrders(status: ENVIADO) returns only the ENVIADO ones; without a filter it returns both', async () => {
     const received = await placeOrder(env, store1.token, [{ productId: 'arroz-1kg', quantity: 1 }]);
     const shipped = await placeOrder(env, store2.token, [{ productId: 'arroz-1kg', quantity: 2 }]);
     const run = setOrderStatus(shipped.id, 'ENVIADO');
@@ -78,7 +78,7 @@ describe('REQ-010', () => {
     expect(all).toContain(received.id);
   });
 
-  it('E5: pedido de 2 Yerba + 5 Arroz → almacén, 2 líneas con precios congelados, total 15500 y estado', async () => {
+  it('E5: order of 2 Yerba + 5 Arroz → store, 2 lines with frozen prices, total 15500 and status', async () => {
     const order = await placeOrder(env, store1.token, [
       { productId: 'yerba-1kg', quantity: 2 },
       { productId: 'arroz-1kg', quantity: 5 },

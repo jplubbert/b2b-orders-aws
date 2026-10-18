@@ -1,5 +1,5 @@
-// REQ-004 Ver estado de mis pedidos — ejemplos de API (DEC-007). Los pedidos los hace un cliente
-// desechable; almacen2 solo intenta leer (E3). El mensaje de E4 en pantalla es manual (LOG).
+// REQ-004 View the status of my orders — API examples (DEC-007). Orders are placed by a throwaway
+// customer; almacen2 only tries to read (E3). The on-screen message of E4 is manual (LOG).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Product } from '../../backend/src/domain/catalog.ts';
 import type { StageEnv } from '../../scripts/lib/env.ts';
@@ -45,7 +45,7 @@ async function getOrder(token: string, id: string) {
 }
 
 describe('REQ-004', () => {
-  it('E1: se lista primero el pedido más reciente, con número, fecha, total y estado', async () => {
+  it('E1: the most recent order is listed first, with number, date, total and status', async () => {
     const older = await placeOrder(env, owner.token, [{ productId: 'arroz-1kg', quantity: 1 }]);
     await new Promise((r) => setTimeout(r, 1100));
     const newer = await placeOrder(env, owner.token, [{ productId: 'yerba-1kg', quantity: 1 }]);
@@ -64,7 +64,7 @@ describe('REQ-004', () => {
     });
   });
 
-  it('E2: el distribuidor pasa el pedido a ENVIADO por script; al refrescar se ve ENVIADO', async () => {
+  it('E2: the distributor moves the order to ENVIADO via script; after refreshing it shows ENVIADO', async () => {
     const order = await placeOrder(env, owner.token, [{ productId: 'arroz-1kg', quantity: 2 }]);
     const run = setOrderStatus(order.id, 'ENVIADO');
     expect(run.status, run.stderr || run.stdout).toBe(0);
@@ -75,14 +75,14 @@ describe('REQ-004', () => {
     expect(detail.data?.order?.status).toBe('ENVIADO');
   });
 
-  it('E2 (borde): el script rechaza un estado fuera de S-04 y no cambia el pedido', async () => {
+  it('E2 (edge): the script rejects a status outside S-04 and does not change the order', async () => {
     const order = await placeOrder(env, owner.token, [{ productId: 'arroz-1kg', quantity: 1 }]);
     const run = setOrderStatus(order.id, 'PERDIDO');
     expect(run.status).not.toBe(0);
     expect((await getOrder(owner.token, order.id)).data?.order?.status).toBe('RECIBIDO');
   });
 
-  it('E3: almacen2 pide order(id) de un pedido ajeno → null, igual que uno inexistente', async () => {
+  it("E3: almacen2 requests order(id) of someone else's order → null, same as a nonexistent one", async () => {
     const order = await placeOrder(env, owner.token, [{ productId: 'yerba-1kg', quantity: 1 }]);
     const intruder = await login(env, SEED_USERS[1]!.email);
 
@@ -92,15 +92,15 @@ describe('REQ-004', () => {
     expect(foreign).toEqual(missing);
     expect((await myOrders(env, intruder)).map((o) => o.id)).not.toContain(order.id);
 
-    // El dueño sí lo ve: el null de arriba no es porque `order` no exista.
+    // The owner does see it: the null above is not because `order` doesn't exist.
     expect((await getOrder(owner.token, order.id)).data?.order?.id).toBe(order.id);
   });
 
-  it('E4: cliente sin pedidos → lista vacía', async () => {
+  it('E4: customer with no orders → empty list', async () => {
     expect(await myOrders(env, empty.token)).toEqual([]);
   });
 
-  it('E5: si el precio de catálogo cambia después de confirmar, el detalle mantiene el precio congelado', async () => {
+  it('E5: if the catalog price changes after confirming, the detail keeps the frozen price', async () => {
     const order = await placeOrder(env, owner.token, [{ productId: temp.productId, quantity: 3 }]);
     expect(order.total).toBe(3000);
     await setUnitPrice(env, temp, 2000);
