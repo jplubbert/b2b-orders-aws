@@ -28,10 +28,11 @@ const config: CodegenConfig = {
       plugins: [header, 'typescript'],
       config: { scalars, enumsAsTypes: true, avoidOptionals: true, skipTypename: true },
     },
-    // App: tipos del esquema y de cada operación escrita con /* GraphQL */ en app/src.
+    // App: tipos de cada operación escrita con /* GraphQL */ en app/src. `typescript-operations` (v6) ya
+    // emite los inputs y enums que usan; sumarle `typescript` los duplica.
     'app/src/lib/generated/graphql.ts': {
       documents: ['app/src/**/*.{ts,tsx}', '!app/src/lib/generated/**'],
-      plugins: [header, 'typescript', 'typescript-operations'],
+      plugins: [header, 'typescript-operations'],
       config: { scalars, enumsAsTypes: true, avoidOptionals: true, skipTypename: true },
     },
   },

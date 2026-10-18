@@ -1,6 +1,6 @@
 # Contrato de la API Pedidos B2B (fuente única; la infra lo carga desde aquí, DEC-005).
 # Autorización: Cognito User Pool; solo el grupo `almaceneros` (DEC-004).
-# Montos: Int en pesos CLP, sin decimales (DEC-006).
+# Montos: Int en pesos CLP, sin decimales (DEC-006). Forma de pedidos: DEC-009.
 
 type Product @aws_auth(cognito_groups: ["almaceneros"]) {
   productId: ID!
@@ -9,11 +9,59 @@ type Product @aws_auth(cognito_groups: ["almaceneros"]) {
   unitPrice: Int!
 }
 
+"Estados del pedido (S-04); uno nuevo nace en RECIBIDO."
+enum OrderStatus {
+  RECIBIDO
+  EN_PREPARACION
+  ENVIADO
+  ENTREGADO
+  CANCELADO
+}
+
+type Order @aws_auth(cognito_groups: ["almaceneros"]) {
+  "ULID (DEC-006)."
+  id: ID!
+  "Últimos 8 caracteres del ULID en mayúsculas (S-11)."
+  number: String!
+  createdAt: AWSDateTime!
+  total: Int!
+  status: OrderStatus!
+  lines: [OrderLine!]!
+}
+
+"Línea con nombre, presentación y precio congelados al confirmar."
+type OrderLine @aws_auth(cognito_groups: ["almaceneros"]) {
+  productId: ID!
+  name: String!
+  presentation: String!
+  quantity: Int!
+  unitPrice: Int!
+  subtotal: Int!
+}
+
+"Sin campo de precio: el servidor usa el del catálogo (S-12)."
+input OrderLineInput {
+  productId: ID!
+  quantity: Int!
+}
+
+input CreateOrderInput {
+  lines: [OrderLineInput!]!
+}
+
 type Query @aws_auth(cognito_groups: ["almaceneros"]) {
   "Productos activos ordenados por nombre (REQ-002)."
   listProducts: [Product!]!
+  "Pedidos del cliente del token, del más reciente al más antiguo (REQ-004)."
+  myOrders: [Order!]!
+}
+
+type Mutation @aws_auth(cognito_groups: ["almaceneros"]) {
+  "Confirma un pedido en RECIBIDO con precios del catálogo (REQ-003). Errores: INVALID_QUANTITY, PRODUCT_UNAVAILABLE, EMPTY_ORDER, TOO_MANY_LINES."
+  createOrder(input: CreateOrderInput!): Order!
 }
 
 schema {
   query: Query
+  mutation: Mutation
 }

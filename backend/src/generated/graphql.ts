@@ -19,6 +19,55 @@ export type Scalars = {
   AWSURL: { input: string; output: string; }
 };
 
+export type CreateOrderInput = {
+  lines: Array<OrderLineInput>;
+};
+
+export type Mutation = {
+  /** Confirma un pedido en RECIBIDO con precios del catálogo (REQ-003). Errores: INVALID_QUANTITY, PRODUCT_UNAVAILABLE, EMPTY_ORDER, TOO_MANY_LINES. */
+  createOrder: Order;
+};
+
+
+export type MutationCreateOrderArgs = {
+  input: CreateOrderInput;
+};
+
+export type Order = {
+  createdAt: Scalars['AWSDateTime']['output'];
+  /** ULID (DEC-006). */
+  id: Scalars['ID']['output'];
+  lines: Array<OrderLine>;
+  /** Últimos 8 caracteres del ULID en mayúsculas (S-11). */
+  number: Scalars['String']['output'];
+  status: OrderStatus;
+  total: Scalars['Int']['output'];
+};
+
+/** Línea con nombre, presentación y precio congelados al confirmar. */
+export type OrderLine = {
+  name: Scalars['String']['output'];
+  presentation: Scalars['String']['output'];
+  productId: Scalars['ID']['output'];
+  quantity: Scalars['Int']['output'];
+  subtotal: Scalars['Int']['output'];
+  unitPrice: Scalars['Int']['output'];
+};
+
+/** Sin campo de precio: el servidor usa el del catálogo (S-12). */
+export type OrderLineInput = {
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+/** Estados del pedido (S-04); uno nuevo nace en RECIBIDO. */
+export type OrderStatus =
+  | 'CANCELADO'
+  | 'ENTREGADO'
+  | 'ENVIADO'
+  | 'EN_PREPARACION'
+  | 'RECIBIDO';
+
 export type Product = {
   name: Scalars['String']['output'];
   presentation: Scalars['String']['output'];
@@ -29,4 +78,6 @@ export type Product = {
 export type Query = {
   /** Productos activos ordenados por nombre (REQ-002). */
   listProducts: Array<Product>;
+  /** Pedidos del cliente del token, del más reciente al más antiguo (REQ-004). */
+  myOrders: Array<Order>;
 };

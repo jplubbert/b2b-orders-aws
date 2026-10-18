@@ -21,6 +21,7 @@ describe('PedidosStack', () => {
   it('DEC-005: cada campo raíz del contrato usa la fuente de datos `api`', () => {
     const fields = rootFields();
     expect(fields).toContainEqual(['Query', 'listProducts']);
+    expect(fields).toContainEqual(['Mutation', 'createOrder']);
     const resolvers = template.findResources('AWS::AppSync::Resolver');
     expect(Object.keys(resolvers)).toHaveLength(fields.length);
     for (const [typeName, fieldName] of fields) {

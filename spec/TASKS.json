@@ -151,11 +151,12 @@
       "depends_on": [
         "T-04"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "verify": "npm test && npm run test:acceptance -- req_003 + REQ-003 E5 y subtotal por línea manual registrado en LOG",
       "evidence": null,
       "review": null,
-      "blocked_by": null
+      "blocked_by": null,
+      "notes": "2026-10-17 23:45: implementada y verificada en local. Contrato: OrderStatus, Order, OrderLine, CreateOrderInput (sin precio, S-12), Mutation.createOrder y Query.myOrders (DEC-009). Query.myOrders se adelanta desde T-06 porque req_003 lo usa para comprobar que un rechazo no persiste nada; T-06 sigue con order(id), order:set-status y las pantallas de Mis pedidos. Backend: dominio puro buildOrder (fusiona, luego valida EMPTY_ORDER, TOO_MANY_LINES, INVALID_QUANTITY, PRODUCT_UNAVAILABLE con el productId en el mensaje; precios del catálogo), ULID propio (sin dependencia nueva), orderRepo en CUSTOMER#/ORDER# con escritura condicional. App: carrito en memoria (S-09) con − / + en el catálogo, pantalla Carrito con subtotal por línea, total, Confirmar deshabilitado si está vacío, motivo del rechazo y número del pedido. lint, typecheck, npm test 124/124, check:spec y expo export android ok. Pendiente: `npm run deploy:dev` (denegado por permisos en esta sesión) y `npm run test:acceptance -- req_003` contra dev; luego evidencia → verified_auto con REQ-003 E5 y subtotal en el teléfono como pendiente manual (DEC-011)."
     },
     {
       "id": "T-06",
