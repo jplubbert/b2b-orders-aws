@@ -47,7 +47,7 @@ export default function CartScreen() {
         <Card style={styles.done}>
           <Text style={styles.doneTitle}>Pedido confirmado</Text>
           <Text style={styles.doneNumber}>N° {confirmed.number}</Text>
-          <StatusBadge status={confirmed.status} />
+          <StatusBadge status={confirmed.status} style={styles.doneBadge} />
           <Text style={styles.doneTotal}>Total {formatCLP(confirmed.total)}</Text>
         </Card>
         <Button title="Volver al catálogo" onPress={() => router.back()} />
@@ -104,6 +104,7 @@ const styles = StyleSheet.create({
   doneScreen: { justifyContent: 'center', padding: spacing.xl, gap: spacing.lg },
   done: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   doneTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
+  doneBadge: { alignSelf: 'center' },
   doneNumber: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
   doneTotal: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
 });

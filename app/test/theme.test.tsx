@@ -237,6 +237,8 @@ describe('REQ-007 E3: etiquetas de estado (S-17)', () => {
     expect(screen.getByText('N° NUM1')).toBeOnTheScreen();
     expect(screen.getByTestId('status-RECIBIDO')).toBeOnTheScreen();
     expect(screen.queryByText(/RECIBIDO/)).toBeNull();
+    // Hallazgo en el teléfono: la etiqueta quedaba a la izquierda con el resto del bloque centrado.
+    expect(StyleSheet.flatten(screen.getByTestId('status-RECIBIDO').props.style).alignSelf).toBe('center');
   });
 });
 
