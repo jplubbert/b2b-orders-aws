@@ -989,3 +989,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el autopilot implementa T-24 (tarea de spec: queda esperando que el usuario apruebe el diff de tests/acceptance/); luego revisión y aceptación.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "En sdd-base, agrega soporte para tareas en paralelo […] Primero dame el plan y regístralo como DEC propuesta; no implementes todavía." Luego: "Acepto DEC-001 (aprobador: Pepe). Push. Crea las tareas en el orden propuesto, pero deja approved_for_impl solo las etapas 1 y 2; las demás en proposed hasta que yo las revise."
+- Hecho (en sdd-base): DEC-001 (tareas en paralelo: `touches`, worktrees, un solo escritor de spec/) propuesta y aceptada por José Pedro Lübbert (Pepe). Para que sus tareas no se copien a los proyectos, sdd-base pasó a tener spec/ propia y sus plantillas a `templates/` (51fa14f). Tareas de sdd-base: T-01 y T-02 `approved_for_impl`, T-03 y T-04 `proposed`. Aquí: T-25 (`proposed`), la etapa 5, adoptar el modo paralelo, con candado en aceptación y humo.
+- Verificado y cómo: `npm run check:spec` ok (aquí y en sdd-base); sdd-base `npm test` 93/93 y `--dry-run` elige T-01.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. T-24 sigue `approved_for_impl` para el autopilot de este repositorio.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el autopilot de este repositorio hace T-24; el de sdd-base, T-01 y T-02; el usuario revisa T-03, T-04 (sdd-base) y T-25.

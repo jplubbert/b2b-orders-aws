@@ -833,6 +833,27 @@
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance (mismo número de casos, todos pasan) && npm run check:spec; aprobación del usuario del diff de tests/acceptance/",
       "blocked_by": null,
       "notes": "2026-10-18: separada de T-23 porque tests/acceptance/ es protegida (AGENTS.md, reglas duras). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) → approved_for_impl, para el autopilot (el diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto)."
+    },
+    {
+      "id": "T-25",
+      "kind": "tooling",
+      "title": "Adoptar el modo paralelo de sdd-base (DEC-001 de sdd-base): touches en las tareas abiertas y candado en aceptación y humo",
+      "description": "Etapa 5 del plan de tareas en paralelo de sdd-base (DEC-001 en sdd-base/spec/DECISIONS.md), cuando T-01..T-04 de sdd-base estén cerradas. Traer los cambios de sdd-base a scripts/ (check-spec.mjs, autopilot.sh, lib/, autopilot-lock.sh y pruebas); agregar `touches` a las tareas abiertas de spec/TASKS.json; envolver `test:acceptance` y `smoke` con scripts/autopilot-lock.sh, porque corren contra el mismo `dev` (el teardown de la aceptación borra todos los pedidos C-ACEPT-…, también los de otra corrida en curso); definir AUTOPILOT_VERIFY_CMD y autopilot_worktree_setup (npm ci) en la configuración. AUTOPILOT_PARALLEL sigue en 1 hasta que el usuario decida subirlo.",
+      "reqs": [],
+      "decisions": [
+        "DEC-010",
+        "DEC-016"
+      ],
+      "depends_on": [],
+      "status": "proposed",
+      "touches": [
+        "scripts/",
+        "package.json",
+        "spec/TASKS.json"
+      ],
+      "verify": "npm run lint && npm run typecheck && npm test && npm run check:spec && npm run test:acceptance && npm run smoke && scripts/autopilot.sh --dry-run",
+      "blocked_by": null,
+      "notes": "2026-10-18: creada como etapa 5 del plan de sdd-base. Queda proposed hasta que el usuario la revise y sdd-base cierre T-01..T-04."
     }
   ]
 }
