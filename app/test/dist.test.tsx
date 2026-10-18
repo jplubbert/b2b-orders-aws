@@ -9,8 +9,7 @@ import { router } from 'expo-router';
 import RootLayout from '@/app/_layout';
 import PanelScreen from '@/app/dist/index';
 import { allOrders, type PanelOrder } from '@/lib/api';
-import { CartProvider } from '@/lib/CartProvider';
-import { PanelProvider } from '@/lib/PanelProvider';
+import { resetStores } from './support/stores';
 
 type ScreenProps = { name?: string; options?: { title?: string; headerBackVisible?: boolean; headerRight?: () => ReactNode } };
 const mockScreens: ScreenProps[] = [];
@@ -72,6 +71,7 @@ const numbers = async () => (await screen.findAllByText(/^N° /)).map((n) => n.p
 beforeEach(() => {
   jest.resetAllMocks(); // also discards `Once` responses a case didn't consume
   mockScreens.length = 0;
+  resetStores();
   mockFetchUserAttributes.mockResolvedValue({ email: 'distribuidor@demo.test' });
   mockSignOut.mockResolvedValue(undefined);
 });
@@ -86,7 +86,7 @@ describe('REQ-010 "Pedidos" panel', () => {
 
   it('E1: orders of every store in server order with number, store, date, total and status', async () => {
     mockAllOrders.mockResolvedValue([fromStore2, fromStore1]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     expect(await numbers()).toEqual(['N° ALM2N1', 'N° ALM1N1']);
     expect(mockAllOrders).toHaveBeenCalledWith(null);
     const stores = screen.getAllByText(/^Almacén /).map((n) => n.props.children.join(''));
@@ -100,7 +100,7 @@ describe('REQ-010 "Pedidos" panel', () => {
 
   it('filter: "Todos" + the 5 statuses (S-28), "Todos" selected on open', async () => {
     mockAllOrders.mockResolvedValue([]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     await screen.findByText('Todavía no hay pedidos');
     for (const label of ['Todos', 'Recibido', 'En preparación', 'Enviado', 'Entregado', 'Cancelado']) {
       expect(screen.getByLabelText(`Filtro ${label}`)).toBeOnTheScreen();
@@ -113,7 +113,7 @@ describe('REQ-010 "Pedidos" panel', () => {
     mockAllOrders.mockImplementation(async (status) =>
       [fromStore2, fromStore1].filter((o) => status === null || o.status === status),
     );
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     expect(await numbers()).toEqual(['N° ALM2N1', 'N° ALM1N1']);
 
     await fireEvent.press(screen.getByLabelText('Filtro Enviado'));
@@ -129,7 +129,7 @@ describe('REQ-010 "Pedidos" panel', () => {
 
   it('E3: filter with no orders in that status → "No hay pedidos en este estado"', async () => {
     mockAllOrders.mockResolvedValueOnce([fromStore1]).mockResolvedValueOnce([]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     await screen.findByText('N° ALM1N1');
     await fireEvent.press(screen.getByLabelText('Filtro Cancelado'));
     expect(await screen.findByText('No hay pedidos en este estado')).toBeOnTheScreen();
@@ -139,20 +139,20 @@ describe('REQ-010 "Pedidos" panel', () => {
 
   it('E4: no orders in the system → "Todavía no hay pedidos" in state-empty', async () => {
     mockAllOrders.mockResolvedValue([]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     expect(await screen.findByText('Todavía no hay pedidos')).toBeOnTheScreen();
     expect(screen.getByTestId('state-empty')).toBeOnTheScreen();
   });
 
   it('loading → state-loading', async () => {
     mockAllOrders.mockReturnValue(new Promise(() => {}));
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     expect(screen.getByTestId('state-loading')).toBeOnTheScreen();
   });
 
   it('an API error is shown with its cause in state-error (not as an empty list)', async () => {
     mockAllOrders.mockRejectedValue(new Error('Network error'));
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     expect(await screen.findByText('Network error')).toBeOnTheScreen();
     expect(screen.getByTestId('state-error')).toBeOnTheScreen();
     expect(screen.queryByText('Todavía no hay pedidos')).toBeNull();
@@ -163,7 +163,7 @@ describe('REQ-010 "Pedidos" panel', () => {
       .mockResolvedValueOnce([fromStore1])
       .mockResolvedValueOnce([fromStore1])
       .mockResolvedValueOnce([{ ...fromStore1, status: 'EN_PREPARACION' }]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     await screen.findByText('N° ALM1N1');
     await fireEvent.press(screen.getByLabelText('Filtro Recibido'));
     await waitFor(() => expect(mockAllOrders).toHaveBeenCalledTimes(2));
@@ -179,7 +179,7 @@ describe('REQ-010 "Pedidos" panel', () => {
       .mockResolvedValueOnce([fromStore2, fromStore1])
       .mockReturnValueOnce(new Promise((r) => (resolveFirst = r)))
       .mockResolvedValueOnce([fromStore1]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     await screen.findByText('N° ALM2N1');
     await fireEvent.press(screen.getByLabelText('Filtro Enviado'));
     await fireEvent.press(screen.getByLabelText('Filtro Recibido'));
@@ -194,20 +194,14 @@ describe('REQ-010 "Pedidos" panel', () => {
     expect(mockScreens.find((s) => s.name === 'dist/order/[id]')?.options?.title).toBe('Pedido');
 
     mockAllOrders.mockResolvedValue([fromStore1]);
-    await render(<PanelScreen />, { wrapper: PanelProvider });
+    await render(<PanelScreen />);
     await fireEvent.press(await screen.findByText('N° ALM1N1'));
     expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/dist/order/[id]', params: { id: fromStore1.id } });
   });
 
   it('account menu with "Cerrar sesión" (S-28) → back to the login screen', async () => {
     mockAllOrders.mockResolvedValue([]);
-    await render(
-      <CartProvider>
-        <PanelProvider>
-          <PanelScreen />
-        </PanelProvider>
-      </CartProvider>,
-    );
+    await render(<PanelScreen />);
     await fireEvent.press(screen.getByLabelText('Cuenta'));
     expect(await screen.findByText('distribuidor@demo.test')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Cerrar sesión'));

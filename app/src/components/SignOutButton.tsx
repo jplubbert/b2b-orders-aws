@@ -1,24 +1,16 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { signOut } from 'aws-amplify/auth';
 import { Button } from '@/components/Button';
-import { useCart } from '@/lib/CartProvider';
+import { signOut } from '@/lib/store/session';
 
-// REQ-005: clears the local session (Amplify tokens in AsyncStorage) and the cart (S-09) and returns to
-// the login screen. signOut without `global` clears the local tokens even if the revocation in Cognito
-// fails (no network), so an error doesn't prevent leaving.
+// REQ-005: clears the local session, the cart (S-09) and the panel's list, and returns to the login screen;
+// a failed revocation in Cognito doesn't prevent leaving (see `signOut`).
 export function SignOutButton({ variant = 'link' }: { variant?: 'secondary' | 'link' }) {
-  const { clear } = useCart();
   const [busy, setBusy] = useState(false);
 
   async function onPress() {
     setBusy(true);
-    try {
-      await signOut();
-    } catch {
-      // see above: the local session is no longer used
-    }
-    clear();
+    await signOut();
     router.replace('/');
   }
 

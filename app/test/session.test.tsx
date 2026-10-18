@@ -8,7 +8,8 @@ import { router } from 'expo-router';
 import LoginScreen from '@/app/index';
 import { AccountMenu } from '@/components/AccountMenu';
 import { cartUnits } from '@/lib/cart';
-import { CartProvider, useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
+import { resetStores } from './support/stores';
 
 jest.mock('aws-amplify/auth', () => ({
   fetchAuthSession: jest.fn(),
@@ -62,6 +63,7 @@ async function submit(email: string, password: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetStores();
   mockFetchAuthSession.mockResolvedValue(withoutSession);
 });
 
@@ -216,10 +218,10 @@ describe('REQ-005 sign-out', () => {
   async function renderSignedIn() {
     mockFetchUserAttributes.mockResolvedValue({ email: 'almacen1@demo.test' });
     await render(
-      <CartProvider>
+      <>
         <CartProbe />
         <AccountMenu />
-      </CartProvider>,
+      </>,
     );
     await fireEvent.press(screen.getByText('add'));
     expect(screen.getByText('units: 2')).toBeOnTheScreen();

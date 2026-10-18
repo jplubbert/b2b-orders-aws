@@ -8,7 +8,7 @@ import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { allOrders, formatCLP, formatDate } from '@/lib/api';
 import type { OrderStatus } from '@/lib/generated/graphql';
-import { usePanel } from '@/lib/PanelProvider';
+import { usePanel } from '@/lib/store/panel';
 import { colors, fontSize, fontWeight, orderStatus, radius, spacing, touchTarget } from '@/theme';
 
 // S-28: "Todos" + the 5 statuses with their readable name (S-17), in S-04 order.
@@ -20,7 +20,7 @@ const FILTERS: { status: OrderStatus | null; label: string }[] = [
 // REQ-010: orders of every store, newest first (the server sorts), with number, store (customerId, S-23),
 // date, total and status. The filter asks the server for `allOrders(status)` (E2).
 // The current status is requested again when returning to the screen and when pulling down (S-06).
-// The list lives in PanelProvider: the detail (dist/order/[id]) reads it and updates it when the status changes.
+// The list lives in the panel store (DEC-021): the detail (dist/order/[id]) reads it and updates it when the status changes.
 export default function PanelScreen() {
   const [filter, setFilter] = useState<OrderStatus | null>(null);
   const { orders, setOrders } = usePanel();

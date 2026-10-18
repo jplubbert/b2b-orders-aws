@@ -1,4 +1,4 @@
-// On-device cart (S-09: in memory only). Pure logic; the state lives in CartProvider.
+// On-device cart (S-09: in memory only). Pure logic; the state lives in the cart store (store/cart.ts).
 // The server merges, validates and computes again with the current prices (REQ-003); this only displays.
 
 export interface CartProduct {

@@ -1,5 +1,5 @@
 // Distributor order detail and status change (REQ-010 E5, REQ-011 E1, E3, E7, S-24, S-28) with
-// jest-expo. The panel and the detail share PanelProvider as in the app; the API and the router are mocked.
+// jest-expo. The panel and the detail share the panel store as in the app; the API and the router are mocked.
 // The real flow against `dev` (cut 3 success criterion) is checked by hand on the phone (DEC-011).
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
@@ -9,7 +9,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import DistOrderScreen from '@/app/dist/order/[id]';
 import PanelScreen from '@/app/dist/index';
 import { allOrders, setOrderStatus, type PanelOrder } from '@/lib/api';
-import { PanelProvider } from '@/lib/PanelProvider';
+import { resetStores } from './support/stores';
 
 type ScreenProps = { options?: { title?: string } };
 const mockScreens: ScreenProps[] = [];
@@ -59,17 +59,17 @@ const other: PanelOrder = { ...order, id: '01JB0000000000000000ALM2N1', customer
 // Intl in Node and in Hermes may separate with different spaces; compare without them.
 const money = (text: string) => new RegExp(text.replace(/[$.]/g, '\\$&').replace(/\s/g, '\\s*'));
 
-// Panel and detail mounted at once on the same PanelProvider; the panel loads the list and then
+// Panel and detail on the same panel store; the panel loads the list and then
 // the detail is shown (like tapping a row).
 function App() {
   const [detail, setDetail] = useState(false);
   return (
-    <PanelProvider>
+    <>
       {detail ? <DistOrderScreen /> : <PanelScreen />}
       <Pressable onPress={() => setDetail(!detail)} accessibilityLabel="toggle">
         <Text>toggle</Text>
       </Pressable>
-    </PanelProvider>
+    </>
   );
 }
 
@@ -83,6 +83,7 @@ async function openDetail(list: PanelOrder[]) {
 beforeEach(() => {
   jest.resetAllMocks(); // also discards `Once` responses a case didn't consume
   mockScreens.length = 0;
+  resetStores();
   mockParams.mockReturnValue({ id: order.id });
 });
 
@@ -137,10 +138,10 @@ describe('REQ-011 change status from the detail', () => {
     mockSetOrderStatus.mockResolvedValue({ ...order, status: 'ENVIADO' });
     // As in the stack: the panel stays mounted while the detail is on top.
     await render(
-      <PanelProvider>
+      <>
         <PanelScreen />
         <DistOrderScreen />
-      </PanelProvider>,
+      </>,
     );
     await fireEvent.press(await screen.findByLabelText('Estado Enviado'));
     const panel = screen.getByTestId('panel-list');

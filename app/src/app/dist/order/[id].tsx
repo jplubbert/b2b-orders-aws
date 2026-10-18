@@ -8,7 +8,7 @@ import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCLP, formatDate, setOrderStatus } from '@/lib/api';
 import type { OrderStatus } from '@/lib/generated/graphql';
-import { usePanel } from '@/lib/PanelProvider';
+import { usePanel } from '@/lib/store/panel';
 import { colors, disabledOpacity, fontSize, fontWeight, orderStatus, radius, spacing, touchTarget } from '@/theme';
 
 // The 5 statuses of S-04 in order, with the readable name of S-17.

@@ -1,5 +1,5 @@
 // REQ-008 E1–E5 with jest-expo: product detail from the loaded catalog (S-19) on the same cart.
-// The router is mocked: `push` to /product/<id> changes the screen rendered inside the same CartProvider,
+// The router is mocked: `push` to /product/<id> changes the screen rendered on the same cart store,
 // and `back` returns to the catalog. The check on the phone is manual (DEC-011).
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -8,7 +8,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import CatalogScreen from '@/app/catalog';
 import ProductScreen from '@/app/product/[id]';
 import { listProducts, type Product } from '@/lib/api';
-import { CartProvider, useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
+import { resetStores } from './support/stores';
 
 jest.mock('aws-amplify/auth', () => ({ signOut: jest.fn(), fetchUserAttributes: jest.fn() }));
 jest.mock('aws-amplify/api', () => ({ generateClient: jest.fn() }));
@@ -50,6 +51,7 @@ function App() {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  resetStores();
   mockListProducts.mockResolvedValue([arroz, yerba]);
   mockPush.mockImplementation((href) => {
     if (typeof href === 'object' && href.pathname === '/product/[id]') navigate(String(href.params?.id));
@@ -58,11 +60,7 @@ beforeEach(() => {
 });
 
 async function renderApp() {
-  await render(
-    <CartProvider>
-      <App />
-    </CartProvider>,
-  );
+  await render(<App />);
   expect(await screen.findByText('Arroz 1 kg')).toBeOnTheScreen();
 }
 
@@ -154,11 +152,7 @@ describe('REQ-008 E5: id that is not in the loaded catalog', () => {
     ['catalog not loaded yet', null],
   ])('%s → "Este producto ya no está disponible", no − / +, with "Volver al catálogo"', async (_case, catalog) => {
     mockParams.mockReturnValue({ id: 'aceite-900' });
-    await render(
-      <CartProvider>
-        <Seeded catalog={catalog} />
-      </CartProvider>,
-    );
+    await render(<Seeded catalog={catalog} />);
     expect(screen.getByText('Este producto ya no está disponible')).toBeOnTheScreen();
     expect(screen.getByTestId('state-empty')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Agregar uno')).toBeNull();
@@ -168,11 +162,7 @@ describe('REQ-008 E5: id that is not in the loaded catalog', () => {
 
   it('"Volver al catálogo" goes back; without history (direct link) it replaces with the catalog', async () => {
     mockParams.mockReturnValue({ id: 'aceite-900' });
-    await render(
-      <CartProvider>
-        <ProductScreen />
-      </CartProvider>,
-    );
+    await render(<ProductScreen />);
     mockCanGoBack.mockReturnValue(true);
     mockBack.mockImplementation(() => {});
     await fireEvent.press(screen.getByText('Volver al catálogo'));

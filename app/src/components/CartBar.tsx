@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatCLP } from '@/lib/api';
 import { cartTotal, cartUnits } from '@/lib/cart';
-import { useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
 // REQ-006 E4–E5: fixed bottom bar with the cart's units and total; it always opens the Cart (empty one

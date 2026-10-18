@@ -10,7 +10,7 @@ import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ApiError, createOrder, formatCLP, type CreatedOrder } from '@/lib/api';
 import { cartTotal, lineSubtotal, rejectionMessage, toOrderLines } from '@/lib/cart';
-import { useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
 import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
 // REQ-003: subtotal per line and total; Confirm creates the order (server prices), empties the cart

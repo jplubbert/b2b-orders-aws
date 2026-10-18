@@ -7,25 +7,44 @@ const INVALID_CREDENTIALS_ERRORS = new Set(['NotAuthorizedException', 'UserNotFo
 // REQ-009 E3: valid user that is in neither `almaceneros` nor `distribuidores`.
 export const NO_ACCESS = 'Tu usuario no tiene acceso a la app';
 
+export type Role = 'almacenero' | 'distribuidor';
+
 /** Home screen of each role (REQ-009): the customer's catalog or the distributor's panel. */
 export type Home = '/catalog' | '/dist';
+export const HOME: Record<Role, Home> = { almacenero: '/catalog', distribuidor: '/dist' };
 
 /** Role from the ID token's `cognito:groups` claim; S-25: in both groups the distributor wins. */
-export function homeForGroups(groups: unknown): Home | null {
+export function roleForGroups(groups: unknown): Role | null {
   const list = Array.isArray(groups) ? groups : [];
-  if (list.includes('distribuidores')) return '/dist';
-  if (list.includes('almaceneros')) return '/catalog';
+  if (list.includes('distribuidores')) return 'distribuidor';
+  if (list.includes('almaceneros')) return 'almacenero';
   return null;
 }
 
+/** What the app keeps of the session (DEC-021); the tokens themselves stay in Amplify (DEC-003). */
+export interface SessionInfo {
+  /** `null`: valid user without access to the app (REQ-009 E3). */
+  role: Role | null;
+  email: string | null;
+  customerId: string | null;
+}
+
+const claim = (value: unknown) => (typeof value === 'string' ? value : null);
+
 /**
  * REQ-001 E3 / REQ-009 E4: Amplify stores the tokens in AsyncStorage and renews them with the refresh token.
- * No session → `null`; with a session → the screen of its role (`home: null` if it has no access, REQ-009 E3).
+ * No session (or it cannot be renewed) → `null`; with a session → role, email and store from the ID token.
  */
-export async function currentSession(): Promise<{ home: Home | null } | null> {
+export async function readSession(): Promise<SessionInfo | null> {
   try {
     const idToken = (await fetchAuthSession()).tokens?.idToken;
-    return idToken ? { home: homeForGroups(idToken.payload['cognito:groups']) } : null;
+    if (!idToken) return null;
+    const { payload } = idToken;
+    return {
+      role: roleForGroups(payload['cognito:groups']),
+      email: claim(payload.email),
+      customerId: claim(payload['custom:customerId']),
+    };
   } catch {
     return null;
   }

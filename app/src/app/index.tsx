@@ -7,7 +7,8 @@ import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { isConfigured } from '@/lib/amplify';
-import { currentSession, type Home, loginErrorMessage, NO_ACCESS, rejectSession } from '@/lib/session';
+import { HOME, type Home, loginErrorMessage, NO_ACCESS } from '@/lib/session';
+import { useSession } from '@/lib/store/session';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
 // REQ-001: with a live session it opens the role's screen without asking for credentials (E3, REQ-009 E4);
@@ -26,13 +27,14 @@ export default function LoginScreen() {
     if (!isConfigured) return;
     let active = true;
     void (async () => {
-      const session = await currentSession();
-      if (session && !session.home) await rejectSession();
+      const { hydrate, reject } = useSession.getState();
+      const session = await hydrate();
+      if (session && !session.role) await reject();
       if (!active) return;
       // No `router.replace` here: when the app opens, the session may resolve before the root navigator
       // is mounted ("Can't perform a React state update on a component that hasn't mounted yet").
       // `<Redirect>` navigates only once this screen has focus inside the navigator.
-      if (session?.home) return setHome(session.home);
+      if (session?.role) return setHome(HOME[session.role]);
       if (session) setError(NO_ACCESS);
       setChecking(false);
     })();
@@ -43,9 +45,10 @@ export default function LoginScreen() {
 
   // After signing in, the role comes from the groups of the freshly issued token (REQ-009 E1–E3).
   async function enter() {
-    const target = (await currentSession())?.home;
-    if (target) return router.replace(target);
-    await rejectSession();
+    const { hydrate, reject } = useSession.getState();
+    const role = (await hydrate())?.role;
+    if (role) return router.replace(HOME[role]);
+    await reject();
     setError(NO_ACCESS);
   }
 

@@ -4,16 +4,20 @@ import { fetchUserAttributes } from 'aws-amplify/auth';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { SignOutButton } from '@/components/SignOutButton';
+import { useSession } from '@/lib/store/session';
 import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
 // REQ-006 (S-15): account button with the email's initial; it opens a menu with the session's email,
 // "Cerrar sesión" (REQ-005) and "Cancelar". Tapping outside, "Cancelar" or Android's back button close it
-// without touching the session or the cart (E3). The email comes from the Cognito attributes via Amplify.
+// without touching the session or the cart (E3). The email comes from the session store (DEC-021); if the
+// ID token didn't carry it, from the Cognito attributes via Amplify.
 export function AccountMenu() {
-  const [email, setEmail] = useState<string | null>(null);
+  const email = useSession((s) => s.email);
+  const setEmail = useSession((s) => s.setEmail);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (email) return;
     let alive = true;
     void (async () => {
       try {
@@ -26,7 +30,7 @@ export function AccountMenu() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [email, setEmail]);
 
   const close = () => setOpen(false);
 

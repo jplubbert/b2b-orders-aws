@@ -20,9 +20,10 @@ import { SignOutButton } from '@/components/SignOutButton';
 import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { createOrder, getOrder, listProducts, myOrders, type OrderSummary, type Product } from '@/lib/api';
-import { CartProvider, useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
 import type { OrderStatus } from '@/lib/generated/graphql';
 import { colors, contrastPairs, orderStatus, touchTarget } from '@/theme';
+import { resetStores } from './support/stores';
 
 jest.mock('aws-amplify/auth', () => ({
   signOut: jest.fn(),
@@ -59,6 +60,7 @@ const mockParams = jest.mocked(useLocalSearchParams);
 
 beforeEach(() => {
   jest.resetAllMocks();
+  resetStores();
 });
 
 const SRC = join(__dirname, '..', 'src');
@@ -117,10 +119,10 @@ function AddArroz() {
 
 async function renderCartWithArroz() {
   await render(
-    <CartProvider>
+    <>
       <AddArroz />
       <CartScreen />
-    </CartProvider>,
+    </>,
   );
   await fireEvent.press(screen.getByText('add arroz'));
 }
@@ -265,11 +267,7 @@ describe('REQ-007 E4: touch area ≥ 44 × 44 dp', () => {
   });
 
   it('"Cerrar sesión"', async () => {
-    await render(
-      <CartProvider>
-        <SignOutButton />
-      </CartProvider>,
-    );
+    await render(<SignOutButton />);
     const s = StyleSheet.flatten(screen.getByRole('button', { name: 'Cerrar sesión' }).props.style);
     expect(s.minHeight).toBeGreaterThanOrEqual(44);
     expect(s.minWidth).toBeGreaterThanOrEqual(44);
@@ -278,10 +276,10 @@ describe('REQ-007 E4: touch area ≥ 44 × 44 dp', () => {
   it('account button and cart bar (REQ-006)', async () => {
     mockFetchUserAttributes.mockResolvedValue({ email: 'almacen1@demo.test' });
     await render(
-      <CartProvider>
+      <>
         <AccountMenu />
         <CartBar />
-      </CartProvider>,
+      </>,
     );
     expect(size('Cuenta').w).toBeGreaterThanOrEqual(44);
     expect(size('Cuenta').h).toBeGreaterThanOrEqual(44);
@@ -293,11 +291,7 @@ describe('REQ-007 E4: touch area ≥ 44 × 44 dp', () => {
     mockListProducts.mockResolvedValue([
       { productId: 'arroz-1kg', name: 'Arroz 1 kg', presentation: 'Paquete 1 kg', unitPrice: 1300 },
     ]);
-    await render(
-      <CartProvider>
-        <CatalogScreen />
-      </CartProvider>,
-    );
+    await render(<CatalogScreen />);
     expect(await screen.findByText('Arroz 1 kg')).toBeOnTheScreen();
     expect(size('Ver detalle de Arroz 1 kg').h).toBeGreaterThanOrEqual(44);
   });
@@ -323,11 +317,7 @@ describe('REQ-007 E4: touch area ≥ 44 × 44 dp', () => {
 
 describe('REQ-007 E5: loading, empty and error with StateMessage', () => {
   function renderCatalog() {
-    return render(
-      <CartProvider>
-        <CatalogScreen />
-      </CartProvider>,
-    );
+    return render(<CatalogScreen />);
   }
 
   it("StateMessage: error with the theme's error color", async () => {
@@ -405,11 +395,7 @@ describe('REQ-007 E5: loading, empty and error with StateMessage', () => {
   });
 
   it('empty Cart → "El carrito está vacío" in state-empty; rejection → state-error', async () => {
-    await render(
-      <CartProvider>
-        <CartScreen />
-      </CartProvider>,
-    );
+    await render(<CartScreen />);
     expect(screen.getByText('El carrito está vacío')).toBeOnTheScreen();
     expect(screen.getByTestId('state-empty')).toBeOnTheScreen();
     await screen.unmount();

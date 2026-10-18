@@ -8,7 +8,7 @@ import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { formatCLP } from '@/lib/api';
 import { quantityOf } from '@/lib/cart';
-import { useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/theme';
 
 // REQ-008: detail of a product from the already loaded catalog (S-19, no new query), with the quantity

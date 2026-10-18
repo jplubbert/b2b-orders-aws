@@ -10,7 +10,7 @@ import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { formatCLP, listProducts, type Product } from '@/lib/api';
 import { quantityOf } from '@/lib/cart';
-import { useCart } from '@/lib/CartProvider';
+import { useCart } from '@/lib/store/cart';
 import { colors, fontSize, fontWeight, spacing, touchTarget } from '@/theme';
 
 // REQ-002: active products sorted by name (the server filters and sorts) with presentation and price.
@@ -21,7 +21,7 @@ export default function CatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { cart, setQuantity, setCatalog } = useCart();
 
-  // S-19: the loaded catalog stays in the context for the product detail (REQ-008).
+  // S-19: the loaded catalog stays in the cart store for the product detail (REQ-008).
   const load = useCallback(async () => {
     try {
       const loaded = await listProducts();

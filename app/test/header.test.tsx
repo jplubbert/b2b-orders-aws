@@ -10,7 +10,7 @@ import RootLayout from '@/app/_layout';
 import CartScreen from '@/app/cart';
 import CatalogScreen from '@/app/catalog';
 import { listProducts, type Product } from '@/lib/api';
-import { CartProvider } from '@/lib/CartProvider';
+import { resetStores } from './support/stores';
 
 type ScreenProps = {
   name?: string;
@@ -55,17 +55,14 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockScreens.length = 0;
   mockStacks.length = 0;
+  resetStores();
   mockListProducts.mockResolvedValue([arroz, yerba]);
   mockFetchUserAttributes.mockResolvedValue({ email: 'almacen1@demo.test' });
   mockSignOut.mockResolvedValue(undefined);
 });
 
 async function renderCatalog() {
-  await render(
-    <CartProvider>
-      <CatalogScreen />
-    </CartProvider>,
-  );
+  await render(<CatalogScreen />);
   expect(await screen.findByText('Arroz 1 kg')).toBeOnTheScreen();
 }
 
@@ -163,21 +160,13 @@ describe('REQ-006 E4–E5: the cart bottom bar', () => {
   });
 
   it('E5: the empty Cart has "Confirmar pedido" disabled (REQ-003 E5)', async () => {
-    await render(
-      <CartProvider>
-        <CartScreen />
-      </CartProvider>,
-    );
+    await render(<CartScreen />);
     expect(screen.getByText('Confirmar pedido')).toBeDisabled();
   });
 
   it('the bar is also shown while loading', async () => {
     mockListProducts.mockReturnValue(new Promise(() => {}));
-    await render(
-      <CartProvider>
-        <CatalogScreen />
-      </CartProvider>,
-    );
+    await render(<CatalogScreen />);
     expect(screen.getByTestId('state-loading')).toBeOnTheScreen();
     expect(screen.getByText('Carrito vacío')).toBeOnTheScreen();
     expect(screen.getByLabelText('Cuenta')).toBeOnTheScreen();
@@ -185,11 +174,7 @@ describe('REQ-006 E4–E5: the cart bottom bar', () => {
 
   it('the bar is also shown with an error', async () => {
     mockListProducts.mockRejectedValue(new Error('Network error'));
-    await render(
-      <CartProvider>
-        <CatalogScreen />
-      </CartProvider>,
-    );
+    await render(<CatalogScreen />);
     expect(await screen.findByText('Network error')).toBeOnTheScreen();
     expect(screen.getByText('Carrito vacío')).toBeOnTheScreen();
   });
