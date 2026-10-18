@@ -285,13 +285,17 @@
         "DEC-008",
         "DEC-012"
       ],
-      "status": "approved_for_impl",
-      "evidence": null,
+      "status": "verified_auto",
+      "evidence": {
+        "command": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android --output-dir /tmp/pedidos-t09-export && npm run test:acceptance && npm run smoke && git show --stat 94eb5cf",
+        "result": "lint ok; typecheck ok; vitest 137/137 + jest 60/60 (app/test/theme.test.tsx: REQ-007 E1 sin literales en components/ y catalog.tsx, E2 contraste ≥ 4,5:1 de 14 pares del tema, E3 los 5 estados con nombre y color, E4 área táctil ≥ 44 dp, E5 carga/vacío/error del catálogo con StateMessage); expo export android ok (2456 módulos); test:acceptance 25/25; smoke 2/2; el commit solo toca app/src y app/test (sin backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json).",
+        "commit": "94eb5cf"
+      },
       "review": null,
       "blocked_by": null,
       "depends_on": [],
       "verify": "npm run lint && npm run typecheck && npm test (incluye app/test/theme.test.tsx) && npx expo export --platform android; git diff --stat sin backend/infra/contrato/acceptance",
-      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
+      "notes": "Corte 2. Propuesta 2026-10-18; aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18 01:52: implementada y verificada → verified_auto. Sin pendiente manual propio (REQ-007 E6 en el teléfono lo cubre T-12). La disposición de la barra del catálogo no cambia (T-10). E1 cubre por ahora components/ y catalog.tsx; T-12 amplía la lista a todas las pantallas."
     },
     {
       "id": "T-10",

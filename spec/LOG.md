@@ -332,3 +332,13 @@
 - En curso / roto: nada. T-03..T-07 siguen `reviewed` esperando la aceptación en lote del corte 1.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el orquestador nocturno toma T-09 (luego T-10, T-11, T-12 según dependencias). Sin backend ni deploy en el corte 2.
+
+## 2026-10-18 01:52 · Claude (claude-opus-5-5)
+- Hecho (T-09, REQ-007, commit 94eb5cf): `app/src/theme.ts` (DEC-012, S-16, S-17) con colores, espaciado, radios, tipografía, área táctil de 44 dp, estados del pedido y pares de contraste; componentes `Screen`, `Button`, `Card`, `StatusBadge`, `StateMessage`; `QuantityStepper` y `SignOutButton` al tema; Catálogo migrado (tarjetas, carga/vacío/error con `StateMessage`). Prueba `app/test/theme.test.tsx` (REQ-007 E1–E5). T-09 → `verified_auto` con evidencia.
+- Interpretaciones (detalles internos): la barra del catálogo conserva su disposición (la rehace T-10); E1 revisa por ahora `components/` y `catalog.tsx` (T-12 la amplía a todas las pantallas); en la tarjeta del producto, presentación y precio van en líneas separadas (mismos textos, S-21).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 + jest 60/60; `npm exec -w app -- expo export --platform android` ok; `npm run test:acceptance` 25/25; `npm run smoke` 2/2; `npm run check:spec` ok (hook). Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.
+- Pendiente manual: ninguno propio (REQ-007 E6 en el teléfono queda en T-12).
+- Pendiente deploy: ninguno (solo app).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-09 (diff 94eb5cf, REQ-007, DEC-003, DEC-008, DEC-012); en paralelo T-10 y T-12 quedan con su dependencia T-09 cerrada cuando T-09 pase a `reviewed`.
