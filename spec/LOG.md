@@ -433,3 +433,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-07 (diff 775954c, REQ-001, DEC-003, DEC-004) en la próxima corrida del orquestador; el usuario completa la checklist manual pendiente y decide `accepted` en lote.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Hecho (T-12, REQ-007 E6, verificación manual en el teléfono, DEC-011): el usuario José Pedro Lübbert informa: "T-12 verificado en el teléfono: inicio con marca y error de clave, carrito, confirmación con "Recibido", Mis pedidos y detalle, todo con el mismo estilo". Cubre la checklist de E6. Queda en `evidence.manual_result` de T-12 y se quita su `manual_pending`. T-12 sigue `reviewed`.
+- Observación menor del usuario (no corregida): en la confirmación del pedido (Carrito), la etiqueta "Recibido" queda alineada a la izquierda y el resto del bloque centrado. Quedó anotada en `notes` de T-12. No bloquea E6; corregirla es un cambio de app de una línea (alinear la etiqueta al centro) si el usuario lo pide.
+- Verificado y cómo: `npm run check:spec`.
+- Pendiente manual: corte 2: ninguno (T-09..T-12 con verificación manual registrada o sin pendiente manual). Corte 1: T-04, T-05, T-06 E4, T-07 (REQ-001 E1–E3, REQ-005 E1–E2).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` en lote del corte 2 (T-09..T-12) y si se corrige la alineación de "Recibido"; revisión independiente de T-07 (diff 775954c) en la próxima corrida del orquestador.
