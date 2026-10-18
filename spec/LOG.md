@@ -791,3 +791,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: el mismo de T-21 (ntfy); seguimiento tras la revisión independiente.
+- Hecho (T-21, 2896295): la revisión independiente (corrida de las 14:41) rechazó T-21 con 2 hallazgos citando DEC-016: el aviso de caída no llevaba hechas/fallidas, y el recorte a 3800 caracteres podía perder Fallidas y Próxima acción. Corregidos: `ntfy_body` arma los campos fijos primero (motivo, hechas · fallidas, próxima acción, corrida) y solo recorta el detalle (`AUTOPILOT_NTFY_MAX`, 3000); `on_exit` lo usa. Además, un rechazo del revisor ahora cuenta como intervención (prioridad alta, "rechazadas por el revisor: …"): el aviso real de esa misma corrida salió "terminó bien" con prioridad normal. DEC-016 (proposed) actualizada. Mismo cambio en sdd-base (57fefbb, publicado).
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 175/175 + jest 137/137 (las pruebas nuevas fallan con autopilot.sh de 96bb2f7); `npm run check:spec` ok; `--dry-run` ok; sdd-base `npm test` 91/91. Avisos reales recibidos: 14:33 high y 14:41 default. T-21 sigue `verified_auto`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: nueva revisión independiente de T-21 (la hace el autopilot); el usuario decide `accepted` de DEC-016 y de T-21.
