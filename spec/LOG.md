@@ -800,3 +800,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: nueva revisión independiente de T-21 (la hace el autopilot); el usuario decide `accepted` de DEC-016 y de T-21.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Acepto DEC-016 (aprobador: Pepe). Corre el autopilot para la nueva revisión de T-21."
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba DEC-016 → `accepted`.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: `scripts/autopilot.sh` revisa T-21 (verified_auto); el usuario decide `accepted`.

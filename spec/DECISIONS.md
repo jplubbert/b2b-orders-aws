@@ -271,9 +271,9 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Revisar si: se pasa a credenciales temporales (rol asumido) en lugar de la llave larga.
 
 ## DEC-016 Avisos del autopilot por ntfy.sh, con el tema fuera del repo
-- Estado: proposed
+- Estado: accepted
 - Alcance: global (tooling)
-- Fecha: 2026-10-18 · Aprobador: pendiente (pedido por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Fecha: 2026-10-18 · Aprobador: José Pedro Lübbert (Pepe), 2026-10-18 (decisión del usuario en sesión) · Confianza: alta
 - Problema: el autopilot corre de noche sin supervisión; el usuario solo se entera del resultado al abrir LOG.md. Pidió un aviso push al detenerse, con más urgencia si hace falta que intervenga. ntfy.sh es un servicio externo fuera de R-01 (R-01 es el stack del producto; esto es tooling del protocolo, pedido expresamente por el usuario).
 - Impulsores: T-08, T-21
 - Alternativas consideradas:
