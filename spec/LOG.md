@@ -271,3 +271,14 @@
 - Pendiente manual (al aceptar en lote, DEC-011): T-06: en el teléfono, login almacen1 → pedido con 2 Arroz + 1 Yerba → "Mis pedidos" lo muestra primero en `RECIBIDO` → `npm run order:set-status -- <id> ENVIADO` → deslizar o volver a la pantalla → `ENVIADO`, y el detalle muestra líneas $2.600 y $4.500, total $7.100; REQ-004 E4 con un cliente sin pedidos (p. ej. almacen2 si no tiene) → "Todavía no hiciste pedidos".
 - Bloqueos nuevos: ninguno de spec; solo el despliegue.
 - Próxima acción autorizada: el usuario corre `npm run deploy:dev`; luego (usuario o night-loop) `npm run test:acceptance -- req_004` y `npm run smoke`, registra la evidencia de T-06 → `verified_auto` y la revisión independiente (diff del commit `Task: T-06`, REQ-004, DEC-004, DEC-006, DEC-009).
+
+## 2026-10-18 00:18 · night-loop (scripts/night-loop.sh)
+- Hecho: T-05 revisada por codex: approved → reviewed (commit f6c7c5f); T-07 revisada por codex: approved → reviewed (commit a7f8326); T-06: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida. Corrida 2026-10-18_000738 (11 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .night-loop/2026-10-18_000738/.
+- Tokens (implementador, campo usage del evento result): T-06: entrada 90 · salida 31.427 · caché leída 4.816.940 · caché escrita 133.577; total de la corrida: entrada 90 · salida 31.427 · caché leída 4.816.940 · caché escrita 133.577.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-04: REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → "No hay productos disponibles"; npm run seed y deslizar → vuelven; T-05: REQ-003 E5 y subtotal por línea en el teléfono: npm run app, login almacen1; con el carrito vacío "Confirmar pedido" está deshabilitado; agregar 2 Arroz y 1 Yerba → Carrito muestra subtotal por línea ($2.600 y $4.500) y total $7.100; confirmar → carrito vacío y "Pedido confirmado N° …"; T-07: REQ-001 E1–E3 y REQ-005 E1–E2 en el teléfono: login con contraseña errónea → "Correo o contraseña incorrectos"; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin pedir credenciales; agregar al carrito, "Cerrar sesión" → inicio y carrito vacío; reabrir → pide credenciales.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-06.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en fd7e0c4.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-06).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
