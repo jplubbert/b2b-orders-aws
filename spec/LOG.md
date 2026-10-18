@@ -1106,3 +1106,8 @@
 - En curso / roto: T-29 `verified_auto`, espera revisión independiente. T-27 sigue `in_progress` a la espera del deploy; T-26 a la espera de la aprobación del diff de tests/acceptance/ (8ab4a0f).
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-29 (diff de ed24b12, REQ-001/003/005/010, DEC-021/003/008); el usuario hace el deploy de T-27 (línea `Pendiente deploy` de su entrada) y aprueba el diff de T-26; luego T-28 y después T-31 (depende de T-28 y T-29).
+
+## 2026-10-18 19:46 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-29 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-29); salida íntegra en .autopilot/2026-10-18_191105/T-29-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.

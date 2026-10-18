@@ -967,7 +967,7 @@
         "DEC-008"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "touches": [
         "app/"
       ],
@@ -978,7 +978,13 @@
         "commit": "ed24b12",
         "manual_pending": "DEC-011, en el teléfono con Expo Go y el dev desplegado, el guion del README sin cambios visibles: (1) almacen1@demo.test inicia sesión → Catálogo; cerrar y reabrir la app entra directo (REQ-001 E3); (2) agregar productos con − / +, abrir un detalle y volver: la barra del carrito suma igual (REQ-003, REQ-008); confirmar el pedido → número y carrito vacío; (3) menú de cuenta muestra el correo; \"Cerrar sesión\" vuelve al inicio y al reingresar el carrito está vacío (REQ-005); (4) distribuidor@demo.test → panel \"Pedidos\", filtro, abrir el pedido, cambiar estado y volver: el panel muestra el estado nuevo (REQ-010, REQ-011)."
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Verificación independiente: npm test pasa (186 pruebas Vitest y 152 pruebas de app); lint, typecheck y check:spec pasan. Sin cambios fuera de alcance ni violaciones detectadas de las decisiones citadas. La persistencia real de sesión y los flujos en teléfono siguen pendientes de verificación manual; no ejecuté expo export ni aceptación contra AWS porque no forman parte de los comandos permitidos para esta revisión. Se excluyeron estilo y preferencias.",
+        "date": "2026-10-18"
+      },
       "blocked_by": null,
       "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí. 2026-10-18: implementada (commit ed24b12): app/src/lib/store/{cart,panel,session}.ts con zustand ^5.0.15; se borran CartProvider y PanelProvider; `useCart`/`usePanel` conservan nombre y forma, así las pantallas solo cambian el import. Sesión: `readSession()` en lib/session.ts lee rol (`cognito:groups`, S-25), `email` y `custom:customerId` del ID token; el store guarda eso y `status` (unknown/loading/signedIn/signedOut); el inicio de sesión hidrata por el store y, sin grupo, `reject()` cierra la sesión (REQ-009 E3). Detalles internos: el menú de cuenta toma el correo del store y, si el ID token no lo trae, lo pide con fetchUserAttributes como antes (lo guarda en el store); el estado \"Comprobando sesión\" de la pantalla de inicio sigue siendo local, para que el botón Ingresar no cambie a esa vista al hidratar tras signIn. Interpretación de DEC-021 (\"cerrar sesión vacía el carrito y la lista del panel como hoy\"): hoy la lista del panel se vacía al entrar al panel; ahora además `signOut` la vacía (el panel la sigue vaciando al montar), sin cambio visible porque se navega al inicio enseguida. Sin deploy (solo app/). Queda verified_auto con la verificación manual en el teléfono pendiente (DEC-011)."
     },
