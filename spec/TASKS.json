@@ -507,10 +507,16 @@
       "depends_on": [
         "T-14"
       ],
-      "status": "approved_for_impl",
+      "status": "verified_auto",
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + REQ-009 E1, E4 y panel con filtro en el teléfono (manual, DEC-011)",
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
+      "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: implementada en 1add24d → verified_auto; pendiente la verificación manual en el teléfono (DEC-011) y la revisión independiente. Detalles internos: AllOrders trae las líneas para el detalle de T-16 (S-19); las filas aún no navegan (T-16); excepción de `dist/` en .gitignore raíz y eslint.config.js para la ruta app/src/app/dist.",
+      "evidence": {
+        "command": "npm run codegen; timeout 40 npm exec -w app -- expo start --offline (regenera tipos de rutas); npm run lint; npm run typecheck; npm test; npm exec -w app -- expo export --platform android; npm run test:acceptance y npm run smoke (perfil fijado por el orquestador, DEC-010, contra PedidosB2B-dev)",
+        "result": "codegen: solo cambia app/src/lib/generated. lint ok; typecheck ok; vitest 162/162 (incluye codegen al día) + jest 125/125 (antes 105; nuevos: session.test REQ-009 E1–E4, E3 al reabrir y S-25; startup.test distribuidor con sesión → /dist con el router real; dist.test REQ-010 E1–E4, filtro de 6 opciones, carga, error, refresco con filtro, respuesta vieja descartada, menú de cuenta). expo export android ok (2461 módulos). test:acceptance 41/41 y smoke 2/2 (sin regresión; T-15 no toca backend).",
+        "commit": "1add24d",
+        "manual_pending": "REQ-009 E1, E3, E4 y REQ-010 en el teléfono: npm run app, login distribuidor@demo.test → panel \"Pedidos\" con los pedidos de almacen1/almacen2 (N°, \"Almacén C-ALMACEN…\", fecha, total, estado); tocar \"Enviado\" → solo los ENVIADO (o \"No hay pedidos en este estado\"); \"Todos\" → vuelven todos; cerrar y reabrir Expo Go → panel sin pedir credenciales; menú de cuenta → \"Cerrar sesión\" → inicio; login almacen1 → catálogo como antes. (E3 sin grupo solo si se crea a mano un usuario sin grupo en Cognito: \"Tu usuario no tiene acceso a la app\" y sigue en inicio.)"
+      }
     },
     {
       "id": "T-16",

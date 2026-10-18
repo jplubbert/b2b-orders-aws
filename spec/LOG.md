@@ -564,3 +564,13 @@
 - Hecho: revisión independiente de T-14 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-14); salida íntegra en .autopilot/2026-10-18_041822/T-14-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 · Claude (claude-opus-5-5) vía autopilot
+- Hecho (T-15, REQ-009 E1–E4, REQ-010 E1–E4, commit 1add24d): la app lee `cognito:groups` del token de id al ingresar y al reabrir: distribuidores → `/dist`, almaceneros → `/catalog`, ambos → `/dist` (S-25), ninguno → "Tu usuario no tiene acceso a la app", cierra sesión y sigue en inicio. Ruta `dist/index` "Pedidos": `allOrders` con número, "Almacén <customerId>" (S-23), fecha es-CL, total y estado; filtro "Todos" + 5 estados contra el servidor (`allOrders(status)`); StateMessage de carga, vacío ("Todavía no hay pedidos" / "No hay pedidos en este estado") y error; recarga al ganar el foco, al cambiar el filtro y al deslizar; menú de cuenta. Sin cambios en backend/, infra/, spec/contracts/, tests/acceptance/ ni app/package.json.
+- Detalle interno: `.gitignore` raíz, `app/.gitignore` y `eslint.config.js` ignoraban `dist/` a cualquier profundidad y ocultaban la ruta `app/src/app/dist` (de la spec); excepción puntual (en app/ se ancla a `/dist/`, la salida de `expo export`). `AllOrders` ya trae las líneas para el detalle de T-16 (S-19).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok (tras regenerar los tipos de rutas con `expo start --offline`); `npm test` vitest 162/162 + jest 125/125; `expo export --platform android` ok; `npm run test:acceptance` 41/41; `npm run smoke` 2/2. T-15 → `verified_auto`.
+- Pendiente manual (DEC-011): T-15: REQ-009 E1/E4 y panel con filtro en el teléfono (detalle en `evidence.manual_pending` de T-15).
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-15 (la hace el autopilot); luego T-16.
