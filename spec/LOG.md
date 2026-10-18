@@ -825,3 +825,14 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Lee AGENTS.md y el LOG.md. Aplica la corrección propuesta para T-21 (acortar listas de campos fijos, recorte final a AUTOPILOT_NTFY_MAX conservando la próxima acción, prueba con límite menor que los campos fijos), en pedidos-b2b-v2 y sdd-base. Luego corre el autopilot para revisión. Haz push de todo."
+- Contexto: segundo rechazo de T-21 (14:55) sobre la misma falla (largo del aviso); por AGENTS.md la sesión anterior se detuvo y escaló; el usuario aprueba este tercer intento.
+- Hecho (T-21, 938861b): `short_list` (5 tareas y "… (+N más)") en fallidas y en la próxima acción; `ntfy_body` deja la próxima acción al final y la conserva (solo se recorta si sola no cabe) y recorta lo anterior desde el final, empezando por el detalle, para no pasar nunca de `AUTOPILOT_NTFY_MAX`. Mismo cambio en sdd-base (8ffdd84, publicado).
+- Interpretación (detalle interno dentro de DEC-016, accepted): DEC-016 dice que los campos fijos van primero y solo se recorta el detalle; con un límite menor que los campos fijos eso es imposible, así que el orden de conservación pasa a ser próxima acción > motivo > hechas/fallidas > corrida > detalle. Se respeta lo esencial de la DEC: el mensaje nunca pasa del límite y, cuando caben, van motivo, hechas/fallidas y próxima acción.
+- Verificado y cómo: lint ok; typecheck ok; `npm test` vitest 178/178 + jest 137/137 (las 4 pruebas nuevas o ampliadas fallan con autopilot.sh de 2896295); `npm run check:spec` ok; `--dry-run` ok; sdd-base `npm test` 94/94.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: tercera revisión independiente de T-21 (el autopilot, a continuación); el usuario decide `accepted` de T-21.
