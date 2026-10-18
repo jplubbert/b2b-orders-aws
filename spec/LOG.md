@@ -1131,3 +1131,13 @@
 - En curso / roto: T-26 `in_progress` esperando la aprobación del usuario del diff de tests/acceptance/ (8ab4a0f), mostrado en esta sesión.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario aprueba (o devuelve) el diff de 8ab4a0f → T-26 `verified_auto`; revisión independiente de T-27; después el autopilot sigue con T-28.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Apruebo el diff de T-26 (aprobador: Pepe), con un ajuste: en E4 espera 5 s extra antes de la verificación final. Pasa T-26 a verified_auto, push, y lanza el autopilot."
+- Hecho: E4 de req_012_historial espera 5 s después de que aparece el evento centinela y vuelve a leer el historial antes de verificar (commit 2313614).
+- Aceptación del diff: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba el diff de tests/acceptance/ de 8ab4a0f con el ajuste de 2313614 → T-26 `verified_auto` (`evidence.user_approval`).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm run test:acceptance` 41 pasan, 5 fallan y 3 se omiten, todas de REQ-012 por `orderHistory` inexistente (esperado hasta T-28); `npm run check:spec` ok.
+- Pendiente deploy: ninguno nuevo (T-28 lo necesitará).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el autopilot revisa T-26 y T-27 e implementa T-28 (queda con `- Pendiente deploy:`); T-31 después de T-28.
