@@ -291,6 +291,54 @@ export function changeOrderStatus(
   return gql<{ setOrderStatus: DistOrder | null }>(env, SET_ORDER_STATUS, target, token);
 }
 
+// --- Order history (REQ-012, S-29, DEC-020) -------------------------------------------------
+
+export const ORDER_HISTORY = /* GraphQL */ `
+  query OrderHistory($id: ID!) { orderHistory(id: $id) { eventId orderId customerId from to at } }
+`;
+
+export interface OrderStatusEvent {
+  eventId: string;
+  orderId: string;
+  customerId: string;
+  from: string | null;
+  to: string;
+  at: string;
+}
+
+export function orderHistory(env: StageEnv, token: string, id: string) {
+  return gql<{ orderHistory: OrderStatusEvent[] | null }>(env, ORDER_HISTORY, { id }, token);
+}
+
+/** `orderHistory(id)` as `token`; fails the test if the API responds with errors. */
+export async function listOrderHistory(env: StageEnv, token: string, id: string): Promise<OrderStatusEvent[]> {
+  const res = await orderHistory(env, token, id);
+  if (res.errors?.length || !res.data?.orderHistory) throw new Error(`orderHistory failed: ${JSON.stringify(res.errors)}`);
+  return res.data.orderHistory;
+}
+
+/**
+ * Polls `orderHistory(id)` until it has at least `count` events. Recording is asynchronous and must
+ * finish within 30 s of the API response (REQ-012), so call it right after the operation.
+ */
+export async function waitForHistory(
+  env: StageEnv,
+  token: string,
+  id: string,
+  count: number,
+  timeoutMs = 30_000,
+): Promise<OrderStatusEvent[]> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const events = await listOrderHistory(env, token, id);
+    if (events.length >= count) return events;
+    if (Date.now() > deadline) {
+      throw new Error(`orderHistory(${id}) has ${events.length} of ${count} event(s) after ${timeoutMs} ms`);
+    }
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+}
+
 // --- Distributor script ---------------------------------------------------------------------
 
 /** `npm run order:set-status -- <id> <status>` (SPEC §Plan, DEC-009). */
