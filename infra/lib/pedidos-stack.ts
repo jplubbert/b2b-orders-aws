@@ -103,7 +103,7 @@ export class PedidosStack extends Stack {
       source.createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
     }
 
-    // DEC-010/DEC-015: the nightly orchestrator's identity for acceptance and smoke, only on this table and user pool.
+    // DEC-010/DEC-015: the autopilot's identity for acceptance and smoke, only on this table and user pool.
     // No keys in the template: they're created separately (`aws iam create-access-key`) and live in the `autopilot` profile.
     if (props.stage === 'dev') {
       const testRunner = new iam.User(this, 'AutopilotTestsUser', { userName: TEST_RUNNER_USER });

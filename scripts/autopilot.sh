@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nightly orchestrator (T-08). Runs tasks of the PCR protocol unattended, within a budget.
+# Autopilot (T-08). Runs tasks of the PCR protocol unattended, within a budget.
 #
 #   scripts/autopilot.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
@@ -395,7 +395,7 @@ EOF
     return
   fi
   local sha
-  sha=$(commit_spec "Nightly orchestrator: summary of run $RUN_ID" "T-08" "N/A") || die "could not commit the summary in LOG.md; check git status"
+  sha=$(commit_spec "Autopilot: summary of run $RUN_ID" "T-08" "N/A") || die "could not commit the summary in LOG.md; check git status"
   log "summary added to spec/LOG.md (commit $sha)"
 }
 

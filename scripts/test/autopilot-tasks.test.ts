@@ -322,7 +322,7 @@ describe('autopilot.sh', () => {
       expect(t03()).toMatchObject({ status: 'reviewed', review: { verdict: 'approved', reviewer: expect.stringContaining('codex') } });
       const log = git('log', '--format=%s%n%b');
       expect(log).toContain('T-03: independent review (approved)');
-      expect(log).toContain('Nightly orchestrator: summary');
+      expect(log).toContain('Autopilot: summary');
       expect(log).toContain('Task: T-08\nReq: N/A');
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('Motivo de parada: presupuesto de tareas alcanzado (1)');
       expect(git('status', '--porcelain')).toBe('');
@@ -626,7 +626,7 @@ describe('autopilot.sh', () => {
         const r = autopilot({ ...approved, ...ntfy, STUB_CURL_RC: '7' }, '--max-tasks', '1');
         expect(r.status).toBe(0);
         expect(r.stdout).toContain('warning: ntfy failed (code 7); the run keeps its result');
-        expect(git('log', '-1', '--format=%s')).toContain('Nightly orchestrator: summary of run');
+        expect(git('log', '-1', '--format=%s')).toContain('Autopilot: summary of run');
         expect(git('status', '--porcelain')).toBe('');
       });
 
