@@ -35,7 +35,7 @@
 #      Código de salida 1 si la parada requiere intervención (blocked, fallos, violación de autoridad, sin veredicto).
 #   5. Nunca hace push, nunca despliega a AWS ni marca accepted/reviewed por su cuenta (reviewed solo con veredicto).
 #
-# Guardas mecánicas sobre los procesos hijos: solo el perfil AWS `night-loop` (usuario IAM night-loop-tests, DEC-010:
+# Guardas mecánicas sobre los procesos hijos: solo el perfil AWS `autopilot` (usuario IAM autopilot-tests, DEC-010/DEC-015:
 # datos de la tabla y admin del user pool de PedidosB2B-dev) copiado a un AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE
 # temporales, así que `default` no existe para ellos (deploy/bootstrap/cdk fallan además por permisos); pushurl de
 # todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
@@ -110,8 +110,8 @@ deploy_pending_since() {
 # ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
 export AUTOPILOT=1
 export CI=1
-# AWS: solo el perfil night-loop (DEC-010), copiado a archivos temporales; default y el resto no existen para los hijos.
-AUTOPILOT_AWS_PROFILE=${AUTOPILOT_AWS_PROFILE:-night-loop}
+# AWS: solo el perfil autopilot (DEC-010, DEC-015), copiado a archivos temporales; default y el resto no existen para los hijos.
+AUTOPILOT_AWS_PROFILE=${AUTOPILOT_AWS_PROFILE:-autopilot}
 AWS_SOURCE=${AUTOPILOT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
 unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE AWS_DEFAULT_REGION
 AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/autopilot-aws.XXXXXX")

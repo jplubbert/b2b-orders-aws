@@ -11,7 +11,7 @@ const REPO = fileURLToPath(new URL('../../', import.meta.url));
 const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-spec');
 const SCRIPT = join(REPO, 'scripts/lib/autopilot-tasks.mjs');
 const AUTOPILOT_SH = join(REPO, 'scripts/autopilot.sh');
-// Credenciales falsas con [default] y [night-loop]: autopilot solo debe pasar el perfil night-loop a los hijos.
+// Credenciales falsas con [default] y [autopilot]: autopilot solo debe pasar el perfil autopilot a los hijos.
 const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-aws/credentials');
 
 let root: string;
@@ -264,7 +264,7 @@ describe('autopilot.sh', () => {
     expect(r.stdout).toContain('sin\\ prefijos\\ de\\ entorno');
     expect(r.stdout).toContain('sin\\ \\`\\&\\&\\`\\ ni\\ \\`cd\\`');
     expect(r.stdout).toContain('Pendiente\\ deploy:');
-    expect(r.stdout).toContain('AWS_PROFILE=night-loop (llave AKIANIGHTLOOPFAKE');
+    expect(r.stdout).toContain('AWS_PROFILE=autopilot (llave AKIAAUTOPILOTFAKE');
     expect(r.stdout).not.toContain('secreto');
     expect(r.stdout).toContain('Entrada que se anotaría en spec/LOG.md');
     expect(git('status', '--porcelain')).toBe('');
@@ -351,14 +351,14 @@ describe('autopilot.sh', () => {
       expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
     });
 
-    it('el implementador solo ve el perfil night-loop; el progreso sale legible en la terminal y en live.log', () => {
+    it('el implementador solo ve el perfil autopilot; el progreso sale legible en la terminal y en live.log', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
       const runDir = join(root, '.autopilot', readdirSync(join(root, '.autopilot')).find((d) => d.startsWith('20'))!);
       const seen = readFileSync(join(root, '.autopilot/stub-env-T-03.txt'), 'utf8');
-      expect(seen).toContain('AWS_PROFILE=night-loop');
-      expect(seen).toContain('[night-loop]\naws_access_key_id = AKIANIGHTLOOPFAKE');
-      expect(seen).toContain('[profile night-loop]\nregion = us-east-1');
+      expect(seen).toContain('AWS_PROFILE=autopilot');
+      expect(seen).toContain('[autopilot]\naws_access_key_id = AKIAAUTOPILOTFAKE');
+      expect(seen).toContain('[profile autopilot]\nregion = us-east-1');
       expect(seen).not.toContain('default');
       const live = readFileSync(join(runDir, 'live.log'), 'utf8');
       for (const out of [r.stdout, live]) {

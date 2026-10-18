@@ -657,3 +657,14 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-18 y T-19 (la hace el autopilot); el usuario decide `accepted`.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Renombra la identidad del autopilot en la cuenta [REDACTED_AWS_ACCOUNT_DEMO]: perfil AWS night-loop → autopilot y usuario IAM night-loop-tests → autopilot-tests (en CDK, scripts, AGENTS.md, README, DEC-010 y donde aparezca). Crea la llave nueva, desactiva la vieja y repite la verificación de DEC-010 […]. Si todo pasa, borra la llave y el usuario viejos. Anótalo en LOG.md, haz commit y push. Porta el cambio a sdd-base si ahí aparece night-loop." Luego: "luego de eso has push".
+- Hecho (T-20, DEC-015 proposed): `TEST_RUNNER_USER` = `autopilot-tests`, id lógico `AutopilotTestsUser` (infra/lib/pedidos-stack.ts, infra/test/stack.test.ts); perfil por defecto de scripts/autopilot.sh = `autopilot`; pruebas y fixture del autopilot; AGENTS.md. README.md no mencionaba night-loop. ~/.aws: `[profile night-loop]` → `[profile autopilot]`; `[night-loop]` → `[autopilot]` con la llave nueva [REDACTED_ACCESS_KEY_ID_3]. Migración en dos despliegues: fase A con ambos usuarios (no commiteada) → llave nueva → vieja [REDACTED_ACCESS_KEY_ID_4] Inactive → verificación → `delete-access-key` de la vieja → fase B (código final) → usuario `night-loop-tests` eliminado por CloudFormation.
+- Interpretación: DEC-010 está `accepted` y el protocolo no permite editarla; en lugar de cambiar su texto, DEC-015 supersede sus nombres (todo lo demás de DEC-010 sigue). Las entradas anteriores de LOG.md, TASKS.json y DEC-014 no se reescriben (solo anexar).
+- sdd-base: sin referencias a night-loop (ya renombrado a autopilot en 4b77f0c); nada que portar.
+- Verificado y cómo: `sts get-caller-identity --profile autopilot` → `arn:aws:iam::[REDACTED_AWS_ACCOUNT_DEMO]:user/autopilot-tests`; `dynamodb list-tables`, `s3 ls`, `iam get-user-policy` → AccessDenied; `AWS_PROFILE=autopilot npm run smoke` 2/2 (antes y después de la fase B); `scripts/autopilot.sh --dry-run` ok (guardas: `AWS_PROFILE=autopilot`, llave [REDACTED_ACCESS_KEY_ID_3]); `iam get-user night-loop-tests` → NoSuchEntity; lint ok; typecheck ok; `npm test` vitest 164/164 + jest 137/137; `npm run check:spec` ok. T-20 → `verified_auto`.
+- Pendiente deploy: ninguno (el código commiteado es el desplegado en la fase B).
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de DEC-015 (y de T-18, T-19, T-20 tras su revisión independiente, que hace el autopilot).

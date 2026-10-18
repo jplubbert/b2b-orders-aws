@@ -94,7 +94,7 @@ describe('PedidosStack', () => {
   });
 });
 
-describe('PedidosStack dev: usuario night-loop-tests (DEC-010)', () => {
+describe('PedidosStack dev: usuario autopilot-tests (DEC-010, DEC-015)', () => {
   let dev: Template;
   beforeAll(() => {
     dev = Template.fromStack(new PedidosStack(new App(), 'PedidosB2B-dev', { stage: 'dev', env: { region: 'us-east-1' } }));
@@ -108,7 +108,7 @@ describe('PedidosStack dev: usuario night-loop-tests (DEC-010)', () => {
 
   it('solo tiene las acciones de datos de la tabla y de admin del user pool, sobre esos recursos', () => {
     const policies = Object.values(dev.findResources('AWS::IAM::Policy')).filter((p) =>
-      JSON.stringify(p.Properties.Users ?? []).includes('NightLoopTestsUser'),
+      JSON.stringify(p.Properties.Users ?? []).includes('AutopilotTestsUser'),
     );
     expect(policies).toHaveLength(1);
     const statements = policies[0]!.Properties.PolicyDocument.Statement as Array<{

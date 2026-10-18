@@ -12,7 +12,7 @@ import { SCHEMA_PATH, rootFields } from './contract.js';
 
 export const CUSTOMER_GROUP = 'almaceneros';
 export const DISTRIBUTOR_GROUP = 'distribuidores'; // DEC-013
-export const TEST_RUNNER_USER = 'night-loop-tests';
+export const TEST_RUNNER_USER = 'autopilot-tests';
 
 /** DEC-010: lo mínimo que usan las fixtures de aceptación (y el script order:set-status de DEC-009). */
 export const TEST_RUNNER_TABLE_ACTIONS = [
@@ -103,10 +103,10 @@ export class PedidosStack extends Stack {
       source.createResolver(`${typeName}${fieldName}Resolver`, { typeName, fieldName });
     }
 
-    // DEC-010: identidad del orquestador nocturno para aceptación y humo, solo sobre esta tabla y este user pool.
-    // Sin llaves en la plantilla: se crean aparte (`aws iam create-access-key`) y viven en el perfil `night-loop`.
+    // DEC-010/DEC-015: identidad del orquestador nocturno para aceptación y humo, solo sobre esta tabla y este user pool.
+    // Sin llaves en la plantilla: se crean aparte (`aws iam create-access-key`) y viven en el perfil `autopilot`.
     if (props.stage === 'dev') {
-      const testRunner = new iam.User(this, 'NightLoopTestsUser', { userName: TEST_RUNNER_USER });
+      const testRunner = new iam.User(this, 'AutopilotTestsUser', { userName: TEST_RUNNER_USER });
       table.grant(testRunner, ...TEST_RUNNER_TABLE_ACTIONS);
       userPool.grant(testRunner, ...TEST_RUNNER_USER_POOL_ACTIONS);
     }
