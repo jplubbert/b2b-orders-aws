@@ -732,7 +732,7 @@
         "DEC-016"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm test (scripts/test/autopilot-tasks.test.ts: aviso ntfy normal/alto/límite/deploy, ntfy caído, caída antes del resumen, config y --dry-run) && npm run check:spec && scripts/autopilot.sh (aviso real recibido en el tema)",
       "blocked_by": null,
       "notes": "2026-10-18: implementado; pendiente la corrida real del autopilot (necesita árbol limpio) y el port a sdd-base. Tema elegido por el usuario: guardado solo en ~/.config/autopilot/autopilot.config.sh (no se escribe en el repo ni en los registros). 2026-10-18 14:28 (sesión del implementador sobre 0f00920): lint ok, typecheck ok, npm test (vitest 173/173 incl. aviso ntfy T-21, jest 137/137), check:spec ok, test:acceptance 41/41, smoke 2/2. Escalado al usuario: (1) DEC-016 sigue proposed y ntfy.sh está fuera de R-01: falta su accepted; (2) el aviso real exige correr scripts/autopilot.sh fuera de esta sesión y publica en un servicio externo: lo corre el usuario; (3) el port a sdd-base es otro repositorio, fuera de este. 2026-10-18 14:33 (repetición sobre d6f8602, sin cambios de código): lint ok, typecheck ok, npm test (vitest 173/173, jest 137/137), check:spec ok, test:acceptance 41/41, smoke 2/2. Los tres escalados siguen abiertos: DEC-016 sigue proposed y no hay confirmación del aviso real. 2026-10-18 (sesión interactiva): la corrida real 2026-10-18_142407 tomó T-21 porque quedó in_progress (error de la sesión, que debía dejarla fuera de la cola); el implementador solo repitió la verificación y anotó escalados (d6f8602, ea03343; sin código) y la corrida la abandonó tras 2 «fallos», lo que generó un aviso real de prioridad alta. Port a sdd-base en 8445475. verified_auto; pendiente revisión independiente y accepted de DEC-016. 2026-10-18: revisión independiente rejected (2 hallazgos DEC-016: aviso de caída sin hechas/fallidas; recorte a 3800 caracteres que podía perder Fallidas y Próxima acción). Corregidos en 2896295 junto con el rechazo como intervención (el aviso de esa misma corrida salió «terminó bien»). sdd-base 57fefbb. Sigue verified_auto para una nueva revisión. 2026-10-18 14:55: segunda revisión rejected (DEC-016: con campos fijos más largos que AUTOPILOT_NTFY_MAX el aviso lo superaba). Corregido en 938861b con la corrección aprobada por el usuario (listas acortadas, recorte final conservando la próxima acción, prueba con límite menor que los campos fijos); sdd-base 8ffdd84. Sigue verified_auto para una tercera revisión. 2026-10-18 15:04: tercera revisión rejected (DEC-016: el recorte final cortaba campos fijos). El usuario eligió la opción B (cumplir DEC-016 al pie de la letra): corregido en db260f6; sdd-base 2e123cb. Sigue verified_auto para una cuarta revisión.",
@@ -743,11 +743,9 @@
       },
       "review": {
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
-        "verdict": "rejected",
-        "findings": [
-          "DEC-016: ntfy_body recorta campos obligatorios, aunque la decisión aceptada permite recortar solo el detalle. Confirmado ejecutando la función del commit f251d8c con AUTOPILOT_NTFY_MAX=110, TASKS_DONE=0 y FAILURES=2: devuelve «Motivo de parada: no h…» y la próxima acción, sin Hechas ni Fallidas. La prueba nueva admite esta pérdida. La interpretación registrada en LOG.md contradice el texto de DEC-016 recibido para esta revisión."
-        ],
-        "notes": "Sin cambios fuera de alcance observados. Lint, typecheck, check:spec y npm test pasan (178 Vitest y 137 Jest). Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Verificación automática aprobada: 177 Vitest, 137 Jest, lint, typecheck y check:spec. Sin cambios fuera de alcance ni violaciones bloqueantes de DEC-016 observados. Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
         "date": "2026-10-18"
       }
     }
