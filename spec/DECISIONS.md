@@ -302,3 +302,17 @@ DEC-001..007 aceptadas por José Pedro Lübbert el 2026-10-17 (LOG).
 - Evidencia: 2026-10-18, `sts get-caller-identity --profile principal` → `arn:aws:sts::[REDACTED_AWS_ACCOUNT_MAIN]:assumed-role/AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe`; `--profile pedidos-demo` → `arn:aws:sts::[REDACTED_AWS_ACCOUNT_DEMO]:assumed-role/AWSReservedSSO_AdministratorAccess_[REDACTED]/pepe`; `cdk diff` con `pedidos-demo`: sin diferencias; `npm run smoke` 2/2; `npm run seed` ok.
 - Confirmación: los mismos comandos con la llave de `[REDACTED_IAM_USER]` inactiva y fuera de ~/.aws/credentials (2026-10-18: `default` → NoCredentials; `principal` y `pedidos-demo` por SSO; `cdk diff` sin diferencias; smoke 2/2; seed ok; `autopilot` sin cambios, smoke 2/2 y `--dry-run` ok).
 - Revisar si: se agregan personas (grupos y permission sets acotados) o se quiere un permission set de menos privilegio para el día a día.
+
+## DEC-018 Idioma: código y commits en inglés; spec/ y LOG.md en español
+- Estado: proposed
+- Alcance: global
+- Fecha: 2026-10-18 · Aprobador: pendiente (regla pedida por José Pedro Lübbert en sesión; falta su `accepted`) · Confianza: alta
+- Problema: el código, los comentarios, las pruebas, la salida de los scripts y los commits mezclan español e inglés. El usuario fijó una regla de idioma.
+- Impulsores: pedido del usuario 2026-10-18
+- Alternativas consideradas:
+  1. Regla del usuario: inglés para código, identificadores, comentarios, pruebas, mensajes de scripts y commits; español para spec/ y LOG.md — a favor: el código queda legible para cualquier herramienta o persona; la spec sigue en el idioma del negocio.
+- Decisión: Usaremos la alternativa 1, con estas interpretaciones: (a) los textos que ve el usuario de la app siguen en español (son requisitos de SPEC.md, p. ej. "Correo o contraseña incorrectos"), y las pruebas que los verifican conservan esas cadenas; (b) AGENTS.md y README.md siguen en español (no son código ni spec/); (c) las entradas de LOG.md que escribe el autopilot siguen en español, pero sus commits, su salida de terminal, sus registros y sus avisos ntfy pasan al inglés; (d) los commits ya hechos no se reescriben; (e) `tests/acceptance/` es protegida: su traducción (comentarios y nombres de prueba, nunca lo que verifican) va en una tarea `"kind": "spec"` aparte (T-24). Lo existente se traduce en T-23 y T-24 sin cambiar comportamiento: mismos códigos de salida, formatos de archivo, reglas de check:spec y trailers.
+- Consecuencias: buenas: criterio único. Malas: una traducción grande (casi todos los archivos de código) que hay que verificar contra regresiones. Neutrales: el hook de commit no comprueba el idioma.
+- Dependencias: afecta a AGENTS.md, todo el código, T-23, T-24 y sdd-base
+- Confirmación: revisión de T-23 y T-24; `npm test`, aceptación y humo sin cambios de resultado.
+- Revisar si: la app necesita otro idioma para el usuario final.

@@ -784,6 +784,39 @@
         "by": "José Pedro Lübbert (Pepe)",
         "date": "2026-10-18"
       }
+    },
+    {
+      "id": "T-23",
+      "kind": "tooling",
+      "title": "Traducir al inglés el código existente que no cumple DEC-018 (sin cambiar comportamiento)",
+      "description": "Traducir al inglés comentarios, identificadores, nombres y descripciones de pruebas y mensajes de scripts en app/ (salvo los textos que ve el usuario), backend/, infra/, scripts/ (autopilot.sh, check-spec.mjs, lib/, test/, fixtures) y tests/smoke/; y los mensajes de commit que generan los scripts (autopilot: resumen y revisión). No toca tests/acceptance/ (T-24) ni spec/. Sin cambios de comportamiento: mismos códigos de salida, formatos de TASKS.json y LOG.md, reglas de check:spec, trailers Task:/Req:, contrato GraphQL y textos de la app. Las entradas de LOG.md que escribe el autopilot siguen en español. Las aserciones de pruebas sobre mensajes de scripts cambian junto con el mensaje, en el mismo commit. Portar a sdd-base lo equivalente de scripts/.",
+      "reqs": [],
+      "decisions": [
+        "DEC-018"
+      ],
+      "depends_on": [],
+      "status": "proposed",
+      "verify": "npm run lint && npm run typecheck && npm test (mismo número de pruebas, todas pasan) && npm run check:spec && scripts/autopilot.sh --dry-run && npm run test:acceptance && npm run smoke (mismos resultados) && npx expo export --platform android; en sdd-base npm test",
+      "blocked_by": null,
+      "notes": "2026-10-18: abierta a pedido del usuario. Alcance medido: texto en español en 24/25 archivos de app/src, 9/9 de app/test, 8/9 de backend/src, 6/6 de backend/test, 8/9 de infra, 18/18 de scripts, 1/2 de tests/smoke y 11/11 de scripts de sdd-base. Queda proposed: el usuario la aprueba (approved_for_impl) antes de que la tome una sesión o el autopilot."
+    },
+    {
+      "id": "T-24",
+      "kind": "spec",
+      "title": "Traducir al inglés comentarios y nombres de prueba de tests/acceptance/ (DEC-018)",
+      "description": "tests/acceptance/ es protegida: solo una tarea kind spec la edita. Traducir al inglés comentarios, nombres de describe/it e identificadores de tests/acceptance/ y support/fixtures.ts, sin cambiar lo que verifican: mismas aserciones, mismas cadenas de la API y de la app en español, mismos datos de prueba (prefijo C-ACEPT-, acept-). El usuario aprueba el diff de tests/acceptance/ antes de verified_auto, como en T-13.",
+      "reqs": [],
+      "decisions": [
+        "DEC-018",
+        "DEC-007"
+      ],
+      "depends_on": [
+        "T-23"
+      ],
+      "status": "proposed",
+      "verify": "npm run lint && npm run typecheck && npm run test:acceptance (mismo número de casos, todos pasan) && npm run check:spec; aprobación del usuario del diff de tests/acceptance/",
+      "blocked_by": null,
+      "notes": "2026-10-18: separada de T-23 porque tests/acceptance/ es protegida (AGENTS.md, reglas duras). Queda proposed hasta que el usuario la apruebe."
     }
   ]
 }

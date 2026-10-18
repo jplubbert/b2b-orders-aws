@@ -933,3 +933,13 @@
 - En curso / roto: nada. Sigue a decisión del usuario borrar la llave [REDACTED_ACCESS_KEY_ID_1] y el usuario `[REDACTED_IAM_USER]` tras el período de prueba.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: agregar la regla de idioma a AGENTS.md (aquí y en sdd-base) y abrir la tarea de traducción (misma sesión).
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: el mismo de la entrada anterior (regla de idioma en AGENTS.md y sdd-base; tarea de traducción sin cambiar comportamiento).
+- Hecho: sección "Idioma" en AGENTS.md (aquí y en sdd-base): inglés para código, identificadores, comentarios, pruebas, mensajes de scripts y commits; español para spec/ y LOG.md. DEC-018 (proposed) registra la regla y sus interpretaciones. Tareas abiertas en `proposed`: T-23 (tooling: traducir app/, backend/, infra/, scripts/, tests/smoke/ y los commits que generan los scripts, y portar a sdd-base) y T-24 (spec: tests/acceptance/, protegida, con aprobación del diff por el usuario; depende de T-23).
+- Interpretaciones (en DEC-018): los textos que ve el usuario de la app siguen en español (son requisitos de SPEC.md); AGENTS.md y README.md siguen en español; las entradas de LOG.md del autopilot siguen en español, pero sus commits, salida, registros y avisos ntfy pasan al inglés; los commits ya hechos no se reescriben; tests/acceptance/ va en una tarea kind spec aparte (por eso son dos tareas y no una). Desde esta entrada los commits de esta sesión van en inglés.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario decide `accepted` de DEC-018 y aprueba T-23 (approved_for_impl) para que la implemente una sesión o el autopilot; T-24 después de T-23. Sin push de estos commits hasta que el usuario lo pida.

@@ -43,6 +43,15 @@ No cargues la spec completa si la tarea no la cita. Nunca reconstruyas estado de
   desplegar fuera de perfil `pedidos-demo` / `us-east-1` (R-04, DEC-014); decisión global no registrada;
   dos intentos fallidos sobre la misma falla.
 
+## Idioma
+- En inglés: código, identificadores, comentarios, nombres y descripciones de pruebas, mensajes de los scripts (terminal,
+  registros de `.autopilot/`, avisos ntfy) y mensajes de commit (los trailers `Task:`/`Req:` no cambian). Rige desde
+  DEC-018; lo existente se traduce en T-23 y T-24, sin cambiar comportamiento.
+- En español: todo `spec/` (SPEC.md, DECISIONS.md, TASKS.json, comentarios de `spec/contracts/`) y `spec/LOG.md`,
+  incluidas las entradas que escribe el autopilot.
+- No es código: los textos que ve el usuario de la app (pantallas, errores) siguen en español, porque son requisitos
+  de SPEC.md; AGENTS.md y README.md siguen en español.
+
 ## Reglas duras (verificadas por `npm run check:spec` y hook de commit, T-02)
 - No edites tests/acceptance/ en un cambio de implementación (solo tareas con `"kind": "spec"` en TASKS.json).
 - Una tarea pasa a `done` solo con evidencia (comando + resultado + commit) en TASKS.json.
