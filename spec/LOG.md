@@ -809,3 +809,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: `scripts/autopilot.sh` revisa T-21 (verified_auto); el usuario decide `accepted`.
+
+## 2026-10-18 14:55 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-21 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **rejected** → estado `verified_auto`. Hallazgos: DEC-016: ntfy_body no respeta AUTOPILOT_NTFY_MAX cuando los campos fijos superan el límite: devuelve fixed completo si room <= 0. Confirmado ejecutando la función del commit 2896295: con máximo 100 produce 235 caracteres; con el máximo predeterminado 3000 y 500 tareas rechazadas produce 3124. Las revisiones pendientes no están limitadas por MAX_TASKS. La prueba de recorte existente solo cubre campos fijos que caben..
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-21); salida íntegra en .autopilot/2026-10-18_145343/T-21-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.

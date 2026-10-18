@@ -745,10 +745,9 @@
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "rejected",
         "findings": [
-          "DEC-016: El aviso de caída antes del resumen omite tareas hechas y fallidas. Confirmado ejecutando on_exit del commit 96bb2f7 con TASKS_DONE=3 y FAILURES=2 y capturando ntfy_send: el mensaje no contiene esos datos. La prueba existente solo comprueba prioridad, título y código de salida.",
-          "DEC-016: El recorte del mensaje a 3800 caracteres puede eliminar Fallidas y Próxima acción, ubicadas después de SUMMARY. Confirmado ejecutando notify_stop y ntfy_send del commit 96bb2f7 con un resumen largo y curl simulado: se envían 3800 caracteres sin ninguno de esos campos. Las revisiones pendientes pueden acumular entradas sin el límite de tareas implementadas."
+          "DEC-016: ntfy_body no respeta AUTOPILOT_NTFY_MAX cuando los campos fijos superan el límite: devuelve fixed completo si room <= 0. Confirmado ejecutando la función del commit 2896295: con máximo 100 produce 235 caracteres; con el máximo predeterminado 3000 y 500 tareas rechazadas produce 3124. Las revisiones pendientes no están limitadas por MAX_TASKS. La prueba de recorte existente solo cubre campos fijos que caben."
         ],
-        "notes": "DEC-016 sigue proposed; los hallazgos señalan incumplimientos funcionales de sus condiciones citadas y de T-21, no una violación de una decisión accepted. Sin cambios fuera de alcance observados. Lint, typecheck, check:spec y npm test pasan (173 Vitest y 137 Jest). Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
+        "notes": "npm test: 175 Vitest y 137 Jest aprobados; lint, typecheck y check:spec aprobados. Sin cambios fuera de alcance observados. Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
         "date": "2026-10-18"
       }
     }
