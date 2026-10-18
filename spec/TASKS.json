@@ -745,9 +745,9 @@
         "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
         "verdict": "rejected",
         "findings": [
-          "DEC-016: ntfy_body no respeta AUTOPILOT_NTFY_MAX cuando los campos fijos superan el límite: devuelve fixed completo si room <= 0. Confirmado ejecutando la función del commit 2896295: con máximo 100 produce 235 caracteres; con el máximo predeterminado 3000 y 500 tareas rechazadas produce 3124. Las revisiones pendientes no están limitadas por MAX_TASKS. La prueba de recorte existente solo cubre campos fijos que caben."
+          "DEC-016: ntfy_body recorta campos obligatorios, aunque la decisión aceptada permite recortar solo el detalle. Confirmado ejecutando la función del commit f251d8c con AUTOPILOT_NTFY_MAX=110, TASKS_DONE=0 y FAILURES=2: devuelve «Motivo de parada: no h…» y la próxima acción, sin Hechas ni Fallidas. La prueba nueva admite esta pérdida. La interpretación registrada en LOG.md contradice el texto de DEC-016 recibido para esta revisión."
         ],
-        "notes": "npm test: 175 Vitest y 137 Jest aprobados; lint, typecheck y check:spec aprobados. Sin cambios fuera de alcance observados. Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
+        "notes": "Sin cambios fuera de alcance observados. Lint, typecheck, check:spec y npm test pasan (178 Vitest y 137 Jest). Aviso real y port a sdd-base no verificados independientemente. Estilo y preferencias excluidos.",
         "date": "2026-10-18"
       }
     }

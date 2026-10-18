@@ -836,3 +836,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: tercera revisión independiente de T-21 (el autopilot, a continuación); el usuario decide `accepted` de T-21.
+
+## 2026-10-18 15:04 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-21 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **rejected** → estado `verified_auto`. Hallazgos: DEC-016: ntfy_body recorta campos obligatorios, aunque la decisión aceptada permite recortar solo el detalle. Confirmado ejecutando la función del commit f251d8c con AUTOPILOT_NTFY_MAX=110, TASKS_DONE=0 y FAILURES=2: devuelve «Motivo de parada: no h…» y la próxima acción, sin Hechas ni Fallidas. La prueba nueva admite esta pérdida. La interpretación registrada en LOG.md contradice el texto de DEC-016 recibido para esta revisión..
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-21); salida íntegra en .autopilot/2026-10-18_150219/T-21-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
