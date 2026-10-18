@@ -438,7 +438,7 @@
         "DEC-013"
       ],
       "depends_on": [],
-      "status": "verified_auto",
+      "status": "reviewed",
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance: un caso por ejemplo de API citado; req_001..004 siguen pasando; los nuevos fallan por la razón esperada (campo inexistente o grupo inexistente)",
       "evidence": {
         "command": "npm run lint; npm run typecheck; npm run test:acceptance (perfil night-loop fijado por el orquestador, DEC-010, contra PedidosB2B-dev); npm run smoke",
@@ -447,7 +447,14 @@
         "user_approval": "2026-10-18, José Pedro Lübbert: \"Apruebo el diff de tests/acceptance/ (5916ae7) y esas interpretaciones\" (interpretaciones de REQ-010 E1/E2/E5, REQ-009 E6 y REQ-011 E5 registradas en notes)."
       },
       "blocked_by": null,
-      "notes": "Corte 3. Propuesta 2026-10-18. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: pruebas escritas (commit 5916ae7): req_009_roles (E5 ×2, E6 ×3, E3 por API como borde con el usuario sin grupo), req_010_panel (E1, E2, E5), req_011_estado (E1–E4, E5 ×2: id inexistente y customerId de otro almacén, E6); 16 casos nuevos. Interpretaciones: REQ-010 E1 y E5 usan clientes desechables en lugar de almacen1/almacen2 (S-14); REQ-010 E2 prepara el ENVIADO con order:set-status para no depender de REQ-011; REQ-010 E5 se verifica en allOrders (el distribuidor no tiene order(id), el detalle sale del panel cargado); \"sin pedido creado\" de REQ-009 E6 y REQ-011 E5 se mide con el largo de allOrders del distribuidor. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario José Pedro Lübbert aprueba el diff de tests/acceptance/ (5916ae7) y las interpretaciones → verified_auto. Pendiente: revisión independiente."
+      "notes": "Corte 3. Propuesta 2026-10-18. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl. 2026-10-18: pruebas escritas (commit 5916ae7): req_009_roles (E5 ×2, E6 ×3, E3 por API como borde con el usuario sin grupo), req_010_panel (E1, E2, E5), req_011_estado (E1–E4, E5 ×2: id inexistente y customerId de otro almacén, E6); 16 casos nuevos. Interpretaciones: REQ-010 E1 y E5 usan clientes desechables en lugar de almacen1/almacen2 (S-14); REQ-010 E2 prepara el ENVIADO con order:set-status para no depender de REQ-011; REQ-010 E5 se verifica en allOrders (el distribuidor no tiene order(id), el detalle sale del panel cargado); \"sin pedido creado\" de REQ-009 E6 y REQ-011 E5 se mide con el largo de allOrders del distribuidor. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario José Pedro Lübbert aprueba el diff de tests/acceptance/ (5916ae7) y las interpretaciones → verified_auto. Pendiente: revisión independiente.",
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Cobertura revisada para el alcance de spec de T-13. Lint, typecheck, check:spec y npm test pasan. No ejecuté aceptación contra AWS; los resultados declarados de req_001..004 y los fallos esperados de los nuevos casos no quedaron corroborados independientemente. Sin hallazgos de alcance ni violaciones de las DEC citadas. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-14",
