@@ -1019,3 +1019,12 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-24).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Para T-24: muéstrame el resultado de test:acceptance antes y después (pasan/fallan), y un resumen del diff confirmando que no cambió ninguna aserción. Si todo coincide, lo apruebo."
+- Verificado y cómo (la sesión, no la evidencia del implementador): `npx vitest run --config vitest.acceptance.config.ts` en un worktree temporal de faa786f (antes) y en 2c607fa (después), contra `dev` ([REDACTED_AWS_ACCOUNT_DEMO], perfil `pedidos-demo` por SSO): 7 archivos / 41 pruebas, 41 pasan y 0 fallan en ambos. Diff de 2c607fa: solo los 8 archivos de tests/acceptance/ (106/106 líneas); 97 líneas de aserción en ambas versiones, idénticas en 6 de 8 archivos y en req_002/req_003 solo con variables locales renombradas (`aceite`→`oil`, `arroz`→`rice`, `ARROZ`→`RICE`) con los mismos valores esperados; 51 bloques describe/it en ambas; fuera de comentarios y títulos solo esas variables y el texto de tres `Error` internos de fixtures.ts ("… falló" → "… failed"), que ninguna prueba verifica. Worktree temporal eliminado.
+- Aceptación del diff: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba el diff de tests/acceptance/ de T-24 (aprobación condicionada a que todo coincidiera; coincidió) → T-24 `verified_auto` (`evidence.user_approval`).
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-24 (el autopilot); el usuario decide `accepted`.
