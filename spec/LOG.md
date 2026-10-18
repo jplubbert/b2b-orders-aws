@@ -841,3 +841,14 @@
 - Hecho: revisión independiente de T-21 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **rejected** → estado `verified_auto`. Hallazgos: DEC-016: ntfy_body recorta campos obligatorios, aunque la decisión aceptada permite recortar solo el detalle. Confirmado ejecutando la función del commit f251d8c con AUTOPILOT_NTFY_MAX=110, TASKS_DONE=0 y FAILURES=2: devuelve «Motivo de parada: no h…» y la próxima acción, sin Hechas ni Fallidas. La prueba nueva admite esta pérdida. La interpretación registrada en LOG.md contradice el texto de DEC-016 recibido para esta revisión..
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-21); salida íntegra en .autopilot/2026-10-18_150219/T-21-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 15:04 · autopilot (scripts/autopilot.sh)
+- Hecho: T-21 revisada por codex: rejected → verified_auto (commit bc61c3d). Corrida 2026-10-18_150219 (2 min, 0 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_150219/.
+- Tokens (implementador, campo usage del evento result): total de la corrida: sin invocaciones del implementador.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en bc61c3d.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
