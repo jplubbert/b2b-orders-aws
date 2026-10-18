@@ -23,7 +23,8 @@ export default function RootLayout() {
       <Stack screenOptions={screenOptions}>
         <Stack.Screen name="index" options={{ title: 'Iniciar sesión' }} />
         <Stack.Screen name="catalog" options={{ title: 'Catálogo', headerBackVisible: false }} />
-        <Stack.Screen name="cart" options={{ title: 'Carrito' }} />
+        <Stack.Screen name="product/[id]" options={{ title: 'Producto' }} />
+        <Stack.Screen name="cart"options={{ title: 'Carrito' }} />
         <Stack.Screen name="orders" options={{ title: 'Mis pedidos' }} />
         <Stack.Screen name="order/[id]" options={{ title: 'Pedido' }} />
       </Stack>

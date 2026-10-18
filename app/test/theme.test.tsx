@@ -47,6 +47,7 @@ const MIGRATED = [
   ...sourcesIn(join(SRC, 'components')),
   join(SRC, 'app', 'catalog.tsx'),
   join(SRC, 'app', '_layout.tsx'),
+  join(SRC, 'app', 'product', '[id].tsx'),
 ];
 
 const FORBIDDEN = [
@@ -97,6 +98,7 @@ describe('REQ-007 E1: sin colores literales ni fontSize numérico fuera de theme
     }
     expect(names).toContain(join('app', 'catalog.tsx'));
     expect(names).toContain(join('app', '_layout.tsx'));
+    expect(names).toContain(join('app', 'product', '[id].tsx'));
   });
 
   it.each(MIGRATED.map((f) => [relative(SRC, f), f]))('%s', (_name, file) => {
@@ -193,6 +195,19 @@ describe('REQ-007 E4: área táctil ≥ 44 × 44 dp', () => {
     expect(size('Cuenta').h).toBeGreaterThanOrEqual(44);
     expect(size('Ver carrito').h).toBeGreaterThanOrEqual(44);
     expect(await screen.findByText('A')).toBeOnTheScreen();
+  });
+
+  it('fila del catálogo que abre el detalle de producto (REQ-008)', async () => {
+    mockListProducts.mockResolvedValue([
+      { productId: 'arroz-1kg', name: 'Arroz 1 kg', presentation: 'Paquete 1 kg', unitPrice: 1300 },
+    ]);
+    await render(
+      <CartProvider>
+        <CatalogScreen />
+      </CartProvider>,
+    );
+    expect(await screen.findByText('Arroz 1 kg')).toBeOnTheScreen();
+    expect(size('Ver detalle de Arroz 1 kg').h).toBeGreaterThanOrEqual(44);
   });
 });
 
