@@ -5,4 +5,4 @@ cdk-outputs*.json
 .expo/
 dist/
 *.tsbuildinfo
-.night-loop/
+.autopilot/

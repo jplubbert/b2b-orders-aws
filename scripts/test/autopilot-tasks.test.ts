@@ -5,14 +5,14 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Fixtures: copia de una spec/ fija (scripts/test/fixtures/night-spec) en un directorio temporal, mutada por cada caso.
+// Fixtures: copia de una spec/ fija (scripts/test/fixtures/autopilot-spec) en un directorio temporal, mutada por cada caso.
 // No se usa spec/ del repo: su estado real cambia con el proyecto.
 const REPO = fileURLToPath(new URL('../../', import.meta.url));
-const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/night-spec');
-const SCRIPT = join(REPO, 'scripts/lib/night-tasks.mjs');
-const LOOP = join(REPO, 'scripts/night-loop.sh');
-// Credenciales falsas con [default] y [night-loop]: el loop solo debe pasar night-loop a los hijos.
-const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/night-aws/credentials');
+const SPEC_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-spec');
+const SCRIPT = join(REPO, 'scripts/lib/autopilot-tasks.mjs');
+const AUTOPILOT_SH = join(REPO, 'scripts/autopilot.sh');
+// Credenciales falsas con [default] y [night-loop]: autopilot solo debe pasar el perfil night-loop a los hijos.
+const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-aws/credentials');
 
 let root: string;
 
@@ -34,12 +34,12 @@ function editTasks(fn: (tasks: Task[]) => void) {
 const task = (tasks: Task[], id: string) => tasks.find((t) => t.id === id)!;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'night-tasks-'));
+  root = mkdtempSync(join(tmpdir(), 'autopilot-tasks-'));
   cpSync(SPEC_FIXTURE, join(root, 'spec'), { recursive: true });
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-describe('night-tasks manual-pending (DEC-011)', () => {
+describe('autopilot-tasks manual-pending (DEC-011)', () => {
   it('lista evidence.manual_pending de las tareas verified_auto o reviewed; no las aceptadas', () => {
     expect(JSON.parse(run('manual-pending').out)).toEqual([]);
     editTasks((ts) => {
@@ -56,7 +56,7 @@ describe('night-tasks manual-pending (DEC-011)', () => {
   });
 });
 
-describe('night-tasks pick', () => {
+describe('autopilot-tasks pick', () => {
   it('no elige nada si ninguna elegible tiene sus dependencias cerradas', () => {
     // T-03..T-07 (approved_for_impl) esperan a T-01 (verified_auto: abierta); T-08 (in_progress) espera a T-02.
     editTasks((ts) => { task(ts, 'T-01').status = 'verified_auto'; });
@@ -121,7 +121,7 @@ describe('night-tasks pick', () => {
   });
 });
 
-describe('night-tasks pending-reviews', () => {
+describe('autopilot-tasks pending-reviews', () => {
   it('lista las tareas en verified_auto, en orden', () => {
     expect(JSON.parse(run('pending-reviews').out)).toEqual(['T-02']); // la fixture deja T-02 en verified_auto
     editTasks((ts) => { task(ts, 'T-05').status = 'verified_auto'; task(ts, 'T-02').status = 'reviewed'; });
@@ -129,7 +129,7 @@ describe('night-tasks pending-reviews', () => {
   });
 });
 
-describe('night-tasks check-authority', () => {
+describe('autopilot-tasks check-authority', () => {
   it('detecta estados reservados otorgados por el ejecutor', () => {
     const snap = join(root, 'before.json');
     writeFileSync(snap, run('snapshot').out);
@@ -149,7 +149,7 @@ describe('night-tasks check-authority', () => {
   });
 });
 
-describe('night-tasks context', () => {
+describe('autopilot-tasks context', () => {
   it('incluye la tarea, sus REQ completos y sus DEC', () => {
     const out = run('context', 'T-04').out;
     expect(out).toContain('# Tarea T-04: Catálogo completo');
@@ -167,7 +167,7 @@ describe('night-tasks context', () => {
   });
 });
 
-describe('night-tasks parse-verdict', () => {
+describe('autopilot-tasks parse-verdict', () => {
   const parse = (text: string) => {
     const f = join(root, 'out.txt');
     writeFileSync(f, text);
@@ -194,7 +194,7 @@ describe('night-tasks parse-verdict', () => {
   });
 });
 
-describe('night-tasks set-review', () => {
+describe('autopilot-tasks set-review', () => {
   const verdict = (v: object) => {
     const f = join(root, 'verdict.json');
     writeFileSync(f, JSON.stringify(v));
@@ -226,10 +226,10 @@ describe('night-tasks set-review', () => {
   });
 });
 
-describe('night-loop.sh', () => {
+describe('autopilot.sh', () => {
   it('es ejecutable y --help describe el ciclo', () => {
-    expect(spawnSync('test', ['-x', LOOP]).status).toBe(0);
-    const r = spawnSync(LOOP, ['--help'], { encoding: 'utf8' });
+    expect(spawnSync('test', ['-x', AUTOPILOT_SH]).status).toBe(0);
+    const r = spawnSync(AUTOPILOT_SH, ['--help'], { encoding: 'utf8' });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('--dry-run');
     expect(r.stdout).toContain('Nunca hace push');
@@ -247,9 +247,9 @@ describe('night-loop.sh', () => {
     editTasks((ts) => { task(ts, 'T-01').status = 'done'; task(ts, 'T-03').status = 'ready'; });
     git('commit', '-q', '-am', 'ready\n\nTask: none\nReq: none');
     const head = git('rev-parse', 'HEAD');
-    const r = spawnSync('bash', [join(root, 'scripts/night-loop.sh'), '--dry-run'], {
+    const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], {
       encoding: 'utf8',
-      env: { ...process.env, PATH: process.env.PATH, NIGHT_REVIEWER: 'claude', NIGHT_AWS_CREDENTIALS: AWS_FIXTURE },
+      env: { ...process.env, PATH: process.env.PATH, AUTOPILOT_REVIEWER: 'claude', AUTOPILOT_AWS_CREDENTIALS: AWS_FIXTURE },
     });
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
@@ -269,16 +269,16 @@ describe('night-loop.sh', () => {
     expect(r.stdout).toContain('Entrada que se anotaría en spec/LOG.md');
     expect(git('status', '--porcelain')).toBe('');
     expect(git('rev-parse', 'HEAD')).toBe(head);
-    expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).not.toContain('night-loop (scripts/night-loop.sh)');
+    expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).not.toContain('autopilot (scripts/autopilot.sh)');
   });
 
   describe('ciclo completo con dobles de claude/codex', () => {
     let git: (...a: string[]) => string;
     let bin: string;
-    const loop = (env: Record<string, string>, ...args: string[]) =>
-      spawnSync('bash', [join(root, 'scripts/night-loop.sh'), ...args], {
+    const autopilot = (env: Record<string, string>, ...args: string[]) =>
+      spawnSync('bash', [join(root, 'scripts/autopilot.sh'), ...args], {
         encoding: 'utf8',
-        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, NIGHT_AWS_CREDENTIALS: AWS_FIXTURE, ...env },
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, AUTOPILOT_AWS_CREDENTIALS: AWS_FIXTURE, ...env },
       });
     const t03 = () => task(readTasks(), 'T-03') as Task & { review?: { verdict: string } };
 
@@ -295,13 +295,13 @@ describe('night-loop.sh', () => {
       });
       git('add', '-A');
       git('commit', '-q', '-m', 'base\n\nTask: none\nReq: none');
-      bin = join(root, '..', `night-stubs-${Date.now()}`);
-      cpSync(join(REPO, 'scripts/test/fixtures/night-stubs'), bin, { recursive: true });
+      bin = join(root, '..', `autopilot-stubs-${Date.now()}`);
+      cpSync(join(REPO, 'scripts/test/fixtures/autopilot-stubs'), bin, { recursive: true });
     });
     afterEach(() => rmSync(bin, { recursive: true, force: true }));
 
     it('implementa, revisa (approved → reviewed), anota LOG y confirma; nunca toca push', () => {
-      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.stderr.replace(/check:spec: ok\n/g, '')).toBe(''); // el hook commit-msg imprime su ok
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('veredicto sobre T-03: approved → estado reviewed');
@@ -313,7 +313,7 @@ describe('night-loop.sh', () => {
       expect(log).toContain('Task: T-08\nReq: N/A');
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('Motivo de parada: presupuesto de tareas alcanzado (1)');
       expect(git('status', '--porcelain')).toBe('');
-      const prompt = readFileSync(join(root, '.night-loop', readdirSync(join(root, '.night-loop')).find((d) => d.startsWith('20'))!, 'codex-received-prompt.md'), 'utf8');
+      const prompt = readFileSync(join(root, '.autopilot', readdirSync(join(root, '.autopilot')).find((d) => d.startsWith('20'))!, 'codex-received-prompt.md'), 'utf8');
       expect(prompt).toContain('### REQ-001');
       expect(prompt).toContain('## DEC-007');
       expect(prompt).toContain('stub change for T-03');
@@ -328,7 +328,7 @@ describe('night-loop.sh', () => {
 
     it('antes de elegir tarea revisa las verified_auto pendientes (approved → reviewed) sin contarlas como tareas', () => {
       pendingT02();
-      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
       const reviewed = r.stdout.indexOf('veredicto sobre T-02: approved → estado reviewed');
       expect(reviewed).toBeGreaterThan(-1);
@@ -343,7 +343,7 @@ describe('night-loop.sh', () => {
 
     it('una pendiente rechazada queda verified_auto y no se revisa otra vez en la misma corrida', () => {
       pendingT02();
-      const r = loop({}); // el doble de codex rechaza por defecto
+      const r = autopilot({}); // el doble de codex rechaza por defecto
       expect(r.status).toBe(0);
       expect(count(r.stdout, 'veredicto sobre T-02: rejected')).toBe(1);
       expect(count(r.stdout, 'veredicto sobre T-03: rejected')).toBe(1);
@@ -352,10 +352,10 @@ describe('night-loop.sh', () => {
     });
 
     it('el implementador solo ve el perfil night-loop; el progreso sale legible en la terminal y en live.log', () => {
-      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
-      const runDir = join(root, '.night-loop', readdirSync(join(root, '.night-loop')).find((d) => d.startsWith('20'))!);
-      const seen = readFileSync(join(root, '.night-loop/stub-env-T-03.txt'), 'utf8');
+      const runDir = join(root, '.autopilot', readdirSync(join(root, '.autopilot')).find((d) => d.startsWith('20'))!);
+      const seen = readFileSync(join(root, '.autopilot/stub-env-T-03.txt'), 'utf8');
       expect(seen).toContain('AWS_PROFILE=night-loop');
       expect(seen).toContain('[night-loop]\naws_access_key_id = AKIANIGHTLOOPFAKE');
       expect(seen).toContain('[profile night-loop]\nregion = us-east-1');
@@ -379,21 +379,21 @@ describe('night-loop.sh', () => {
     });
 
     it('encadena: con T-03 reviewed toma T-04 (depende de T-01 y T-03) en la misma corrida', () => {
-      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '2');
+      const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '2');
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('veredicto sobre T-04: approved → estado reviewed');
       expect(task(readTasks(), 'T-04').status).toBe('reviewed');
     });
 
     it('rejected conserva verified_auto y sigue; sin más ready termina con exit 0', () => {
-      const r = loop({});
+      const r = autopilot({});
       expect(r.status).toBe(0);
       expect(t03()).toMatchObject({ status: 'verified_auto', review: { verdict: 'rejected', findings: [expect.stringContaining('REQ-001')] } });
       expect(r.stdout).toContain('parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas');
     });
 
     it('se detiene con exit 1 si el implementador otorga accepted', () => {
-      const r = loop({ STUB_MODE: 'accepted' });
+      const r = autopilot({ STUB_MODE: 'accepted' });
       expect(r.status).toBe(1);
       expect(r.stderr).toContain('T-03: ready → accepted');
       expect(r.stdout).toContain('violación de autoridad');
@@ -402,7 +402,7 @@ describe('night-loop.sh', () => {
 
     it('se detiene con exit 1 y sin confirmar nada si el implementador deja el árbol sucio', () => {
       const head = git('rev-parse', 'HEAD');
-      const r = loop({ STUB_MODE: 'dirty' });
+      const r = autopilot({ STUB_MODE: 'dirty' });
       expect(r.status).toBe(1);
       expect(r.stdout).toContain('SIN commit');
       expect(git('rev-parse', 'HEAD')).toBe(head);
@@ -412,7 +412,7 @@ describe('night-loop.sh', () => {
     it('una tarea que queda sin cambios no es fallo: se salta y se toma la siguiente independiente', () => {
       editTasks((ts) => { task(ts, 'T-08').status = 'ready'; }); // depende solo de T-02 (done): independiente de T-03
       git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
-      const r = loop({ STUB_NOOP: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      const r = autopilot({ STUB_NOOP: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('T-03 quedó sin cambios: no cuenta como fallo');
       expect(r.stdout).not.toContain('fallo 1/');
@@ -432,7 +432,7 @@ describe('night-loop.sh', () => {
 
     it('los fallos se cuentan por tarea: dos en T-03 la abandonan y la corrida sigue con T-08', () => {
       t08Ready();
-      const r = loop({ STUB_FAIL: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      const r = autopilot({ STUB_FAIL: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(1); // un abandono requiere intervención
       expect(r.stdout).toContain('fallo 1/2 en T-03');
       expect(r.stdout).toContain('fallo 2/2 en T-03');
@@ -446,7 +446,7 @@ describe('night-loop.sh', () => {
 
     it('una tarea que necesita desplegar queda in_progress con Pendiente deploy: no es fallo y sigue la siguiente', () => {
       t08Ready();
-      const r = loop({ STUB_DEPLOY: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      const r = autopilot({ STUB_DEPLOY: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('T-03 espera un despliegue (Pendiente deploy): no cuenta como fallo');
       expect(r.stdout).not.toContain('fallo 1/');
@@ -458,13 +458,13 @@ describe('night-loop.sh', () => {
     });
 
     it('el resumen lista las verificaciones manuales pendientes (DEC-011)', () => {
-      const r = loop({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
+      const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);
       expect(readFileSync(join(root, 'spec/LOG.md'), 'utf8')).toContain('- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ninguna.');
     });
 
     it('con dos fallos del implementador abandona la tarea (exit 1) tras reintentar la misma', () => {
-      const r = loop({ STUB_MODE: 'fail' });
+      const r = autopilot({ STUB_MODE: 'fail' });
       expect(r.status).toBe(1);
       expect(r.stdout).toContain('intento 2');
       expect(r.stdout).toContain('T-03 llegó al tope de 2 fallos: se abandona en esta corrida');
@@ -479,10 +479,10 @@ describe('night-loop.sh', () => {
     cpSync(join(REPO, 'scripts'), join(root, 'scripts'), { recursive: true });
     const git = (...a: string[]) => execFileSync('git', ['-C', root, ...a], { encoding: 'utf8' });
     git('init', '-q');
-    const r = spawnSync('bash', [join(root, 'scripts/night-loop.sh')], { encoding: 'utf8' });
+    const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh')], { encoding: 'utf8' });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('árbol de trabajo sucio');
-    const d = spawnSync('bash', [join(root, 'scripts/night-loop.sh'), '--dry-run'], { encoding: 'utf8' });
+    const d = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], { encoding: 'utf8' });
     expect(d.status).toBe(0);
     expect(d.stderr).toContain('aviso: árbol de trabajo sucio');
   });

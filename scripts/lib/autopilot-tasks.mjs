@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Operaciones sobre spec/ que usa scripts/night-loop.sh (T-08). Sin dependencias.
+// Operaciones sobre spec/ que usa scripts/autopilot.sh (T-08). Sin dependencias.
 //
-//   node scripts/lib/night-tasks.mjs [--root DIR] <orden> [args]
+//   node scripts/lib/autopilot-tasks.mjs [--root DIR] <orden> [args]
 //
 //   pick [--task T-NN] [--exclude T-NN,…]
 //                           primera tarea elegible (in_progress/ready/approved_for_impl) con todas sus dependencias cerradas
@@ -209,7 +209,7 @@ function main(argv) {
       const before = JSON.parse(readFileSync(args[0], 'utf8'));
       const v = authorityViolations(before, readTasks(root));
       if (v.length > 0) {
-        console.error(`night-loop: el ejecutor otorgó estados reservados (${RESERVED_STATES.join(', ')}):`);
+        console.error(`autopilot: el ejecutor otorgó estados reservados (${RESERVED_STATES.join(', ')}):`);
         for (const line of v) console.error(`  ✗ ${line}`);
         return 1;
       }
@@ -224,7 +224,7 @@ function main(argv) {
     case 'parse-verdict': {
       const v = parseVerdict(readFileSync(args[0], 'utf8'));
       if (!v) {
-        console.error('night-loop: la salida del revisor no contiene un veredicto JSON válido');
+        console.error('autopilot: la salida del revisor no contiene un veredicto JSON válido');
         return 1;
       }
       out(v);
@@ -245,7 +245,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   try {
     process.exit(main(process.argv.slice(2)));
   } catch (e) {
-    console.error(`night-tasks: ${e.message}`);
+    console.error(`autopilot-tasks: ${e.message}`);
     process.exit(1);
   }
 }

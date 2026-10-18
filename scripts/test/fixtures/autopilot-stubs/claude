@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Doble de `claude` para las pruebas de scripts/night-loop.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail;
+# Doble de `claude` para las pruebas de scripts/autopilot.sh. STUB_MODE: ok (verified_auto + commit) | accepted | dirty | fail;
 # STUB_NOOP / STUB_FAIL / STUB_DEPLOY: listas de tareas que terminan sin cambios / fallan / esperan un despliegue.
 # El implementador emite stream-json (como `--output-format stream-json --verbose`) y deja en stub-env.txt lo que ve de AWS.
 [ "$1" = "--version" ] && { echo "claude-stub 0.0"; exit 0; }
@@ -12,7 +12,7 @@ mode=${STUB_MODE:-ok}
 case ",${STUB_NOOP:-}," in *",$id,"*) mode=noop ;; esac   # STUB_NOOP=T-03,…: termina bien sin tocar nada
 case ",${STUB_FAIL:-}," in *",$id,"*) mode=fail ;; esac   # STUB_FAIL=T-03,…: falla solo en esas tareas
 case ",${STUB_DEPLOY:-}," in *",$id,"*) mode=deploy ;; esac   # STUB_DEPLOY=T-03,…: in_progress + Pendiente deploy
-{ echo "AWS_PROFILE=$AWS_PROFILE"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".night-loop/stub-env-$id.txt"
+{ echo "AWS_PROFILE=$AWS_PROFILE"; echo "--- config"; cat "$AWS_CONFIG_FILE"; echo "--- credentials"; cat "$AWS_SHARED_CREDENTIALS_FILE"; } >".autopilot/stub-env-$id.txt"
 echo '{"type":"system","subtype":"init","model":"stub","session_id":"s1"}'
 echo '{"type":"assistant","message":{"content":[{"type":"text","text":"Empiezo la tarea"},{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"npm run test:acceptance"}}]}}'
 echo '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"u1","content":"Tests 25 passed"}]}}'

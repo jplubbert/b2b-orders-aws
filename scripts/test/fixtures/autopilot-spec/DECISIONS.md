@@ -1,4 +1,4 @@
-# Decisiones — fixture fija de scripts/test/night-tasks.test.ts
+# Decisiones — fixture fija de scripts/test/autopilot-tasks.test.ts
 
 ## DEC-001 Decisión de prueba 1
 - Estado: accepted

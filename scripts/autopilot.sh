@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Orquestador nocturno (T-08). Ejecuta tareas del protocolo PCR sin supervisión, dentro de un presupuesto.
 #
-#   scripts/night-loop.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
+#   scripts/autopilot.sh [--dry-run] [--task T-NN] [--max-tasks N] [--budget-seconds N] [--max-failures N]
 #
 # Ciclo:
 #   0. Antes de elegir tarea nueva, revisa cada tarea en verified_auto (p. ej. implementada en una sesión interactiva)
@@ -14,8 +14,8 @@
 #      (el prompt pide además `npm run test:acceptance` sin prefijos de entorno, comandos simples sin && ni cd, y
 #      "Pendiente deploy" en vez de desplegar; ver IMPL_PROMPT)
 #      con permisos acotados al repositorio (sin red, sin push, sin instalar nada fuera de npm; AWS solo con el perfil
-#      `night-loop` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
-#      en la terminal y en .night-loop/<corrida>/live.log (`tail -f` desde otra terminal). Tokens de cada invocación
+#      `autopilot` para `npm run test:acceptance` y `npm run smoke`). Progreso en vivo (stream-json → líneas legibles)
+#      en la terminal y en .autopilot/<corrida>/live.log (`tail -f` desde otra terminal). Tokens de cada invocación
 #      (entrada, salida, caché leída y escrita, del campo `usage` del evento `result`) por tarea y total de la corrida
 #      en la terminal, live.log y el resumen de LOG.md; el revisor no se cuenta (codex/claude en texto no los informan).
 #   3. Si la tarea queda verified_auto (o done), lanza un revisor con contexto limpio (`codex exec`, o `claude -p`
@@ -26,7 +26,7 @@
 #      salta en esta corrida y se elige la siguiente independiente.
 #      Si lo único pendiente es una verificación manual en el teléfono, el implementador deja la tarea verified_auto
 #      con `evidence.manual_pending` (DEC-011); el resumen de LOG.md lista esas verificaciones en "Pendiente manual".
-#      Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (NIGHT_MAX_FAILURES) se
+#      Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (AUTOPILOT_MAX_FAILURES) se
 #      abandona en esta corrida y se sigue con la siguiente independiente (la corrida termina con código 1).
 #   4. Se detiene si la tarea queda blocked, si vence el presupuesto (6 h), si completa 10 tareas o si no quedan
 #      tareas elegibles.
@@ -40,19 +40,19 @@
 # todos los remotos apuntado a una ruta inexistente, herramientas de red y despliegue denegadas al implementador,
 # y comprobación tras cada tarea de que el ejecutor no otorgó estados reservados (reviewed/accepted/…).
 #
-# Variables: NIGHT_MAX_TASKS (10), NIGHT_BUDGET_SECONDS (21600), NIGHT_MAX_FAILURES (2, por tarea), NIGHT_REVIEWER (auto|codex|claude),
-#            NIGHT_IMPL_MODEL, NIGHT_REVIEW_MODEL, NIGHT_MAX_USD (tope por invocación de claude, opcional),
-#            NIGHT_AWS_PROFILE (night-loop), NIGHT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
-# Registros de cada corrida: .night-loop/<fecha>/ (fuera de git).
+# Variables: AUTOPILOT_MAX_TASKS (10), AUTOPILOT_BUDGET_SECONDS (21600), AUTOPILOT_MAX_FAILURES (2, por tarea), AUTOPILOT_REVIEWER (auto|codex|claude),
+#            AUTOPILOT_IMPL_MODEL, AUTOPILOT_REVIEW_MODEL, AUTOPILOT_MAX_USD (tope por invocación de claude, opcional),
+#            AUTOPILOT_AWS_PROFILE (autopilot), AUTOPILOT_AWS_CREDENTIALS (origen de las llaves; ~/.aws/credentials).
+# Registros de cada corrida: .autopilot/<fecha>/ (fuera de git).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
-MAX_TASKS=${NIGHT_MAX_TASKS:-10}
-BUDGET=${NIGHT_BUDGET_SECONDS:-21600}
-MAX_FAILURES=${NIGHT_MAX_FAILURES:-2}
-REVIEWER=${NIGHT_REVIEWER:-auto}
+MAX_TASKS=${AUTOPILOT_MAX_TASKS:-10}
+BUDGET=${AUTOPILOT_BUDGET_SECONDS:-21600}
+MAX_FAILURES=${AUTOPILOT_MAX_FAILURES:-2}
+REVIEWER=${AUTOPILOT_REVIEWER:-auto}
 DRY_RUN=0
 FORCED_TASK=""
 
@@ -66,16 +66,16 @@ while [ $# -gt 0 ]; do
     --budget-seconds) BUDGET=$2; shift ;;
     --max-failures) MAX_FAILURES=$2; shift ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "night-loop: argumento desconocido: $1" >&2; usage >&2; exit 2 ;;
+    *) echo "autopilot: argumento desconocido: $1" >&2; usage >&2; exit 2 ;;
   esac
   shift
 done
 
-tasks() { node "$ROOT/scripts/lib/night-tasks.mjs" --root "$ROOT" "$@"; }
+tasks() { node "$ROOT/scripts/lib/autopilot-tasks.mjs" --root "$ROOT" "$@"; }
 RUN_ID=$(date '+%Y-%m-%d_%H%M%S')
-RUN_DIR="$ROOT/.night-loop/$RUN_ID"
+RUN_DIR="$ROOT/.autopilot/$RUN_ID"
 LIVE="$RUN_DIR/live.log"
-TOKENS="$RUN_DIR/tokens.jsonl"   # una línea por invocación del implementador (night-stream.mjs --tokens)
+TOKENS="$RUN_DIR/tokens.jsonl"   # una línea por invocación del implementador (autopilot-stream.mjs --tokens)
 START=$(date +%s)
 DEADLINE=$((START + BUDGET))
 SUMMARY=()        # líneas "Hecho" del resumen
@@ -90,47 +90,47 @@ REVIEWED_IDS=" "  # tareas ya revisadas en esta corrida (no se revisan dos veces
 SKIPPED=""        # tareas que el implementador dejó sin cambios (separadas por comas; no se vuelven a elegir)
 
 log() { # a la terminal y, en una corrida real, a live.log
-  local line; line=$(printf '%s night-loop: %s' "$(date '+%H:%M:%S')" "$*")
+  local line; line=$(printf '%s autopilot: %s' "$(date '+%H:%M:%S')" "$*")
   printf '%s\n' "$line"
   if [ "$DRY_RUN" = 0 ] && [ -d "$RUN_DIR" ]; then printf '%s\n' "$line" >>"$LIVE"; fi
   return 0
 }
-die() { echo "night-loop: $*" >&2; exit 1; }
-tokens_summary() { node "$ROOT/scripts/lib/night-stream.mjs" tokens-summary "$TOKENS"; }
+die() { echo "autopilot: $*" >&2; exit 1; }
+tokens_summary() { node "$ROOT/scripts/lib/autopilot-stream.mjs" tokens-summary "$TOKENS"; }
 remaining() { echo $((DEADLINE - $(date +%s))); }
 now_stamp() { date '+%Y-%m-%d %H:%M'; }
 git_head() { git rev-parse --short HEAD; }
 
 # ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
-export NIGHT_LOOP=1
+export AUTOPILOT=1
 export CI=1
 # AWS: solo el perfil night-loop (DEC-010), copiado a archivos temporales; default y el resto no existen para los hijos.
-NIGHT_AWS_PROFILE=${NIGHT_AWS_PROFILE:-night-loop}
-AWS_SOURCE=${NIGHT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
+AUTOPILOT_AWS_PROFILE=${AUTOPILOT_AWS_PROFILE:-night-loop}
+AWS_SOURCE=${AUTOPILOT_AWS_CREDENTIALS:-${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}}
 unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE AWS_DEFAULT_PROFILE AWS_DEFAULT_REGION
-AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/night-loop-aws.XXXXXX")
+AWS_SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/autopilot-aws.XXXXXX")
 trap 'rm -rf "$AWS_SANDBOX"' EXIT
-aws_profile_key() { # $1 = clave; lee la sección [$NIGHT_AWS_PROFILE] del archivo de credenciales de origen
+aws_profile_key() { # $1 = clave; lee la sección [$AUTOPILOT_AWS_PROFILE] del archivo de credenciales de origen
   [ -r "$AWS_SOURCE" ] || return 0
-  awk -v sec="[$NIGHT_AWS_PROFILE]" -v key="$1" '
+  awk -v sec="[$AUTOPILOT_AWS_PROFILE]" -v key="$1" '
     /^[[:space:]]*\[/ { gsub(/[[:space:]]/, ""); inside = ($0 == sec); next }
     inside { split($0, kv, "="); k = kv[1]; gsub(/[[:space:]]/, "", k)
              if (k == key) { v = substr($0, index($0, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); print v; exit } }' "$AWS_SOURCE"
 }
 AWS_KEY_ID=$(aws_profile_key aws_access_key_id)
 ( umask 077
-  printf '[profile %s]\nregion = us-east-1\n' "$NIGHT_AWS_PROFILE" >"$AWS_SANDBOX/config"
+  printf '[profile %s]\nregion = us-east-1\n' "$AUTOPILOT_AWS_PROFILE" >"$AWS_SANDBOX/config"
   if [ -n "$AWS_KEY_ID" ]; then
     printf '[%s]\naws_access_key_id = %s\naws_secret_access_key = %s\n' \
-      "$NIGHT_AWS_PROFILE" "$AWS_KEY_ID" "$(aws_profile_key aws_secret_access_key)" >"$AWS_SANDBOX/credentials"
+      "$AUTOPILOT_AWS_PROFILE" "$AWS_KEY_ID" "$(aws_profile_key aws_secret_access_key)" >"$AWS_SANDBOX/credentials"
   else
     : >"$AWS_SANDBOX/credentials"
   fi )
 export AWS_CONFIG_FILE=$AWS_SANDBOX/config AWS_SHARED_CREDENTIALS_FILE=$AWS_SANDBOX/credentials
-export AWS_PROFILE=$NIGHT_AWS_PROFILE AWS_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true
+export AWS_PROFILE=$AUTOPILOT_AWS_PROFILE AWS_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true
 n=0
 for remote in $(git remote); do
-  export "GIT_CONFIG_KEY_${n}=remote.${remote}.pushurl" "GIT_CONFIG_VALUE_${n}=/nonexistent/night-loop-sin-push"
+  export "GIT_CONFIG_KEY_${n}=remote.${remote}.pushurl" "GIT_CONFIG_VALUE_${n}=/nonexistent/autopilot-sin-push"
   n=$((n + 1))
 done
 [ "$n" -gt 0 ] && export GIT_CONFIG_COUNT=$n
@@ -167,28 +167,28 @@ impl_cmd() { # $1 = ID
   local cmd=(claude -p "$(printf "$IMPL_PROMPT" "$1")"
     --permission-mode dontAsk --output-format stream-json --verbose
     --allowedTools "${IMPL_ALLOWED[@]}" --disallowedTools "${IMPL_DENIED[@]}")
-  [ -n "${NIGHT_IMPL_MODEL:-}" ] && cmd+=(--model "$NIGHT_IMPL_MODEL")
-  [ -n "${NIGHT_MAX_USD:-}" ] && cmd+=(--max-budget-usd "$NIGHT_MAX_USD")
+  [ -n "${AUTOPILOT_IMPL_MODEL:-}" ] && cmd+=(--model "$AUTOPILOT_IMPL_MODEL")
+  [ -n "${AUTOPILOT_MAX_USD:-}" ] && cmd+=(--max-budget-usd "$AUTOPILOT_MAX_USD")
   printf '%q ' "${cmd[@]}"
 }
 
 case "$REVIEWER" in
-  codex) command -v codex >/dev/null || die "NIGHT_REVIEWER=codex pero codex no está en PATH"; REVIEWER_KIND=codex ;;
+  codex) command -v codex >/dev/null || die "AUTOPILOT_REVIEWER=codex pero codex no está en PATH"; REVIEWER_KIND=codex ;;
   claude) REVIEWER_KIND=claude ;;
   auto) if command -v codex >/dev/null; then REVIEWER_KIND=codex; else REVIEWER_KIND=claude; fi ;;
-  *) die "NIGHT_REVIEWER inválido: $REVIEWER (auto|codex|claude)" ;;
+  *) die "AUTOPILOT_REVIEWER inválido: $REVIEWER (auto|codex|claude)" ;;
 esac
 
 review_cmd() { # imprime la orden del revisor; lee el prompt por stdin
   local cmd
   if [ "$REVIEWER_KIND" = codex ]; then
     cmd=(codex exec --sandbox read-only -C "$ROOT" --ephemeral --color never -o "$RUN_DIR/REVIEW-last.txt" -)
-    [ -n "${NIGHT_REVIEW_MODEL:-}" ] && cmd+=(--model "$NIGHT_REVIEW_MODEL")
+    [ -n "${AUTOPILOT_REVIEW_MODEL:-}" ] && cmd+=(--model "$AUTOPILOT_REVIEW_MODEL")
   else
     cmd=(claude -p --permission-mode dontAsk --output-format text
       --allowedTools "${REVIEW_ALLOWED[@]}" --disallowedTools "${REVIEW_DENIED[@]}")
-    [ -n "${NIGHT_REVIEW_MODEL:-}" ] && cmd+=(--model "$NIGHT_REVIEW_MODEL")
-    [ -n "${NIGHT_MAX_USD:-}" ] && cmd+=(--max-budget-usd "$NIGHT_MAX_USD")
+    [ -n "${AUTOPILOT_REVIEW_MODEL:-}" ] && cmd+=(--model "$AUTOPILOT_REVIEW_MODEL")
+    [ -n "${AUTOPILOT_MAX_USD:-}" ] && cmd+=(--max-budget-usd "$AUTOPILOT_MAX_USD")
   fi
   printf '%q ' "${cmd[@]}"
 }
@@ -248,7 +248,7 @@ commit_spec() { # $1 = asunto, $2 = Task, $3 = Req
   git add spec/TASKS.json spec/LOG.md
   git commit -q -m "$1" -m "Task: $2
 Req: $3
-Co-Authored-By: night-loop <noreply@local>"
+Co-Authored-By: autopilot <noreply@local>"
   git_head
 }
 
@@ -266,7 +266,7 @@ write_summary() {
   log "tokens (implementador): $tokens"
   local body
   body=$(cat <<EOF
-- Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .night-loop/${RUN_ID}/.
+- Hecho: ${hecho}. Corrida ${RUN_ID} (${elapsed} min, ${TASKS_DONE} tarea(s) completada(s), ${FAILURES} fallo(s)); registros en .autopilot/${RUN_ID}/.
 - Tokens (implementador, campo usage del evento result): ${tokens}.
 - Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): ${manual}.
 - Pendiente deploy (el usuario corre \`npm run deploy:dev\`; el orquestador no despliega): ${deploy}.
@@ -279,12 +279,12 @@ EOF
 )
   if [ "$DRY_RUN" = 1 ]; then
     echo; echo "== Entrada que se anotaría en spec/LOG.md (no escrita: --dry-run) =="
-    printf '## %s · night-loop (scripts/night-loop.sh)\n%s\n' "$(now_stamp)" "$body"
+    printf '## %s · autopilot (scripts/autopilot.sh)\n%s\n' "$(now_stamp)" "$body"
     return
   fi
   local dirty=0
   git status --porcelain | grep -q . && dirty=1
-  printf '%s\n' "$body" | append_log "night-loop (scripts/night-loop.sh)"
+  printf '%s\n' "$body" | append_log "autopilot (scripts/autopilot.sh)"
   if [ "$dirty" = 1 ]; then
     log "resumen anotado en spec/LOG.md SIN commit: el árbol ya estaba sucio y nada se confirma a ciegas (git status)"
     return
@@ -319,7 +319,7 @@ review_task() { # $1 = ID; devuelve 0 si hubo veredicto
   if [ "$kind" = codex ]; then label="codex exec $(codex --version 2>/dev/null | head -1)"; else label="claude -p $(claude --version 2>/dev/null | head -1)"; fi
   node -e '
     const fs=require("fs");const [f,label]=process.argv.slice(1);
-    const v=JSON.parse(fs.readFileSync(f,"utf8"));v.reviewer=label+" (contexto limpio, night-loop)";
+    const v=JSON.parse(fs.readFileSync(f,"utf8"));v.reviewer=label+" (contexto limpio, autopilot)";
     fs.writeFileSync(f,JSON.stringify(v,null,2));' "$verdict_file" "$label"
   local verdict new_status findings
   verdict=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).verdict)' "$verdict_file")
@@ -328,9 +328,9 @@ review_task() { # $1 = ID; devuelve 0 si hubo veredicto
   log "veredicto sobre $id: $verdict → estado $new_status"
   local reqs
   reqs=$(node -e 'const t=require(process.argv[1]).tasks.find(t=>t.id===process.argv[2]);console.log(t.reqs.length?t.reqs.join(", "):(t.kind==="tooling"?"N/A":"none"))' "$ROOT/spec/TASKS.json" "$id")
-  append_log "revisor independiente ($label) vía night-loop" <<EOF
+  append_log "revisor independiente ($label) vía autopilot" <<EOF
 - Hecho: revisión independiente de $id con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **$verdict** → estado \`$new_status\`. Hallazgos: $findings.
-- Verificado y cómo: veredicto completo en TASKS.json (\`review\` de $id); salida íntegra en .night-loop/$RUN_ID/$id-review-output.txt.
+- Verificado y cómo: veredicto completo en TASKS.json (\`review\` de $id); salida íntegra en .autopilot/$RUN_ID/$id-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
 EOF
   local sha
@@ -352,7 +352,7 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
   set +e
   # shellcheck disable=SC2046
   eval timeout -k 30 "$(remaining)" "$(impl_cmd "$id")" 2>"$RUN_DIR/$id-impl-$attempt.err" \
-    | node "$ROOT/scripts/lib/night-stream.mjs" --label "$id" \
+    | node "$ROOT/scripts/lib/autopilot-stream.mjs" --label "$id" \
         --raw "$RUN_DIR/$id-impl-$attempt.jsonl" --result "$RUN_DIR/$id-impl-$attempt.json" --tokens "$TOKENS" \
     | tee -a "$LIVE"
   rc=${PIPESTATUS[0]}
@@ -362,7 +362,7 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
     try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
     fs.writeFileSync(process.argv[2],(r.result??"")+"\n");const u=usageOf(r);
     console.log(`turnos=${r.num_turns} tokens: ${u?formatUsage(u):"sin usage"} error=${r.is_error}`)}catch{console.log("(salida no JSON)")}' \
-    "$RUN_DIR/$id-impl-$attempt.json" "$RUN_DIR/$id-impl-$attempt.txt" "$ROOT/scripts/lib/night-stream.mjs" </dev/null)"
+    "$RUN_DIR/$id-impl-$attempt.json" "$RUN_DIR/$id-impl-$attempt.txt" "$ROOT/scripts/lib/autopilot-stream.mjs" </dev/null)"
   log "tokens de $id en la corrida: $(tokens_summary | grep "^$id: " | sed "s/^$id: //" || echo "sin usage")"
   status=$(tasks status "$id" 2>/dev/null || echo "?")
   log "implementador terminó (código $rc); $id → $status; HEAD $head_before → $(git_head)"
@@ -391,7 +391,7 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
     verified_auto|done)
       if ! npm run -s check:spec >"$RUN_DIR/$id-check-spec.txt" 2>&1; then
         SUMMARY+=("$id quedó $status pero check:spec falla")
-        VERIFIED+=("npm run check:spec tras $id → falla (ver .night-loop/$RUN_ID/$id-check-spec.txt)")
+        VERIFIED+=("npm run check:spec tras $id → falla (ver .autopilot/$RUN_ID/$id-check-spec.txt)")
         return 1
       fi
       VERIFIED+=("npm run check:spec tras $id → ok")
@@ -421,14 +421,14 @@ command -v timeout >/dev/null || die "falta coreutils timeout"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "no es un repositorio git"
 if git status --porcelain | grep -q .; then
   [ "$DRY_RUN" = 1 ] || die "árbol de trabajo sucio; confirma o guarda los cambios antes de la corrida nocturna"
-  echo "night-loop: aviso: árbol de trabajo sucio (una corrida real se detendría aquí)" >&2
+  echo "autopilot: aviso: árbol de trabajo sucio (una corrida real se detendría aquí)" >&2
 fi
-mkdir -p "$ROOT/.night-loop" && printf '*\n' >"$ROOT/.night-loop/.gitignore"   # registros fuera de git
-exec 9>"$ROOT/.night-loop/lock"
-flock -n 9 || die "otra corrida nocturna está en marcha (.night-loop/lock)"
+mkdir -p "$ROOT/.autopilot" && printf '*\n' >"$ROOT/.autopilot/.gitignore"   # registros fuera de git
+exec 9>"$ROOT/.autopilot/lock"
+flock -n 9 || die "otra corrida nocturna está en marcha (.autopilot/lock)"
 mkdir -p "$RUN_DIR"
 
-[ -n "$AWS_KEY_ID" ] || echo "night-loop: aviso: sin perfil [$NIGHT_AWS_PROFILE] en $AWS_SOURCE; aceptación y humo fallarán por credenciales" >&2
+[ -n "$AWS_KEY_ID" ] || echo "autopilot: aviso: sin perfil [$AUTOPILOT_AWS_PROFILE] en $AWS_SOURCE; aceptación y humo fallarán por credenciales" >&2
 log "inicio en $(git_head) (rama $(git rev-parse --abbrev-ref HEAD)); presupuesto ${BUDGET}s, máx. ${MAX_TASKS} tareas, máx. ${MAX_FAILURES} fallos por tarea; revisor: $REVIEWER_KIND"
 if [ "$DRY_RUN" = 1 ]; then
   echo

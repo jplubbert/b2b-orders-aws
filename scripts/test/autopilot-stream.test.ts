@@ -5,11 +5,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error módulo .mjs sin tipos
-import { formatEvent, formatLine, oneLine, tokensSummary } from '../lib/night-stream.mjs';
+import { formatEvent, formatLine, oneLine, tokensSummary } from '../lib/autopilot-stream.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../lib/night-stream.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../lib/autopilot-stream.mjs', import.meta.url));
 
-describe('night-stream formatEvent', () => {
+describe('autopilot-stream formatEvent', () => {
   it('init, texto, herramientas y resultado en una línea cada uno', () => {
     expect(formatEvent({ type: 'system', subtype: 'init', model: 'claude-opus-5-5', session_id: 'abc' })).toEqual([
       '· inicio (modelo claude-opus-5-5, sesión abc)',
@@ -82,9 +82,9 @@ describe('night-stream formatEvent', () => {
   });
 });
 
-describe('night-stream CLI', () => {
+describe('autopilot-stream CLI', () => {
   it('escribe líneas con prefijo, el flujo íntegro en --raw, el evento final en --result y sus tokens en --tokens', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'night-stream-'));
+    const dir = mkdtempSync(join(tmpdir(), 'autopilot-stream-'));
     try {
       const input = [
         JSON.stringify({ type: 'system', subtype: 'init', model: 'm', session_id: 's' }),

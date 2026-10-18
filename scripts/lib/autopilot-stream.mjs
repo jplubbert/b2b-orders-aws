@@ -2,15 +2,15 @@
 // Progreso en vivo del implementador (T-08): convierte `claude -p --output-format stream-json --verbose` en líneas
 // legibles. Sin dependencias.
 //
-//   claude -p … --output-format stream-json --verbose | node scripts/lib/night-stream.mjs [--label T-NN] [--raw FILE] [--result FILE] [--tokens FILE]
-//   node scripts/lib/night-stream.mjs tokens-summary FILE
+//   claude -p … --output-format stream-json --verbose | node scripts/lib/autopilot-stream.mjs [--label T-NN] [--raw FILE] [--result FILE] [--tokens FILE]
+//   node scripts/lib/autopilot-stream.mjs tokens-summary FILE
 //
 //   --label   prefijo de cada línea (la tarea)
 //   --raw     copia íntegra del flujo (JSONL)
 //   --result  el evento final `result` como JSON (lo que antes daba --output-format json)
 //   --tokens  agrega al archivo (JSONL) los tokens del campo `usage` del evento `result`, con la etiqueta
 //   tokens-summary  imprime una línea por etiqueta (tokens sumados de sus invocaciones) y una última con el total
-// Las líneas legibles van a stdout; night-loop.sh las duplica a la terminal y a .night-loop/<corrida>/live.log.
+// Las líneas legibles van a stdout; autopilot.sh las duplica a la terminal y a .autopilot/<corrida>/live.log.
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';

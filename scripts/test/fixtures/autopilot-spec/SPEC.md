@@ -1,4 +1,4 @@
-# SPEC — fixture fija de scripts/test/night-tasks.test.ts (no es la spec del proyecto)
+# SPEC — fixture fija de scripts/test/autopilot-tasks.test.ts (no es la spec del proyecto)
 
 ## Requisitos
 ### REQ-001 Inicio de sesión

@@ -452,3 +452,14 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: corte 2 cerrado. Revisión independiente de T-07 (diff 775954c) en la próxima corrida del orquestador; el usuario completa la checklist manual del corte 1 y decide `accepted` en lote (T-03..T-07).
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Renombra night-loop a autopilot en sdd-base y en pedidos-b2b-v2: scripts, librerías, variables NIGHT_*, carpeta .night-loop, pruebas, AGENTS.md, README y textos."
+- Hecho (T-08, tooling): `scripts/night-loop.sh` → `scripts/autopilot.sh`; `scripts/lib/night-{tasks,stream}.mjs` → `autopilot-{tasks,stream}.mjs`; pruebas `scripts/test/autopilot-{tasks,stream}.test.ts` y fixtures `autopilot-{spec,stubs,aws}`; variables `NIGHT_*` → `AUTOPILOT_*` (`NIGHT_LOOP=1` → `AUTOPILOT=1`, `NIGHT_AWS_PROFILE` → `AUTOPILOT_AWS_PROFILE`, …); carpeta de registros `.night-loop/` → `.autopilot/` (en `.gitignore`; los registros de corridas anteriores se movieron ahí); mensajes con prefijo `autopilot:`; AGENTS.md actualizado. El mismo renombre se hizo en ~/Projects/sdd-base (commit 4b77f0c, publicado).
+- Interpretaciones: el renombre no alcanza a la identidad AWS de DEC-010 (`accepted`): el perfil `night-loop` de ~/.aws, el usuario IAM `night-loop-tests` y su id lógico `NightLoopTestsUser` en `infra/` siguen igual. Cambiar el id lógico reemplazaría el usuario IAM al desplegar (llaves nuevas), y cambiar los nombres exige supersedir DEC-010. Tampoco se reescriben entradas anteriores de LOG.md, TASKS.json ni DECISIONS.md (solo anexar): donde dicen `scripts/night-loop.sh` o `.night-loop/` se lee `scripts/autopilot.sh` y `.autopilot/`. T-08 sigue `accepted`; el renombre no pasó por revisión independiente (anotado en sus `notes`).
+- Verificado y cómo: `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 137/137 (incluye autopilot-tasks y autopilot-stream con el ciclo completo con dobles) + jest 105/105; `npm run check:spec` ok; `scripts/autopilot.sh --dry-run` ok.
+- Pendiente manual: sin cambios (T-04, T-05, T-06 E4, T-07).
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: la próxima corrida nocturna se lanza con `scripts/autopilot.sh` y revisa T-07 (diff 775954c); el usuario completa la checklist manual del corte 1 y decide `accepted` en lote (T-03..T-07).

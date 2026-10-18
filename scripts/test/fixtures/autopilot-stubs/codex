@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Doble de `codex exec` para las pruebas de scripts/night-loop.sh. Guarda el prompt recibido y emite STUB_VERDICT (o un rechazo).
+# Doble de `codex exec` para las pruebas de scripts/autopilot.sh. Guarda el prompt recibido y emite STUB_VERDICT (o un rechazo).
 [ "$1" = "--version" ] && { echo "codex-stub 0.0"; exit 0; }
 out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out=$2; shift; done
 cat >"$(dirname "$out")/codex-received-prompt.md"
