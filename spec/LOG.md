@@ -1044,3 +1044,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas.
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: el README "está como las weas" y quiere uno gerencial.
+- Hecho: README.md reescrito para lectura gerencial: qué es y para quién, estado al 2026-10-18 (3 cortes aceptados, probados en el teléfono; 41 pruebas de aceptación en verde; cuenta AWS aislada con credenciales temporales), qué muestra la demo en 4 pasos, qué no incluye, riesgos y límites (demo, escala del panel ~1.000 pedidos, un distribuidor), arquitectura en una mirada, costos y cómo se trabajó. Los comandos y el guion toque a toque quedan al final, "Para el equipo técnico".
+- Interpretación: el costo va como estimación ("centavos de dólar al mes", sin costos fijos por R-02) porque `aws ce get-cost-and-usage` responde "User not enabled for cost explorer access"; el README dice cómo medirlo. No se afirma doble factor: la configuración de MFA de Identity Center no se verificó desde la sesión.
+- Verificado y cómo: `npm run check:spec` ok.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. T-24 en `reviewed`, espera `accepted` del usuario.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: el usuario revisa el README y decide `accepted` de T-24; activar Cost Explorer si quiere la cifra real de costo.
