@@ -3,13 +3,17 @@ import { colors, fontSize, radius, spacing } from '@/theme';
 
 // REQ-007 E5: carga, lista vacía y error se muestran con este mismo componente en todas las pantallas.
 // Los textos los pone cada pantalla (S-21: se conservan los de REQ-001..005).
+// En la carga, `label` es solo para lectores de pantalla (p. ej. "Comprobando sesión").
 export function StateMessage(
-  props: { kind: 'loading' } | { kind: 'empty'; message: string } | { kind: 'error'; message: string },
+  props:
+    | { kind: 'loading'; label?: string }
+    | { kind: 'empty'; message: string }
+    | { kind: 'error'; message: string },
 ) {
   if (props.kind === 'loading') {
     return (
       <View style={styles.container} testID="state-loading">
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primary} accessibilityLabel={props.label} />
       </View>
     );
   }

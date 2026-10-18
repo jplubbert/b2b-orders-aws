@@ -1,15 +1,17 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, disabledOpacity, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'link';
 
 // Botón del tema; alto mínimo de 44 dp (REQ-007 E4).
 // primary: relleno azul; secondary: borde azul; link: solo texto (enlaces de la barra).
+// loading: indicador en lugar del texto y botón deshabilitado (p. ej. mientras se envía).
 export function Button({
   title,
   onPress,
   variant = 'primary',
   disabled = false,
+  loading = false,
   accessibilityLabel,
   style,
 }: {
@@ -17,16 +19,19 @@ export function Button({
   onPress: () => void;
   variant?: Variant;
   disabled?: boolean;
+  loading?: boolean;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const inactive = disabled || loading;
+  const textStyle = variant === 'primary' ? styles.onPrimary : styles.onLight;
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={inactive}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: inactive, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         styles[variant],
@@ -36,7 +41,11 @@ export function Button({
         style,
       ]}
     >
-      <Text style={[styles.text, variant === 'primary' ? styles.onPrimary : styles.onLight]}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator color={textStyle.color} />
+      ) : (
+        <Text style={[styles.text, textStyle]}>{title}</Text>
+      )}
     </Pressable>
   );
 }

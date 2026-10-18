@@ -1,7 +1,12 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Card } from '@/components/Card';
+import { Screen } from '@/components/Screen';
+import { StateMessage } from '@/components/StateMessage';
+import { StatusBadge } from '@/components/StatusBadge';
 import { formatCLP, formatDate, getOrder, type OrderDetail } from '@/lib/api';
+import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
 // REQ-004: líneas con los precios congelados al confirmar (E5) y el estado vigente, que se pide de nuevo
 // al volver a la pantalla y al deslizar hacia abajo (S-06). Un pedido ajeno llega como null (E3).
@@ -32,56 +37,74 @@ export default function OrderDetailScreen() {
     setRefreshing(false);
   }
 
-  if (order === undefined && !error) return <ActivityIndicator style={styles.loading} />;
-  if (order === null) return <Text style={styles.empty}>Pedido no encontrado</Text>;
+  if (order === undefined && !error) {
+    return (
+      <Screen style={styles.centered}>
+        <StateMessage kind="loading" />
+      </Screen>
+    );
+  }
+  if (order === null) {
+    return (
+      <Screen style={styles.centered}>
+        <StateMessage kind="empty" message="Pedido no encontrado" />
+      </Screen>
+    );
+  }
 
   return (
-    <FlatList
-      testID="order-detail"
-      data={order?.lines ?? []}
-      keyExtractor={(l) => l.productId}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      ListHeaderComponent={
-        <>
-          {error && <Text style={[styles.row, styles.error]}>{error}</Text>}
-          {order && (
-            <View style={styles.row}>
-              <View style={styles.line}>
-                <Text style={styles.number}>N° {order.number}</Text>
-                <Text style={styles.status}>{order.status}</Text>
-              </View>
-              <Text style={styles.detail}>{formatDate(order.createdAt)}</Text>
-            </View>
-          )}
-        </>
-      }
-      ListFooterComponent={
-        order ? <Text style={[styles.row, styles.total]}>Total {formatCLP(order.total)}</Text> : null
-      }
-      renderItem={({ item }) => (
-        <View style={styles.row}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.detail}>
-            {item.presentation} · {item.quantity} × {formatCLP(item.unitPrice)}
-          </Text>
-          <Text style={styles.subtotal}>Subtotal {formatCLP(item.subtotal)}</Text>
-        </View>
-      )}
-    />
+    <Screen>
+      <FlatList
+        testID="order-detail"
+        data={order?.lines ?? []}
+        keyExtractor={(l) => l.productId}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <>
+            {error && <StateMessage kind="error" message={error} />}
+            {order && (
+              <Card style={styles.header}>
+                <View style={styles.line}>
+                  <Text style={styles.number}>N° {order.number}</Text>
+                  <StatusBadge status={order.status} />
+                </View>
+                <Text style={styles.detail}>{formatDate(order.createdAt)}</Text>
+              </Card>
+            )}
+          </>
+        }
+        ListFooterComponent={
+          order ? (
+            <Card>
+              <Text style={styles.total}>Total {formatCLP(order.total)}</Text>
+            </Card>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <Card style={styles.item}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.detail}>
+              {item.presentation} · {item.quantity} × {formatCLP(item.unitPrice)}
+            </Text>
+            <Text style={styles.subtotal}>Subtotal {formatCLP(item.subtotal)}</Text>
+          </Card>
+        )}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: { marginTop: 32 },
-  row: { padding: 16, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ccc' },
-  line: { flexDirection: 'row', justifyContent: 'space-between' },
-  number: { fontSize: 18, fontWeight: '700' },
-  status: { fontSize: 16, fontWeight: '600', color: '#1f6feb' },
-  name: { fontSize: 16, fontWeight: '600' },
-  detail: { color: '#555' },
-  subtotal: { fontWeight: '600' },
-  total: { fontSize: 18, fontWeight: '700', textAlign: 'right' },
-  error: { color: '#b00020' },
-  empty: { textAlign: 'center', fontSize: 16, color: '#555', padding: 24 },
+  centered: { justifyContent: 'center' },
+  list: { padding: spacing.lg, gap: spacing.md },
+  header: { gap: spacing.sm },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  number: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
+  item: { gap: spacing.xs },
+  name: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  detail: { fontSize: fontSize.sm, color: colors.textMuted },
+  subtotal: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  total: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, textAlign: 'right' },
 });

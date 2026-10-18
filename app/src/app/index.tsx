@@ -1,9 +1,14 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { signIn } from 'aws-amplify/auth';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Screen } from '@/components/Screen';
+import { StateMessage } from '@/components/StateMessage';
 import { isConfigured } from '@/lib/amplify';
 import { hasSession, loginErrorMessage } from '@/lib/session';
+import { colors, fontSize, fontWeight, radius, spacing, touchTarget } from '@/theme';
 
 // REQ-001: con sesión vigente abre el catálogo sin pedir credenciales (E3); si no, pide correo y
 // contraseña y, si son inválidas, muestra "Correo o contraseña incorrectos" sin salir de aquí (E2).
@@ -50,50 +55,84 @@ export default function LoginScreen() {
 
   if (!isConfigured) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>Falta configuración: ejecuta `npm run deploy:dev` (escribe .env.dev).</Text>
-      </View>
+      <Screen style={styles.centered}>
+        <StateMessage kind="error" message="Falta configuración: ejecuta `npm run deploy:dev` (escribe .env.dev)." />
+      </Screen>
     );
   }
 
-  if (checking) return <ActivityIndicator style={styles.loading} accessibilityLabel="Comprobando sesión" />;
+  if (checking) {
+    return (
+      <Screen style={styles.centered}>
+        <StateMessage kind="loading" label="Comprobando sesión" />
+      </Screen>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Correo"
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {error && <Text style={styles.error}>{error}</Text>}
-      <Pressable
-        style={[styles.button, (busy || !email || !password) && styles.disabled]}
-        disabled={busy || !email || !password}
-        onPress={onSubmit}
-      >
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Ingresar</Text>}
-      </Pressable>
-    </View>
+    <Screen>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* S-16: marca neutra de la demo. */}
+        <View style={styles.brand}>
+          <View style={styles.logo}>
+            <Text style={styles.logoText}>B2B</Text>
+          </View>
+          <Text style={styles.brandName} accessibilityRole="header">
+            Pedidos B2B
+          </Text>
+          <Text style={styles.tagline}>Catálogo y pedidos para tu almacén</Text>
+        </View>
+        <Card style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Correo"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          {error && <StateMessage kind="error" message={error} />}
+          <Button title="Ingresar" loading={busy} disabled={!email || !password} onPress={onSubmit} />
+        </Card>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, padding: 24, gap: 12, justifyContent: 'center', backgroundColor: '#fff' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, fontSize: 16 },
-  button: { backgroundColor: '#1f6feb', borderRadius: 8, padding: 14, alignItems: 'center' },
-  disabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  error: { color: '#b00020' },
+  centered: { justifyContent: 'center' },
+  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.xl },
+  brand: { alignItems: 'center', gap: spacing.sm },
+  logo: {
+    width: spacing.xxl * 2,
+    height: spacing.xxl * 2,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.onPrimary },
+  brandName: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text },
+  tagline: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
+  form: { gap: spacing.md },
+  input: {
+    minHeight: touchTarget,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
 });

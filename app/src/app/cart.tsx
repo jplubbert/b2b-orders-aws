@@ -1,10 +1,17 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { QuantityStepper } from '@/components/QuantityStepper';
+import { Screen } from '@/components/Screen';
+import { StateMessage } from '@/components/StateMessage';
+import { StatusBadge } from '@/components/StatusBadge';
 import { ApiError, createOrder, formatCLP, type CreatedOrder } from '@/lib/api';
 import { cartTotal, lineSubtotal, rejectionMessage, toOrderLines } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
+import { colors, fontSize, fontWeight, spacing } from '@/theme';
 
 // REQ-003: subtotal por línea y total; Confirmar crea el pedido (precios del servidor), vacía el carrito
 // y muestra el número. Con el carrito vacío, Confirmar está deshabilitado (E5).
@@ -36,28 +43,28 @@ export default function CartScreen() {
 
   if (confirmed) {
     return (
-      <View style={styles.done}>
-        <Text style={styles.doneTitle}>Pedido confirmado</Text>
-        <Text style={styles.doneNumber}>N° {confirmed.number}</Text>
-        <Text style={styles.detail}>
-          Total {formatCLP(confirmed.total)} · {confirmed.status}
-        </Text>
-        <Pressable style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Volver al catálogo</Text>
-        </Pressable>
-      </View>
+      <Screen style={styles.doneScreen}>
+        <Card style={styles.done}>
+          <Text style={styles.doneTitle}>Pedido confirmado</Text>
+          <Text style={styles.doneNumber}>N° {confirmed.number}</Text>
+          <StatusBadge status={confirmed.status} />
+          <Text style={styles.doneTotal}>Total {formatCLP(confirmed.total)}</Text>
+        </Card>
+        <Button title="Volver al catálogo" onPress={() => router.back()} />
+      </Screen>
     );
   }
 
   const empty = cart.length === 0;
   return (
-    <View style={styles.container}>
+    <Screen>
       <FlatList
         data={cart}
         keyExtractor={(l) => l.product.productId}
-        ListEmptyComponent={<Text style={styles.empty}>El carrito está vacío</Text>}
+        ListEmptyComponent={<StateMessage kind="empty" message="El carrito está vacío" />}
+        contentContainerStyle={[styles.list, empty && styles.emptyContainer]}
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Card style={styles.line}>
             <View style={styles.info}>
               <Text style={styles.name}>{item.product.name}</Text>
               <Text style={styles.detail}>
@@ -66,46 +73,37 @@ export default function CartScreen() {
               <Text style={styles.subtotal}>Subtotal {formatCLP(lineSubtotal(item))}</Text>
             </View>
             <QuantityStepper quantity={item.quantity} onChange={(q) => setQuantity(item.product, q)} />
-          </View>
+          </Card>
         )}
       />
-      <View style={styles.footer}>
-        {error && <Text style={styles.error}>{error}</Text>}
+      <SafeAreaView edges={['bottom']} style={styles.footer}>
+        {error && <StateMessage kind="error" message={error} />}
         <Text style={styles.total}>Total {formatCLP(cartTotal(cart))}</Text>
-        <Pressable
-          style={[styles.button, (empty || busy) && styles.disabled]}
-          disabled={empty || busy}
-          onPress={onConfirm}
-        >
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Confirmar pedido</Text>}
-        </Pressable>
-      </View>
-    </View>
+        <Button title="Confirmar pedido" loading={busy} disabled={empty} onPress={onConfirm} />
+      </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ccc',
+  list: { padding: spacing.lg, gap: spacing.md },
+  emptyContainer: { flexGrow: 1, justifyContent: 'center' },
+  line: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  info: { flex: 1, gap: spacing.xs },
+  name: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  detail: { fontSize: fontSize.sm, color: colors.textMuted },
+  subtotal: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  footer: {
+    padding: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
-  info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600' },
-  detail: { color: '#555', marginTop: 4 },
-  subtotal: { marginTop: 4, fontWeight: '600' },
-  empty: { textAlign: 'center', fontSize: 16, color: '#555', padding: 24 },
-  footer: { padding: 16, gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#ccc' },
-  total: { fontSize: 18, fontWeight: '700', textAlign: 'right' },
-  error: { color: '#b00020' },
-  button: { backgroundColor: '#1f6feb', borderRadius: 8, padding: 14, alignItems: 'center' },
-  disabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  done: { flex: 1, padding: 24, gap: 12, justifyContent: 'center', backgroundColor: '#fff' },
-  doneTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  doneNumber: { fontSize: 28, fontWeight: '700', textAlign: 'center' },
+  total: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, textAlign: 'right' },
+  doneScreen: { justifyContent: 'center', padding: spacing.xl, gap: spacing.lg },
+  done: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
+  doneTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
+  doneNumber: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
+  doneTotal: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
 });

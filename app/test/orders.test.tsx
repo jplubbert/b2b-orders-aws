@@ -49,8 +49,8 @@ describe('REQ-004 Mis pedidos', () => {
     await render(<OrdersScreen />);
     const numbers = await screen.findAllByText(/^N° /);
     expect(numbers.map((n) => n.props.children.join(''))).toEqual(['N° NEWER1', 'N° OLDER1']);
-    expect(screen.getByText('RECIBIDO')).toBeOnTheScreen();
-    expect(screen.getByText('ENTREGADO')).toBeOnTheScreen();
+    expect(screen.getByText('Recibido')).toBeOnTheScreen();
+    expect(screen.getByText('Entregado')).toBeOnTheScreen();
     expect(screen.getByText(money('$15.500'))).toBeOnTheScreen();
     expect(screen.getByText(money('$4.500'))).toBeOnTheScreen();
     expect(screen.getAllByText(/\d{2}-\d{2}-\d{2,4}/)).toHaveLength(2);
@@ -66,10 +66,10 @@ describe('REQ-004 Mis pedidos', () => {
   it('E2: al refrescar muestra el estado vigente', async () => {
     mockMyOrders.mockResolvedValueOnce([newer]).mockResolvedValueOnce([{ ...newer, status: 'ENVIADO' }]);
     await render(<OrdersScreen />);
-    expect(await screen.findByText('RECIBIDO')).toBeOnTheScreen();
+    expect(await screen.findByText('Recibido')).toBeOnTheScreen();
     await fireEvent(screen.getByTestId('orders-list'), 'refresh');
-    expect(await screen.findByText('ENVIADO')).toBeOnTheScreen();
-    expect(screen.queryByText('RECIBIDO')).toBeNull();
+    expect(await screen.findByText('Enviado')).toBeOnTheScreen();
+    expect(screen.queryByText('Recibido')).toBeNull();
     expect(mockMyOrders).toHaveBeenCalledTimes(2);
   });
 
@@ -97,7 +97,7 @@ describe('REQ-004 Detalle de pedido', () => {
     await render(<OrderDetailScreen />);
     expect(await screen.findByText('N° NEWER1')).toBeOnTheScreen();
     expect(mockGetOrder).toHaveBeenCalledWith(newer.id);
-    expect(screen.getByText('RECIBIDO')).toBeOnTheScreen();
+    expect(screen.getByText('Recibido')).toBeOnTheScreen();
     expect(screen.getByText('Yerba 1 kg')).toBeOnTheScreen();
     expect(screen.getByText(money('Paquete 1 kg · 2 × $4.500'))).toBeOnTheScreen();
     expect(screen.getByText(money('Subtotal $9.000'))).toBeOnTheScreen();
@@ -109,9 +109,9 @@ describe('REQ-004 Detalle de pedido', () => {
   it('E2: al refrescar el detalle muestra el estado vigente', async () => {
     mockGetOrder.mockResolvedValueOnce(detail).mockResolvedValueOnce({ ...detail, status: 'ENVIADO' });
     await render(<OrderDetailScreen />);
-    expect(await screen.findByText('RECIBIDO')).toBeOnTheScreen();
+    expect(await screen.findByText('Recibido')).toBeOnTheScreen();
     await fireEvent(screen.getByTestId('order-detail'), 'refresh');
-    await waitFor(() => expect(screen.getByText('ENVIADO')).toBeOnTheScreen());
+    await waitFor(() => expect(screen.getByText('Enviado')).toBeOnTheScreen());
   });
 
   it('E3: un pedido ajeno o inexistente (null) → "Pedido no encontrado", sin datos', async () => {
