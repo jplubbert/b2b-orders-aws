@@ -424,3 +424,12 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-07 (diff 775954c, REQ-001, DEC-003, DEC-004) en la próxima corrida del orquestador; el usuario confirma en el teléfono que el aviso no aparece al reabrir.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Hecho (T-07, REQ-001 E3, verificación manual en el teléfono, DEC-011): el usuario José Pedro Lübbert informa, con la app en 775954c: "Ya no aparece el error al abrir la app en el teléfono". Se cierra el hallazgo del aviso "Can't perform a React state update on a component that hasn't mounted yet" (ExpoRoot, ContextNavigator). Queda en `evidence.manual_result` de T-07 y se quita ese paso de su `manual_pending`.
+- Interpretación: el informe cubre solo el aviso al abrir la app. El resto de la checklist manual de T-07 (REQ-001 E1–E3, REQ-005 E1–E2) sigue pendiente. T-07 sigue `verified_auto` hasta la revisión independiente del diff 775954c.
+- Verificado y cómo: `npm run check:spec`.
+- Pendiente manual: T-07 (REQ-001 E1–E3, REQ-005 E1–E2), T-12 (REQ-007 E6), T-04, T-05, T-06 E4.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-07 (diff 775954c, REQ-001, DEC-003, DEC-004) en la próxima corrida del orquestador; el usuario completa la checklist manual pendiente y decide `accepted` en lote.
