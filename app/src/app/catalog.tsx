@@ -2,6 +2,7 @@ import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { QuantityStepper } from '@/components/QuantityStepper';
+import { SignOutButton } from '@/components/SignOutButton';
 import { formatCLP, listProducts, type Product } from '@/lib/api';
 import { cartUnits, quantityOf } from '@/lib/cart';
 import { useCart } from '@/lib/CartProvider';
@@ -37,6 +38,7 @@ export default function CatalogScreen() {
   const header = (
     <Stack.Screen
       options={{
+        headerLeft: () => <SignOutButton />,
         headerRight: () => (
           <Pressable onPress={() => router.push('/cart')} accessibilityLabel="Ver carrito">
             <Text style={styles.cartLink}>Carrito ({cartUnits(cart)})</Text>

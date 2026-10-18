@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces",
     "codegen": "graphql-codegen --config codegen.ts",
-    "test": "vitest run",
+    "test": "vitest run && npm test -w app",
     "test:acceptance": "vitest run --config vitest.acceptance.config.ts",
     "smoke": "vitest run --config tests/smoke/vitest.config.ts",
     "synth": "npm run synth -w infra",
