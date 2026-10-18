@@ -342,3 +342,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-09 (diff 94eb5cf, REQ-007, DEC-003, DEC-008, DEC-012); en paralelo T-10 y T-12 quedan con su dependencia T-09 cerrada cuando T-09 pase a `reviewed`.
+
+## 2026-10-18 01:53 · revisor independiente (codex exec codex-cli 0.162.0) vía night-loop
+- Hecho: revisión independiente de T-09 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-09); salida íntegra en .night-loop/2026-10-18_014651/T-09-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
