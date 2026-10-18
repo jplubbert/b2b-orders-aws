@@ -457,6 +457,29 @@ describe('autopilot.sh', () => {
       expect(log).toContain('0 fallo(s)');
     });
 
+    it('"Pendiente deploy: ninguno" no es despliegue: una tarea de spec in_progress con commits espera al usuario y no es fallo', () => {
+      t08Ready();
+      const r = autopilot({ STUB_WAIT: 'T-03', STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).not.toContain('T-03 espera un despliegue');
+      expect(r.stdout).toContain('T-03 espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo');
+      expect(r.stdout).not.toContain('fallo 1/');
+      expect(r.stdout).toContain('veredicto sobre T-08: approved → estado reviewed');
+      expect(t03().status).toBe('in_progress');
+      const log = readFileSync(join(root, 'spec/LOG.md'), 'utf8');
+      expect(log).toContain('- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): ninguna.');
+      expect(log).toContain('T-03: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/');
+      expect(log).toContain('0 fallo(s)');
+    });
+
+    it('"Pendiente deploy: ninguno" en una tarea que no es de spec y queda in_progress cuenta como fallo', () => {
+      editTasks((ts) => { task(ts, 'T-08').status = 'ready'; task(ts, 'T-03').status = 'reviewed'; });
+      git('commit', '-q', '-am', 'T-08 ready\n\nTask: T-08\nReq: N/A');
+      const r = autopilot({ STUB_WAIT: 'T-08' }, '--task', 'T-08');
+      expect(r.stdout).not.toContain('T-08 espera un despliegue');
+      expect(r.stdout).toContain('fallo 1/2 en T-08');
+    });
+
     it('el resumen lista las verificaciones manuales pendientes (DEC-011)', () => {
       const r = autopilot({ STUB_VERDICT: '{"verdict":"approved","findings":[],"notes":"ok"}' }, '--max-tasks', '1');
       expect(r.status).toBe(0);

@@ -513,6 +513,21 @@
       "verify": "npm run lint && npm run typecheck && npm test && npm exec -w app -- expo export --platform android + criterio de éxito del corte 3 en el teléfono (manual, DEC-011)",
       "blocked_by": null,
       "notes": "Corte 3. Propuesta 2026-10-18. Solo app. Aprobada por José Pedro Lübbert el 2026-10-18 → approved_for_impl."
+    },
+    {
+      "id": "T-17",
+      "kind": "tooling",
+      "title": "Autopilot: \"Pendiente deploy: ninguno\" no es un despliegue pendiente; tarea de spec esperando al usuario no es fallo",
+      "description": "scripts/autopilot.sh trataba cualquier línea nueva \"- Pendiente deploy:\" en LOG.md como despliegue pendiente, aunque dijera \"ninguno\" (corrida 2026-10-18_034909: T-13 apareció como \"espera un despliegue\" cuando esperaba la aprobación del diff de tests/acceptance/). Corregir: ignorar las líneas cuyo valor es ninguno/ninguna/nada/no aplica/N/A; una tarea `kind: spec` que el implementador deja in_progress con commits nuevos espera la aprobación del usuario: se salta sin contar fallo y se anota como tal. Pruebas en scripts/test/autopilot-tasks.test.ts con el doble de claude.",
+      "reqs": [],
+      "decisions": [
+        "DEC-011"
+      ],
+      "depends_on": [],
+      "status": "in_progress",
+      "verify": "npm run lint && npm run typecheck && npm test (autopilot-tasks: casos nuevos de \"Pendiente deploy: ninguno\" en tarea de spec y de implementación) && npm run check:spec && scripts/autopilot.sh --dry-run",
+      "blocked_by": null,
+      "notes": "Pedida por José Pedro Lübbert el 2026-10-18 como tarea de tooling."
     }
   ]
 }

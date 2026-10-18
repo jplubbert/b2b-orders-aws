@@ -218,6 +218,9 @@ function main(argv) {
     case 'status':
       out(findTask(readTasks(root), args[0]).status);
       return 0;
+    case 'kind':
+      out(findTask(readTasks(root), args[0]).kind ?? 'impl');
+      return 0;
     case 'context':
       out(context(root, args[0]));
       return 0;

@@ -22,8 +22,9 @@
 #      si no hay codex) con el prompt de sdd.md §7.5, solo sobre el diff de la tarea y sus REQ/DEC. El veredicto va a
 #      TASKS.json (`review`; approved → reviewed) y a LOG.md.
 #      Si el implementador termina bien (código 0) sin cambios (mismo HEAD y mismo estado), o deja la tarea
-#      in_progress con una línea "- Pendiente deploy:" nueva en LOG.md, no es un fallo ni se reintenta: la tarea se
-#      salta en esta corrida y se elige la siguiente independiente.
+#      in_progress con una línea "- Pendiente deploy:" nueva en LOG.md (que no diga "ninguno", "nada", "N/A"…), no es
+#      un fallo ni se reintenta: la tarea se salta en esta corrida y se elige la siguiente independiente. Lo mismo si
+#      una tarea de spec queda in_progress con commits nuevos: espera que el usuario apruebe el diff de tests/acceptance/.
 #      Si lo único pendiente es una verificación manual en el teléfono, el implementador deja la tarea verified_auto
 #      con `evidence.manual_pending` (DEC-011); el resumen de LOG.md lista esas verificaciones en "Pendiente manual".
 #      Los fallos se cuentan por tarea: tras el primero se reintenta la misma; con dos (AUTOPILOT_MAX_FAILURES) se
@@ -100,6 +101,11 @@ tokens_summary() { node "$ROOT/scripts/lib/autopilot-stream.mjs" tokens-summary 
 remaining() { echo $((DEADLINE - $(date +%s))); }
 now_stamp() { date '+%Y-%m-%d %H:%M'; }
 git_head() { git rev-parse --short HEAD; }
+# ¿Hay una línea "- Pendiente deploy:" nueva en LOG.md desde $1 que pida algo? "ninguno", "nada", "N/A"… no cuentan.
+deploy_pending_since() {
+  git diff "$1" HEAD -- spec/LOG.md | grep -E '^\+- Pendiente deploy:' \
+    | grep -qviE '^\+- Pendiente deploy:[[:space:]]*(ningun[oa]?|nada|no aplica|n/?a|—|-)([[:space:].,;:()]|$)'
+}
 
 # ---------- Guardas de entorno (heredadas por claude/codex y todo lo que lancen) ----------
 export AUTOPILOT=1
@@ -375,9 +381,13 @@ run_task() { # $1 = ID, $2 = intento; devuelve 0 si la tarea avanzó, 1 si fall�
     STOP_REASON="el implementador otorgó un estado reservado en $id (violación de autoridad; revisar a mano)"; ABNORMAL=1
     return 2
   fi
-  if [ "$status" = in_progress ] && git diff "$head_before" HEAD -- spec/LOG.md | grep -q '^+- Pendiente deploy'; then
+  if [ "$status" = in_progress ] && deploy_pending_since "$head_before"; then
     SUMMARY+=("$id: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida")
     return 4
+  fi
+  if [ "$status" = in_progress ] && [ "$(tasks kind "$id")" = spec ] && [ "$(git_head)" != "$head_before" ]; then
+    SUMMARY+=("$id: tarea de spec in_progress; espera que el usuario apruebe el diff de tests/acceptance/; se salta en esta corrida")
+    return 5
   fi
   if [ "$rc" -eq 0 ] && [ "$(git_head)" = "$head_before" ] && [ "$status" = "$status_before" ]; then
     SUMMARY+=("$id: el implementador la dejó sin cambios (estado $status); se salta en esta corrida")
@@ -480,9 +490,10 @@ while :; do
   else
     rc=$?
     [ "$rc" -eq 2 ] && break
-    if [ "$rc" -eq 3 ] || [ "$rc" -eq 4 ]; then
+    if [ "$rc" -eq 3 ] || [ "$rc" -eq 4 ] || [ "$rc" -eq 5 ]; then
       SKIPPED="$SKIPPED$ID,"
       if [ "$rc" -eq 4 ]; then DEPLOY_PENDING+=("$ID"); log "$ID espera un despliegue (Pendiente deploy): no cuenta como fallo; se pasa a la siguiente tarea independiente"
+      elif [ "$rc" -eq 5 ]; then log "$ID espera que el usuario apruebe el diff de tests/acceptance/ (tarea de spec): no cuenta como fallo; se pasa a la siguiente tarea independiente"
       else log "$ID quedó sin cambios: no cuenta como fallo; se pasa a la siguiente tarea independiente"; fi
       continue
     fi
