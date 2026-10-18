@@ -645,7 +645,7 @@
       "evidence": {
         "command": "npm run lint && npm run typecheck && npm test && npm run acceptance:cleanup && AWS_PROFILE=night-loop npm run test:acceptance && npm run check:spec",
         "result": "lint ok; typecheck ok; vitest 164/164 (2 nuevos en acceptance-cleanup.test.ts) + jest 137/137; acceptance:cleanup → 23 pedidos borrados; aceptación con night-loop 41/41 y el teardown borró los 23 pedidos que creó; tabla después: CATALOG 2, C-ALMACEN1 1, C-ALMACEN2 1; usuarios: almacen1, almacen2, distribuidor; check:spec ok.",
-        "commit": "(este commit)"
+        "commit": "be94960"
       }
     }
   ]
