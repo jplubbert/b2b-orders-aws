@@ -224,3 +224,13 @@
 - En curso / roto: `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` denegado por los permisos de esta sesión (el backend no cambió; en T-03 dio 2/2).
 - Bloqueos nuevos: ninguno de spec; solo el permiso de AWS.
 - Próxima acción autorizada: el usuario (o night-loop) corre `AWS_PROFILE=night-loop npm run test:acceptance -- req_001` (esperado 2/2); con el resultado, evidencia de T-07 → `verified_auto` con `manual_pending`: en el teléfono, login con contraseña errónea → mensaje; login correcto → catálogo; cerrar y reabrir Expo Go → catálogo sin credenciales; agregar al carrito, "Cerrar sesión" → inicio y carrito vacío; reabrir → pide credenciales. Luego revisión independiente (diff del commit `Task: T-07`, REQ-001, REQ-005, DEC-003, DEC-004). Sigue pendiente lo de T-05 (deploy:dev y req_003).
+
+## 2026-10-17 23:54 · night-loop (scripts/night-loop.sh)
+- Hecho: T-04 revisada por codex: approved → reviewed (commit 689403b); T-05: el implementador terminó en in_progress (código 0); T-05: el implementador la dejó sin cambios (estado in_progress); se salta en esta corrida; T-07: el implementador terminó en in_progress (código 0). Corrida 2026-10-17_233408 (19 min, 0 tarea(s) completada(s), 2 fallo(s)); registros en .night-loop/2026-10-17_233408/.
+- Tokens (implementador, campo usage del evento result): T-05: entrada 102 · salida 41.603 · caché leída 4.669.995 · caché escrita 157.088 (2 invocaciones); T-07: entrada 120 · salida 27.438 · caché leída 4.875.907 · caché escrita 95.868; total de la corrida: entrada 222 · salida 69.041 · caché leída 9.545.902 · caché escrita 252.956.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-04: REQ-002 E3 en el teléfono: npm run app, login almacen1 → ve Arroz y Yerba con presentación y $1.300/$4.500; poner active=false en ambos productos de la tabla de dev, deslizar hacia abajo → "No hay productos disponibles"; npm run seed y deslizar → vuelven.
+- Verificado y cómo: sin comandos ejecutados.
+- En curso / roto: árbol limpio en e228c2f.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: 2 fallos (tope 2).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
