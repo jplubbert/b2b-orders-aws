@@ -897,3 +897,14 @@
 - En curso / roto: T-22 `in_progress`: falta el paso 3. La llave de `[REDACTED_IAM_USER]` sigue activa en `[default]`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario autoriza el paso 3 (desactivar la llave de `[REDACTED_IAM_USER]` con `principal` y quitarla de ~/.aws/credentials) y decide `accepted` de DEC-017. Borrar la llave y el usuario requiere confirmación aparte.
+
+## 2026-10-18 · Claude (claude-opus-5-5)
+- Encargo del usuario: "Autorizo el paso 3, sin guardar el secreto. Acepto DEC-017 (aprobador: Pepe). Haz push."
+- Hecho (T-22, DEC-017): `aws iam update-access-key … --status Inactive` de [REDACTED_ACCESS_KEY_ID_1] (`[REDACTED_IAM_USER]`) con el perfil `principal` (SSO); sección `[default]` quitada de ~/.aws/credentials sin guardar el secreto (queda solo `[autopilot]`); `[default]` de ~/.aws/config conserva solo la región. T-22 → `verified_auto` (no queda `in_progress` para que el autopilot no la tome: lo que falta solo lo decide el usuario).
+- Aceptación: **José Pedro Lübbert (Pepe)**, 2026-10-18 — aprueba DEC-017 → `accepted`.
+- Verificado y cómo: `sts get-caller-identity` → `default`: NoCredentials; `principal`: `AWSReservedSSO_AdministratorAccess_…/pepe` en [REDACTED_AWS_ACCOUNT_MAIN]; `pedidos-demo`: ídem en [REDACTED_AWS_ACCOUNT_DEMO]; `autopilot`: `user/autopilot-tests`; `cdk diff` con `pedidos-demo`: sin diferencias; `npm run smoke` 2/2; `npm run seed` ok; `AWS_PROFILE=autopilot npm run smoke` 2/2; `scripts/autopilot.sh --dry-run` ok; `npm run check:spec` ok.
+- Reversión (mientras exista `[REDACTED_IAM_USER]`): reactivar la llave con `aws iam update-access-key --user-name [REDACTED_IAM_USER] --access-key-id [REDACTED_ACCESS_KEY_ID_1] --status Active --profile principal` no sirve sin el secreto: crear una llave nueva desde la consola (root o SSO) y ponerla en `[default]`; restaurar `~/.aws/config` desde `~/.aws/config.bak-2026-10-18-pre-sso`.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. Para desplegar o administrar, `aws sso login --sso-session pepe` cuando venza la sesión (8 h).
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-22 (la hace el autopilot); tras el período de prueba, el usuario confirma (o no) borrar la llave [REDACTED_ACCESS_KEY_ID_1] y el usuario `[REDACTED_IAM_USER]`, en una tarea nueva.
