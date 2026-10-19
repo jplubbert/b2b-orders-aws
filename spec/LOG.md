@@ -1172,3 +1172,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-28).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 21:20 · Claude (claude-opus-5-5)
+- Encargo del usuario: push, `npm run deploy:dev` para T-28, verificar aceptación (49/49) y humo, pasar T-28 a `verified_auto` y lanzar el autopilot.
+- Hecho: push (nada que subir: main = origin/main). `npm run deploy:dev` con el perfil `pedidos-demo` (cuenta [REDACTED_AWS_ACCOUNT_DEMO], us-east-1) → exit 0, CloudFormation «no changes»: los recursos de T-28 (tópico SNS, cola y DLQ, OrderHistoryFunction, resolver orderHistory) ya estaban desplegados a las 20:34–20:37 (hora local), después de la corrida 2026-10-18_200835; `.env.dev` reescrito y seed corrido.
+- Verificado y cómo: `npm run smoke` → 2/2. `npm run test:acceptance` dos veces, sin 49/49: (1) 36 pasan, 13 omitidas, 3 archivos fallan en el armado; (2) 47 pasan, 2 fallan. Fallos distintos en cada corrida y ninguno de REQ-012: `UserNotFoundException` al borrar usuarios C-ACEPT recién creados (REQ-004, REQ-009), `PRODUCT_UNAVAILABLE: arroz-1kg` (REQ-011 E1) y pedidos que desaparecen durante la prueba (REQ-011 E5: 14 → 8). Con `fileParallelism: false`, el patrón indica otro proceso usando el dev a la vez (otra corrida de aceptación, su limpieza global de C-ACEPT o el seed). En esta máquina no había otro proceso de pedidos-b2b-v2; CloudTrail muestra los `AdminDeleteUser` con la misma identidad SSO (`pepe`), así que no distingue el origen.
+- Pendiente manual: ninguna.
+- Pendiente deploy: ninguno (el dev ya tiene T-28).
+- En curso / roto: T-28 sigue `in_progress`; no se pasó a `verified_auto` ni se lanzó el autopilot (correría la aceptación contra el mismo dev compartido).
+- Bloqueos nuevos: ninguno registrado como Q; se escala al usuario por la regla de dos intentos fallidos sobre la misma falla.
+- Próxima acción autorizada: el usuario confirma si otra sesión o máquina usa el dev (p. ej. otra corrida de aceptación o la que desplegó T-28 a las 20:34) y la detiene; luego repetir `npm run test:acceptance` (esperado 49/49) y, si pasa, evidencia de T-28 → `verified_auto` y autopilot.
