@@ -28,13 +28,12 @@ Executive summary in Spanish: [docs/resumen-ejecutivo.md](docs/resumen-ejecutivo
 
 ## Screenshots
 
-<!--
-Photos from the phone go in docs/img/ (one per screen). Uncomment the table once they are there.
-
 | Catalog | Cart | My orders | Order detail with history | Distributor panel |
 |---|---|---|---|---|
 | ![Catalog](docs/img/catalog.png) | ![Cart](docs/img/cart.png) | ![My orders](docs/img/my-orders.png) | ![Order detail with its status history](docs/img/order-history.png) | ![Distributor panel](docs/img/distributor-panel.png) |
--->
+
+Captured from the app running on Expo web at phone size (390 × 844), signed in to the dev stack as the demo store
+owner and the distributor: one order confirmed, moved to "Enviado" by the distributor, then opened again by both.
 
 The app's screens are in Spanish because its users are Chilean corner-store owners and their distributor. The
 [demo script](docs/resumen-ejecutivo.md#guion-de-la-demo) walks through them tap by tap.
