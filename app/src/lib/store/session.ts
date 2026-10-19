@@ -2,6 +2,7 @@ import { signOut as amplifySignOut } from 'aws-amplify/auth';
 import { create } from 'zustand';
 import { readSession, rejectSession, type SessionInfo } from '../session';
 import { useCart } from './cart';
+import { useHistory } from './history';
 import { usePanel } from './panel';
 
 /** `unknown`: not read yet; `loading`: reading it from Amplify. */
@@ -39,7 +40,8 @@ export const useSession = create<SessionState>()((set) => ({
 }));
 
 /**
- * REQ-005: clears the local session (Amplify tokens in AsyncStorage), the cart (S-09) and the panel's list.
+ * REQ-005: clears the local session (Amplify tokens in AsyncStorage), the cart (S-09), the panel's list and the
+ * loaded order histories.
  * signOut without `global` clears the local tokens even if the revocation in Cognito fails (no network),
  * so an error doesn't prevent leaving.
  */
@@ -51,5 +53,6 @@ export async function signOut(): Promise<void> {
   }
   useCart.getState().clear();
   usePanel.getState().setOrders(null);
+  useHistory.getState().clear();
   useSession.setState(signedOut);
 }

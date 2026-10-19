@@ -60,3 +60,10 @@ export type SetOrderStatusMutationVariables = Exact<{
 
 
 export type SetOrderStatusMutation = { setOrderStatus: { id: string, customerId: string, number: string, createdAt: string, total: number, status: OrderStatus, lines: Array<{ productId: string, name: string, presentation: string, quantity: number, unitPrice: number, subtotal: number }> } };
+
+export type OrderHistoryQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type OrderHistoryQuery = { orderHistory: Array<{ eventId: string, from: OrderStatus | null, to: OrderStatus, at: string }> };

@@ -8,6 +8,8 @@ import type {
   MyOrdersQuery,
   OrderDetailQuery,
   OrderDetailQueryVariables,
+  OrderHistoryQuery,
+  OrderHistoryQueryVariables,
   OrderLineInput,
   OrderStatus,
   SetOrderStatusMutation,
@@ -20,6 +22,7 @@ export type CreatedOrder = CreateOrderMutation['createOrder'];
 export type OrderSummary = MyOrdersQuery['myOrders'][number];
 export type OrderDetail = NonNullable<OrderDetailQuery['order']>;
 export type PanelOrder = AllOrdersQuery['allOrders'][number];
+export type HistoryEvent = OrderHistoryQuery['orderHistory'][number];
 
 const LIST_PRODUCTS = /* GraphQL */ `
   query ListProducts {
@@ -119,6 +122,18 @@ const SET_ORDER_STATUS = /* GraphQL */ `
   }
 `;
 
+// Order status history (REQ-012, S-37), for the store's and the distributor's detail; a query apart from the order.
+const ORDER_HISTORY = /* GraphQL */ `
+  query OrderHistory($id: ID!) {
+    orderHistory(id: $id) {
+      eventId
+      from
+      to
+      at
+    }
+  }
+`;
+
 // The client is created on every call: that way it always comes after Amplify.configure (in _layout).
 export async function listProducts(): Promise<Product[]> {
   const res = (await generateClient().graphql({ query: LIST_PRODUCTS })) as { data: ListProductsQuery };
@@ -150,6 +165,13 @@ export async function setOrderStatus(customerId: string, id: string, status: Ord
   const variables: SetOrderStatusMutationVariables = { customerId, id, status };
   const res = (await generateClient().graphql({ query: SET_ORDER_STATUS, variables })) as { data: SetOrderStatusMutation };
   return res.data.setOrderStatus;
+}
+
+/** Events of order `id`, oldest first (the server sorts); another store's order → [] (REQ-012 E10). */
+export async function orderHistory(id: string): Promise<HistoryEvent[]> {
+  const variables: OrderHistoryQueryVariables = { id };
+  const res = (await generateClient().graphql({ query: ORDER_HISTORY, variables })) as { data: OrderHistoryQuery };
+  return res.data.orderHistory;
 }
 
 /** GraphQL error with its `errorType` (REQ-003 rejection reasons, DEC-005). */

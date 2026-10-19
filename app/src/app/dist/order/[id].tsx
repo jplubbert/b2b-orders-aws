@@ -1,8 +1,9 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { OrderHistory, useOrderHistory } from '@/components/OrderHistory';
 import { Screen } from '@/components/Screen';
 import { StateMessage } from '@/components/StateMessage';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -18,12 +19,23 @@ const STATUSES = Object.keys(orderStatus) as OrderStatus[];
 // from the already loaded panel list (like S-19, no new query). REQ-011: "Cambiar estado" with the 5
 // statuses as buttons; the chosen one is saved with setOrderStatus and the server response updates the
 // detail and the panel. No confirmation and no required order; choosing the current one is not an error (S-24).
+// REQ-012: "Historial" under the status and the date, requested on opening and on pulling down (the order
+// itself still comes from the panel); after a status change no row is added until it is refreshed (S-37).
 export default function DistOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { orders, replaceOrder } = usePanel();
   const order = orders?.find((o) => o.id === id);
   const [saving, setSaving] = useState<OrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const { entry: history, reload: loadHistory } = useOrderHistory(id);
+  const found = order !== undefined;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (found) void loadHistory();
+    }, [found, loadHistory]),
+  );
 
   if (!order) {
     return (
@@ -52,6 +64,12 @@ export default function DistOrderScreen() {
     }
   }
 
+  async function onRefresh() {
+    setRefreshing(true);
+    await loadHistory();
+    setRefreshing(false);
+  }
+
   return (
     <Screen>
       <Stack.Screen options={{ title: `Pedido ${order.number}` }} />
@@ -59,15 +77,20 @@ export default function DistOrderScreen() {
         testID="dist-order-detail"
         data={order.lines}
         keyExtractor={(l) => l.productId}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          <Card style={styles.header}>
-            <View style={styles.line}>
-              <Text style={styles.customer}>Almacén {order.customerId}</Text>
-              <StatusBadge status={order.status} />
-            </View>
-            <Text style={styles.detail}>{formatDate(order.createdAt)}</Text>
-          </Card>
+          <View style={styles.top}>
+            <Card style={styles.header}>
+              <View style={styles.line}>
+                <Text style={styles.customer}>Almacén {order.customerId}</Text>
+                <StatusBadge status={order.status} />
+              </View>
+              <Text style={styles.detail}>{formatDate(order.createdAt)}</Text>
+            </Card>
+            <OrderHistory entry={history} />
+          </View>
         }
         ListFooterComponent={
           <View style={styles.footer}>
@@ -121,6 +144,7 @@ export default function DistOrderScreen() {
 const styles = StyleSheet.create({
   missing: { justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
   list: { padding: spacing.lg, gap: spacing.md },
+  top: { gap: spacing.md },
   header: { gap: spacing.sm },
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   customer: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
