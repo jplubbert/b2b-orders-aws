@@ -1193,3 +1193,8 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno. Riesgo operativo: dos sesiones (o una sesión y el autopilot) no deben correr la aceptación al mismo tiempo contra el dev.
 - Próxima acción autorizada: el autopilot revisa T-28 (verified_auto) e implementa T-31.
+
+## 2026-10-18 21:25 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-28 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-28); salida íntegra en .autopilot/2026-10-18_212359/T-28-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
