@@ -1235,3 +1235,14 @@
 - En curso / roto: T-30 `in_progress` hasta el push y la verificación en GitHub.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: el usuario hace push y verifica CI y la vista de GitHub (línea Pendiente deploy); agrega las capturas cuando las tenga; luego T-30 → `verified_auto` y revisión independiente.
+
+## 2026-10-18 21:51 · autopilot (scripts/autopilot.sh)
+- Hecho: T-31 implementada (d73645d..b048ced, estado verified_auto); T-31 revisada por codex: approved → reviewed (commit 3adbe36); T-30: el implementador la dejó in_progress con Pendiente deploy; se salta en esta corrida. Corrida 2026-10-18_213343 (17 min, 1 tarea(s) completada(s), 0 fallo(s)); registros en .autopilot/2026-10-18_213343/.
+- Tokens (implementador, campo usage del evento result): T-31: entrada 92 · salida 33.709 · caché leída 4.095.161 · caché escrita 119.468; T-30: entrada 94 · salida 31.360 · caché leída 3.764.413 · caché escrita 98.288; total de la corrida: entrada 186 · salida 65.069 · caché leída 7.859.574 · caché escrita 217.756.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-29: DEC-011, en el teléfono con Expo Go y el dev desplegado, el guion del README sin cambios visibles: (1) almacen1@demo.test inicia sesión → Catálogo; cerrar y reabrir la app entra directo (REQ-001 E3); (2) agregar productos con − / +, abrir un detalle y volver: la barra del carrito suma igual (REQ-003, REQ-008); confirmar el pedido → número y carrito vacío; (3) menú de cuenta muestra el correo; "Cerrar sesión" vuelve al inicio y al reingresar el carrito está vacío (REQ-005); (4) distribuidor@demo.test → panel "Pedidos", filtro, abrir el pedido, cambiar estado y volver: el panel muestra el estado nuevo (REQ-010, REQ-011); T-31: DEC-011, en el teléfono con Expo Go y el dev desplegado: (E8) almacen1@demo.test confirma un pedido; distribuidor@demo.test lo pasa a «Enviado»; almacen1 abre el pedido en Mis pedidos → sección «Historial» debajo del estado y la fecha con 2 filas, «Recibido» y «Recibido → Enviado», cada una con fecha y hora (si aún dice «Sin movimientos registrados todavía», deslizar hacia abajo); (E9) el distribuidor abre ese pedido desde el panel → la misma sección con las mismas 2 filas; al cambiar el estado no aparece fila nueva hasta deslizar hacia abajo.
+- Pendiente deploy (el usuario corre `npm run deploy:dev`; el orquestador no despliega): T-30.
+- Verificado y cómo: npm run check:spec tras T-31 → ok.
+- En curso / roto: árbol limpio en 929b8ae.
+- Bloqueos nuevos: ninguno.
+- Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-30).
+- Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
