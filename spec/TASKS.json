@@ -1029,7 +1029,7 @@
         "T-29",
         "T-31"
       ],
-      "status": "verified_auto",
+      "status": "reviewed",
       "touches": [
         "README.md",
         "docs/",
@@ -1042,7 +1042,13 @@
         "commit": "d8e4c41, 09eb35d",
         "manual_pending": "S-36 y vista de GitHub con sesión iniciada: (1) poner las capturas del teléfono en docs/img/ (catalog.png, cart.png, my-orders.png, order-history.png, distributor-panel.png) y descomentar la tabla «Screenshots» de README.md; (2) abrir https://github.com/jplubbert/pedidos-b2b-v2 con sesión iniciada y mirar que el badge de CI diga «passing» y que los 2 diagramas Mermaid se vean dibujados (sin navegador en esta sesión: se comprobó con gh y mermaid-cli)."
       },
-      "review": null,
+      "review": {
+        "reviewer": "codex exec codex-cli 0.162.0 (contexto limpio, autopilot)",
+        "verdict": "approved",
+        "findings": [],
+        "notes": "Entrega incompleta: las capturas solicitadas siguen ausentes y su tabla está comentada, incluido el detalle con historial. Sin cita REQ/DEC aplicable, esta observación no bloquea. Verificación propia: lint, typecheck y check:spec correctos; Vitest 231/231 y Jest 173/173. Instrucciones de despliegue contrastadas con package.json, CDK y write-env.ts; no ejecutadas en una cuenta limpia. No se verificaron de forma independiente el CI remoto, Mermaid en GitHub ni los enlaces renderizados. Sin cambios fuera de alcance ni violaciones observadas de las decisiones citadas.",
+        "date": "2026-10-19"
+      },
       "blocked_by": null,
       "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario. 2026-10-18 (autopilot): implementada en d8e4c41 — README.md en inglés, docs/resumen-ejecutivo.md (resumen gerencial actualizado al corte 4), .github/workflows/ci.yml (Node 24, npm ci, lint, typecheck, npm test, check:spec; checkout con historial completo porque check:spec lee los trailers de todos los commits; identidad git de CI para las pruebas de scripts que hacen commits). Verificado sin GitHub: en un clon limpio (/tmp, sin .expo/ ni .env*, sin AWS) `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (vitest 231/231, jest 173/173) y `npm run check:spec` ok; 46 enlaces relativos de README.md y docs/resumen-ejecutivo.md resuelven (archivo y ancla al estilo GitHub, incluidas las de REQ/DEC); sin IDs internos sueltos en README.md; YAML del workflow válido. Instrucciones de cuenta nueva revisadas paso a paso contra package.json, infra/bin, infra/lib/pedidos-stack.ts, scripts/write-env.ts y scripts/seed.ts (no seguidas en una cuenta limpia; `cdk destroy` documentado, no ejecutado). Interpretación (detalle interno): sin capturas todavía (S-36, las pone el usuario), la tabla de capturas queda comentada en README.md con los nombres de archivo esperados en docs/img/. Falta, fuera del alcance del autopilot (no hace push): push, CI en verde en GitHub (`gh run list`), Mermaid dibujado en la vista de GitHub y badge visible. 2026-10-18 (sesión interactiva): push hecho; la primera corrida de CI en GitHub falló porque 2 pruebas del autopilot dependían del claude local; corregidas en 09eb35d; CI en verde (run 39184809320). Mermaid validado con mermaid-cli y con el HTML de GitHub; badge visual con sesión → manual_pending."
     },

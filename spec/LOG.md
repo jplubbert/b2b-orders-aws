@@ -1256,3 +1256,8 @@
 - En curso / roto: nada. T-30 `verified_auto`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-30 (`scripts/autopilot.sh`, que revisa primero las tareas `verified_auto`); el usuario hace lo pendiente manual y decide accepted de T-24, T-26 a T-31.
+
+## 2026-10-18 22:31 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-30 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-30); salida íntegra en .autopilot/2026-10-18_223044/T-30-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
