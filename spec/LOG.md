@@ -1246,3 +1246,13 @@
 - Bloqueos nuevos: ninguno.
 - Motivo de parada: no hay tareas in_progress/ready/approved_for_impl con dependencias cerradas (saltadas en esta corrida: T-30).
 - Próxima acción autorizada: el usuario revisa este resumen, los veredictos registrados en TASKS.json y los registros de la corrida; decide accepted o devuelve la tarea. El orquestador no marca accepted ni hace push.
+
+## 2026-10-18 22:30 · Claude (claude-opus-5-5), sesión interactiva
+- Encargo: "En pedidos-b2b-v2: haz push, espera el CI de GitHub Actions y verifica que pase, que los diagramas Mermaid del README se dibujen y que el badge se vea. Si todo está bien, pasa T-30 a verified_auto y lanza su revisión independiente. Si algo falla, corrígelo y repite." Después: "No uses el navegador. Verifica el CI con gh y renderiza los diagramas Mermaid del README con mermaid-cli".
+- Hecho: push de main (d73645d..0cbab68). La primera corrida de CI falló en `npm test`: 2 pruebas de `scripts/test/autopilot-tasks.test.ts` (--dry-run y árbol sucio) necesitaban el `claude` de la máquina («claude is not in PATH»). Se corrigió en 09eb35d: esas pruebas ponen primero en PATH los dobles de `scripts/test/fixtures/autopilot-stubs`, igual que las del ciclo completo; `scripts/autopilot.sh` no cambia. Segundo push: CI en verde. T-30 → `verified_auto`.
+- Verificado y cómo: `gh run watch` en la corrida 39184809320 (09eb35d) → success (npm ci, lint, typecheck, npm test, check:spec); `gh api …/readme` con HTML de GitHub: los 2 bloques salen marcados como diagramas mermaid y el badge apunta a ci.yml en main; `npx @mermaid-js/mermaid-cli@11.4.2` dibuja los 2 diagramas sin errores; 51 enlaces relativos y las 14 anclas de DEC existen en el HTML que genera GitHub (solo faltan las 5 imágenes, que están comentadas, S-36); en local sin claude ni codex en PATH: lint, typecheck, vitest 231/231 y jest 173/173.
+- Pendiente manual: capturas S-36 en `docs/img/` y descomentar la tabla «Screenshots»; con sesión iniciada en GitHub, mirar que el badge de CI diga «passing» y que los diagramas se vean dibujados (repo privado: sin sesión la URL del badge da 404; en esta sesión no se usó navegador).
+- Pendiente deploy: ninguno.
+- En curso / roto: nada. T-30 `verified_auto`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-30 (`scripts/autopilot.sh`, que revisa primero las tareas `verified_auto`); el usuario hace lo pendiente manual y decide accepted de T-24, T-26 a T-31.
