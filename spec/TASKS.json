@@ -829,7 +829,7 @@
       "depends_on": [
         "T-23"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "verify": "npm run lint && npm run typecheck && npm run test:acceptance (mismo número de casos, todos pasan) && npm run check:spec; aprobación del usuario del diff de tests/acceptance/",
       "evidence": {
         "command": "npm run test:acceptance (línea base antes de tocar nada); npm run lint; npm run typecheck; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit)",
@@ -844,6 +844,10 @@
         "verdict": "approved",
         "findings": [],
         "notes": "Revisados los tres commits mediante git show. Se conservan aserciones, datos, cadenas de API/app y casos de borde. npm run lint, npm run typecheck y npm run check:spec pasan. No se ejecutó test:acceptance porque no está entre los comandos autorizados; no se confirma independientemente el resultado 41/41 ni la aprobación del usuario registrados en el diff. Sin cambios fuera de alcance ni violaciones detectadas de DEC-018 o DEC-007. Estilo y preferencias excluidos.",
+        "date": "2026-10-18"
+      },
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
         "date": "2026-10-18"
       }
     },
@@ -881,7 +885,7 @@
         "DEC-020"
       ],
       "depends_on": [],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "tests/acceptance/"
       ],
@@ -900,7 +904,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido (almacenero y distribuidor): la aceptación lee por `orderHistory` en vez de la tabla y suma E8–E10. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. El diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto. 2026-10-18: pruebas escritas (commit 8ab4a0f): req_012_historial (E1, E2, E3, E4, E7, E8, E9, E10; 8 casos nuevos) y en support/fixtures.ts la consulta `orderHistory`, el tipo `OrderStatusEvent`, `listOrderHistory` y `waitForHistory` (sondeo cada 1 s, tope 30 s desde la respuesta; falla de inmediato si la API responde con errores). Interpretaciones: E8–E10 usan clientes desechables en lugar de almacen1/almacen2 (S-14, como T-13); E4 (\"ningún evento nuevo\") se mide sin esperar 30 s fijos: tras los rechazos (EMPTY_ORDER, ORDER_NOT_FOUND con el customerId de otro almacén y con id inexistente) se hace un cambio válido como centinela, y cuando su evento aparece el historial debe tener exactamente RECIBIDO y RECIBIDO → ENVIADO; además `orderHistory` del id inexistente es vacío y no aparecen pedidos nuevos; con colas estándar (DEC-020, sin orden estricto) un evento rechazado que llegara después del centinela no se detectaría; E7 verifica el contrato desplegado por introspección (Query = los 4 campos actuales + `orderHistory`, Mutation sin cambios, `OrderStatusEvent` con los 6 campos de S-29); que REQ-001..011 sigan pasando lo cubre el resto de la suite. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario aprobó el diff con el ajuste de E4 (+5 s, 2313614) → verified_auto."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido (almacenero y distribuidor): la aceptación lee por `orderHistory` en vez de la tabla y suma E8–E10. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. El diff de tests/acceptance/ igual requiere su aprobación antes de verified_auto. 2026-10-18: pruebas escritas (commit 8ab4a0f): req_012_historial (E1, E2, E3, E4, E7, E8, E9, E10; 8 casos nuevos) y en support/fixtures.ts la consulta `orderHistory`, el tipo `OrderStatusEvent`, `listOrderHistory` y `waitForHistory` (sondeo cada 1 s, tope 30 s desde la respuesta; falla de inmediato si la API responde con errores). Interpretaciones: E8–E10 usan clientes desechables en lugar de almacen1/almacen2 (S-14, como T-13); E4 (\"ningún evento nuevo\") se mide sin esperar 30 s fijos: tras los rechazos (EMPTY_ORDER, ORDER_NOT_FOUND con el customerId de otro almacén y con id inexistente) se hace un cambio válido como centinela, y cuando su evento aparece el historial debe tener exactamente RECIBIDO y RECIBIDO → ENVIADO; además `orderHistory` del id inexistente es vacío y no aparecen pedidos nuevos; con colas estándar (DEC-020, sin orden estricto) un evento rechazado que llegara después del centinela no se detectaría; E7 verifica el contrato desplegado por introspección (Query = los 4 campos actuales + `orderHistory`, Mutation sin cambios, `OrderStatusEvent` con los 6 campos de S-29); que REQ-001..011 sigan pasando lo cubre el resto de la suite. Queda in_progress: falta que el usuario apruebe el diff de tests/acceptance/ (tarea de spec); con su aprobación → verified_auto y revisión independiente. 2026-10-18: el usuario aprobó el diff con el ajuste de E4 (+5 s, 2313614) → verified_auto.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-27",
@@ -913,7 +921,7 @@
         "DEC-019"
       ],
       "depends_on": [],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "backend/",
         "infra/"
@@ -932,7 +940,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios). 2026-10-18: implementada (commit c598b01): backend/src/domains.ts (campo → dominio, S-30, sin imports para que la infra lo lea), backend/src/lambda.ts (`domainHandler`) y backend/src/handlers/{catalog,orders,distributor}.ts; se borra backend/src/handler.ts. La pila crea CatalogFunction, OrdersFunction y DistributorFunction con data sources `catalog`, `orders`, `distributor` (la `api` desaparece) y falla al sintetizar si un campo del contrato no tiene dominio. Detalles internos: catalog con GetItem y Query como dice DEC-019 aunque el código solo usa Query, limitada por `dynamodb:LeadingKeys` = CATALOG; orders PutItem/Query/GetItem sin condición de partición (lee CUSTOMER#… y CATALOG; en T-28 suma HISTORY#…); distributor Scan/UpdateItem (UpdateItem con ReturnValues ALL_NEW, sin GetItem). Las tres funciones construyen los dos repositorios (no hacen llamadas): el rol IAM es el que limita. Queda in_progress: falta deploy (Pendiente deploy en LOG.md). 2026-10-18: el usuario desplegó dev; aceptación (41/41 de REQ-001..011) y humo (2/2) verificados contra la pila nueva → verified_auto."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. REQ-012 E7 (REQ-001..011 sin cambios). 2026-10-18: implementada (commit c598b01): backend/src/domains.ts (campo → dominio, S-30, sin imports para que la infra lo lea), backend/src/lambda.ts (`domainHandler`) y backend/src/handlers/{catalog,orders,distributor}.ts; se borra backend/src/handler.ts. La pila crea CatalogFunction, OrdersFunction y DistributorFunction con data sources `catalog`, `orders`, `distributor` (la `api` desaparece) y falla al sintetizar si un campo del contrato no tiene dominio. Detalles internos: catalog con GetItem y Query como dice DEC-019 aunque el código solo usa Query, limitada por `dynamodb:LeadingKeys` = CATALOG; orders PutItem/Query/GetItem sin condición de partición (lee CUSTOMER#… y CATALOG; en T-28 suma HISTORY#…); distributor Scan/UpdateItem (UpdateItem con ReturnValues ALL_NEW, sin GetItem). Las tres funciones construyen los dos repositorios (no hacen llamadas): el rol IAM es el que limita. Queda in_progress: falta deploy (Pendiente deploy en LOG.md). 2026-10-18: el usuario desplegó dev; aceptación (41/41 de REQ-001..011) y humo (2/2) verificados contra la pila nueva → verified_auto.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-28",
@@ -948,7 +960,7 @@
         "T-26",
         "T-27"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "spec/contracts/schema.graphql",
         "backend/",
@@ -972,7 +984,11 @@
         "date": "2026-10-19"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido: suma la consulta orderHistory (S-29). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18: implementada (commit 7333914). Detalles internos: `setStatus` del repositorio pasa a ReturnValues ALL_OLD y devuelve { order, previous }, así el `from` sale de la misma escritura atómica; el `at` de OrderCreated es el `createdAt` del pedido y el de OrderStatusChanged el reloj de la Lambda que publica (S-33); el mensaje SNS lleva el JSON del evento con `type` y un atributo `type`; la consumidora valida cada cuerpo (tipo, estados, fecha, ids) y un mensaje malformado falla para terminar en la DLQ; la fila del historial guarda también `type`, que orderHistory no devuelve; la Lambda de historial tiene PutItem limitado por `dynamodb:LeadingKeys` StringLike HISTORY#*; `PUBLISHING_DOMAINS` (orders, distributor) en backend/src/domains.ts decide TOPIC_ARN y sns:Publish; la función catalog no recibe TOPIC_ARN; nombre del tópico `pedidos-b2b-<stage>-order-events`. Dependencia nueva: @aws-sdk/client-sns (backend; el runtime Node.js 24 la trae y el bundle la deja externa); por eso cambia también package-lock.json. Tipos de app/src/lib/generated sin cambios: ninguna operación de la app usa orderHistory hasta T-31. El script `order:set-status` (DEC-009) escribe directo en la tabla y no publica eventos: fuera de alcance. Queda in_progress: falta deploy (Pendiente deploy en LOG.md). 2026-10-18: deploy verificado; aceptación 49/49 y humo 2/2 → verified_auto (sin verificación manual pendiente: T-28 no cambia la app). 2026-10-18 21:33 (Claude, a pedido del usuario): aceptación repetida tras cerrar las sesiones, sin otra corrida en paralelo: npm run test:acceptance → 8 archivos, 49/49 (limpieza: 28 pedidos y 39 eventos de historial de C-ACEPT-…); npm run smoke → 2/2. El estado sigue en reviewed (ya había pasado verified_auto y la revisión independiente); no se retrocede."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: al aprobar, el usuario pidió mostrar el historial en el detalle del pedido: suma la consulta orderHistory (S-29). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18: implementada (commit 7333914). Detalles internos: `setStatus` del repositorio pasa a ReturnValues ALL_OLD y devuelve { order, previous }, así el `from` sale de la misma escritura atómica; el `at` de OrderCreated es el `createdAt` del pedido y el de OrderStatusChanged el reloj de la Lambda que publica (S-33); el mensaje SNS lleva el JSON del evento con `type` y un atributo `type`; la consumidora valida cada cuerpo (tipo, estados, fecha, ids) y un mensaje malformado falla para terminar en la DLQ; la fila del historial guarda también `type`, que orderHistory no devuelve; la Lambda de historial tiene PutItem limitado por `dynamodb:LeadingKeys` StringLike HISTORY#*; `PUBLISHING_DOMAINS` (orders, distributor) en backend/src/domains.ts decide TOPIC_ARN y sns:Publish; la función catalog no recibe TOPIC_ARN; nombre del tópico `pedidos-b2b-<stage>-order-events`. Dependencia nueva: @aws-sdk/client-sns (backend; el runtime Node.js 24 la trae y el bundle la deja externa); por eso cambia también package-lock.json. Tipos de app/src/lib/generated sin cambios: ninguna operación de la app usa orderHistory hasta T-31. El script `order:set-status` (DEC-009) escribe directo en la tabla y no publica eventos: fuera de alcance. Queda in_progress: falta deploy (Pendiente deploy en LOG.md). 2026-10-18: deploy verificado; aceptación 49/49 y humo 2/2 → verified_auto (sin verificación manual pendiente: T-28 no cambia la app). 2026-10-18 21:33 (Claude, a pedido del usuario): aceptación repetida tras cerrar las sesiones, sin otra corrida en paralelo: npm run test:acceptance → 8 archivos, 49/49 (limpieza: 28 pedidos y 39 eventos de historial de C-ACEPT-…); npm run smoke → 2/2. El estado sigue en reviewed (ya había pasado verified_auto y la revisión independiente); no se retrocede.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-29",
@@ -990,7 +1006,7 @@
         "DEC-008"
       ],
       "depends_on": [],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "app/"
       ],
@@ -1009,7 +1025,11 @@
         "date": "2026-10-18"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí. 2026-10-18: implementada (commit ed24b12): app/src/lib/store/{cart,panel,session}.ts con zustand ^5.0.15; se borran CartProvider y PanelProvider; `useCart`/`usePanel` conservan nombre y forma, así las pantallas solo cambian el import. Sesión: `readSession()` en lib/session.ts lee rol (`cognito:groups`, S-25), `email` y `custom:customerId` del ID token; el store guarda eso y `status` (unknown/loading/signedIn/signedOut); el inicio de sesión hidrata por el store y, sin grupo, `reject()` cierra la sesión (REQ-009 E3). Detalles internos: el menú de cuenta toma el correo del store y, si el ID token no lo trae, lo pide con fetchUserAttributes como antes (lo guarda en el store); el estado \"Comprobando sesión\" de la pantalla de inicio sigue siendo local, para que el botón Ingresar no cambie a esa vista al hidratar tras signIn. Interpretación de DEC-021 (\"cerrar sesión vacía el carrito y la lista del panel como hoy\"): hoy la lista del panel se vacía al entrar al panel; ahora además `signOut` la vacía (el panel la sigue vaciando al montar), sin cambio visible porque se navega al inicio enseguida. Sin deploy (solo app/). Queda verified_auto con la verificación manual en el teléfono pendiente (DEC-011)."
+      "notes": "2026-10-18: propuesta del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. La sección \"Historial\" del detalle va en T-31, no aquí. 2026-10-18: implementada (commit ed24b12): app/src/lib/store/{cart,panel,session}.ts con zustand ^5.0.15; se borran CartProvider y PanelProvider; `useCart`/`usePanel` conservan nombre y forma, así las pantallas solo cambian el import. Sesión: `readSession()` en lib/session.ts lee rol (`cognito:groups`, S-25), `email` y `custom:customerId` del ID token; el store guarda eso y `status` (unknown/loading/signedIn/signedOut); el inicio de sesión hidrata por el store y, sin grupo, `reject()` cierra la sesión (REQ-009 E3). Detalles internos: el menú de cuenta toma el correo del store y, si el ID token no lo trae, lo pide con fetchUserAttributes como antes (lo guarda en el store); el estado \"Comprobando sesión\" de la pantalla de inicio sigue siendo local, para que el botón Ingresar no cambie a esa vista al hidratar tras signIn. Interpretación de DEC-021 (\"cerrar sesión vacía el carrito y la lista del panel como hoy\"): hoy la lista del panel se vacía al entrar al panel; ahora además `signOut` la vacía (el panel la sigue vaciando al montar), sin cambio visible porque se navega al inicio enseguida. Sin deploy (solo app/). Queda verified_auto con la verificación manual en el teléfono pendiente (DEC-011). 2026-10-18 (aceptación): el guion manual en el teléfono no se hizo; la corrida de Playwright en Expo web cubrió en parte los pasos (2) y (4): agregar con +, confirmar → número, y en el panel el estado nuevo tras cambiarlo. Sin probar: reabrir la app y entrar directo, detalle de producto, menú de cuenta y cerrar sesión.",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-30",
@@ -1029,7 +1049,7 @@
         "T-29",
         "T-31"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "README.md",
         "docs/",
@@ -1050,7 +1070,11 @@
         "date": "2026-10-19"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario. 2026-10-18 (autopilot): implementada en d8e4c41 — README.md en inglés, docs/resumen-ejecutivo.md (resumen gerencial actualizado al corte 4), .github/workflows/ci.yml (Node 24, npm ci, lint, typecheck, npm test, check:spec; checkout con historial completo porque check:spec lee los trailers de todos los commits; identidad git de CI para las pruebas de scripts que hacen commits). Verificado sin GitHub: en un clon limpio (/tmp, sin .expo/ ni .env*, sin AWS) `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (vitest 231/231, jest 173/173) y `npm run check:spec` ok; 46 enlaces relativos de README.md y docs/resumen-ejecutivo.md resuelven (archivo y ancla al estilo GitHub, incluidas las de REQ/DEC); sin IDs internos sueltos en README.md; YAML del workflow válido. Instrucciones de cuenta nueva revisadas paso a paso contra package.json, infra/bin, infra/lib/pedidos-stack.ts, scripts/write-env.ts y scripts/seed.ts (no seguidas en una cuenta limpia; `cdk destroy` documentado, no ejecutado). Interpretación (detalle interno): sin capturas todavía (S-36, las pone el usuario), la tabla de capturas queda comentada en README.md con los nombres de archivo esperados en docs/img/. Falta, fuera del alcance del autopilot (no hace push): push, CI en verde en GitHub (`gh run list`), Mermaid dibujado en la vista de GitHub y badge visible. 2026-10-18 (sesión interactiva): push hecho; la primera corrida de CI en GitHub falló porque 2 pruebas del autopilot dependían del claude local; corregidas en 09eb35d; CI en verde (run 39184809320). Mermaid validado con mermaid-cli y con el HTML de GitHub; badge visual con sesión → manual_pending."
+      "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario. 2026-10-18 (autopilot): implementada en d8e4c41 — README.md en inglés, docs/resumen-ejecutivo.md (resumen gerencial actualizado al corte 4), .github/workflows/ci.yml (Node 24, npm ci, lint, typecheck, npm test, check:spec; checkout con historial completo porque check:spec lee los trailers de todos los commits; identidad git de CI para las pruebas de scripts que hacen commits). Verificado sin GitHub: en un clon limpio (/tmp, sin .expo/ ni .env*, sin AWS) `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (vitest 231/231, jest 173/173) y `npm run check:spec` ok; 46 enlaces relativos de README.md y docs/resumen-ejecutivo.md resuelven (archivo y ancla al estilo GitHub, incluidas las de REQ/DEC); sin IDs internos sueltos en README.md; YAML del workflow válido. Instrucciones de cuenta nueva revisadas paso a paso contra package.json, infra/bin, infra/lib/pedidos-stack.ts, scripts/write-env.ts y scripts/seed.ts (no seguidas en una cuenta limpia; `cdk destroy` documentado, no ejecutado). Interpretación (detalle interno): sin capturas todavía (S-36, las pone el usuario), la tabla de capturas queda comentada en README.md con los nombres de archivo esperados en docs/img/. Falta, fuera del alcance del autopilot (no hace push): push, CI en verde en GitHub (`gh run list`), Mermaid dibujado en la vista de GitHub y badge visible. 2026-10-18 (sesión interactiva): push hecho; la primera corrida de CI en GitHub falló porque 2 pruebas del autopilot dependían del claude local; corregidas en 09eb35d; CI en verde (run 39184809320). Mermaid validado con mermaid-cli y con el HTML de GitHub; badge visual con sesión → manual_pending. 2026-10-18 (aceptación): capturas en docs/img/ hechas por Claude con Playwright en Expo web contra dev, por pedido del usuario (S-36 decía fotos del teléfono), commit c6c0dbd; tabla «Screenshots» descomentada. El badge visto con sesión iniciada en GitHub no se comprobó en la vista (sin navegador).",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     },
     {
       "id": "T-31",
@@ -1068,7 +1092,7 @@
         "T-28",
         "T-29"
       ],
-      "status": "reviewed",
+      "status": "accepted",
       "touches": [
         "app/"
       ],
@@ -1087,7 +1111,11 @@
         "date": "2026-10-19"
       },
       "blocked_by": null,
-      "notes": "2026-10-18: creada al aprobar el corte 4, por el cambio pedido por el usuario (historial visible en el detalle del pedido, almacenero y distribuidor). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18 (implementación, detalles internos): el historial vive en un store Zustand solo de datos (`useHistory`, por pedido) y se carga con `useOrderHistory` junto al componente `OrderHistory`, para que el store de sesión lo vacíe al cerrar sesión sin importar la API; `StateMessage` acepta un `testID` opcional para que los estados del historial no choquen con los de la pantalla; si una recarga falla, se muestra el error y se conservan las filas ya cargadas; en el detalle del almacenero el historial se muestra solo si el pedido cargó (si falla el pedido, se ve su error como antes); en el del distribuidor no se pide historial si el pedido no está en el panel; mientras carga, la sección muestra su título y un indicador. Sin deploy: el contrato y `orderHistory` ya están en dev (T-28)."
+      "notes": "2026-10-18: creada al aprobar el corte 4, por el cambio pedido por el usuario (historial visible en el detalle del pedido, almacenero y distribuidor). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18 (implementación, detalles internos): el historial vive en un store Zustand solo de datos (`useHistory`, por pedido) y se carga con `useOrderHistory` junto al componente `OrderHistory`, para que el store de sesión lo vacíe al cerrar sesión sin importar la API; `StateMessage` acepta un `testID` opcional para que los estados del historial no choquen con los de la pantalla; si una recarga falla, se muestra el error y se conservan las filas ya cargadas; en el detalle del almacenero el historial se muestra solo si el pedido cargó (si falla el pedido, se ve su error como antes); en el del distribuidor no se pide historial si el pedido no está en el panel; mientras carga, la sección muestra su título y un indicador. Sin deploy: el contrato y `orderHistory` ya están en dev (T-28). 2026-10-18 (aceptación): E8 y E9 comprobados por decisión del usuario en Expo web a tamaño de teléfono contra dev, con Playwright, en vez de Expo Go en el teléfono: pedido 4G6PD9M1, «Recibido» y «Recibido → Enviado» con fecha y hora para almacen1 y para el distribuidor; justo tras cambiar el estado, una sola fila (sin fila optimista). Deslizar hacia abajo no se probó (no existe en web).",
+      "acceptance": {
+        "by": "José Pedro Lübbert (Pepe)",
+        "date": "2026-10-18"
+      }
     }
   ]
 }
