@@ -1,6 +1,6 @@
 # Pedidos B2B
 
-[![CI](https://github.com/jplubbert/pedidos-b2b-v2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jplubbert/pedidos-b2b-v2/actions/workflows/ci.yml)
+[![CI](https://github.com/jplubbert/b2b-orders-aws/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jplubbert/b2b-orders-aws/actions/workflows/ci.yml)
 ![Node 24](https://img.shields.io/badge/node-%E2%89%A524-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![AWS CDK v2](https://img.shields.io/badge/IaC-AWS%20CDK%20v2-FF9900?logo=amazonaws&logoColor=white)
