@@ -1029,7 +1029,7 @@
         "T-29",
         "T-31"
       ],
-      "status": "approved_for_impl",
+      "status": "in_progress",
       "touches": [
         "README.md",
         "docs/",
@@ -1039,7 +1039,7 @@
       "evidence": null,
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario."
+      "notes": "2026-10-18: propuesta como última tarea del corte 4. 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. Depende también de T-31 (el detalle con historial forma parte de las capturas) y de las capturas del usuario. 2026-10-18 (autopilot): implementada en d8e4c41 — README.md en inglés, docs/resumen-ejecutivo.md (resumen gerencial actualizado al corte 4), .github/workflows/ci.yml (Node 24, npm ci, lint, typecheck, npm test, check:spec; checkout con historial completo porque check:spec lee los trailers de todos los commits; identidad git de CI para las pruebas de scripts que hacen commits). Verificado sin GitHub: en un clon limpio (/tmp, sin .expo/ ni .env*, sin AWS) `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (vitest 231/231, jest 173/173) y `npm run check:spec` ok; 46 enlaces relativos de README.md y docs/resumen-ejecutivo.md resuelven (archivo y ancla al estilo GitHub, incluidas las de REQ/DEC); sin IDs internos sueltos en README.md; YAML del workflow válido. Instrucciones de cuenta nueva revisadas paso a paso contra package.json, infra/bin, infra/lib/pedidos-stack.ts, scripts/write-env.ts y scripts/seed.ts (no seguidas en una cuenta limpia; `cdk destroy` documentado, no ejecutado). Interpretación (detalle interno): sin capturas todavía (S-36, las pone el usuario), la tabla de capturas queda comentada en README.md con los nombres de archivo esperados en docs/img/. Falta, fuera del alcance del autopilot (no hace push): push, CI en verde en GitHub (`gh run list`), Mermaid dibujado en la vista de GitHub y badge visible."
     },
     {
       "id": "T-31",
