@@ -16,6 +16,9 @@ const AUTOPILOT_SH = join(REPO, 'scripts/autopilot.sh');
 const AWS_FIXTURE = join(REPO, 'scripts/test/fixtures/autopilot-aws/credentials');
 // Without the user's local configuration (~/.config/autopilot): the tests never send real notices.
 const NO_CONFIG = { AUTOPILOT_CONFIG: '/dev/null', NTFY_TOPIC: '', NTFY_URL: '' };
+// claude/codex/curl doubles first in PATH: the preconditions need claude, and CI has no real one.
+const STUBS = join(REPO, 'scripts/test/fixtures/autopilot-stubs');
+const STUB_PATH = `${STUBS}:${process.env.PATH}`;
 
 let root: string;
 
@@ -252,7 +255,7 @@ describe('autopilot.sh', () => {
     const head = git('rev-parse', 'HEAD');
     const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], {
       encoding: 'utf8',
-      env: { ...process.env, ...NO_CONFIG, PATH: process.env.PATH, AUTOPILOT_REVIEWER: 'claude', AUTOPILOT_AWS_CREDENTIALS: AWS_FIXTURE },
+      env: { ...process.env, ...NO_CONFIG, PATH: STUB_PATH, AUTOPILOT_REVIEWER: 'claude', AUTOPILOT_AWS_CREDENTIALS: AWS_FIXTURE },
     });
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
@@ -665,10 +668,10 @@ describe('autopilot.sh', () => {
     cpSync(join(REPO, 'scripts'), join(root, 'scripts'), { recursive: true });
     const git = (...a: string[]) => execFileSync('git', ['-C', root, ...a], { encoding: 'utf8' });
     git('init', '-q');
-    const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh')], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG } });
+    const r = spawnSync('bash', [join(root, 'scripts/autopilot.sh')], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG, PATH: STUB_PATH } });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('dirty working tree');
-    const d = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG } });
+    const d = spawnSync('bash', [join(root, 'scripts/autopilot.sh'), '--dry-run'], { encoding: 'utf8', env: { ...process.env, ...NO_CONFIG, PATH: STUB_PATH } });
     expect(d.status).toBe(0);
     expect(d.stderr).toContain('warning: dirty working tree');
   });
