@@ -1182,3 +1182,14 @@
 - En curso / roto: T-28 sigue `in_progress`; no se pasó a `verified_auto` ni se lanzó el autopilot (correría la aceptación contra el mismo dev compartido).
 - Bloqueos nuevos: ninguno registrado como Q; se escala al usuario por la regla de dos intentos fallidos sobre la misma falla.
 - Próxima acción autorizada: el usuario confirma si otra sesión o máquina usa el dev (p. ej. otra corrida de aceptación o la que desplegó T-28 a las 20:34) y la detiene; luego repetir `npm run test:acceptance` (esperado 49/49) y, si pasa, evidencia de T-28 → `verified_auto` y autopilot.
+
+## 2026-10-18 21:30 · Claude (claude-opus-5-5)
+- Encargo del usuario: "push, npm run deploy:dev para T-28, verifica aceptación (49/49) y humo, pasa T-28 a verified_auto y lanza su autopilot."
+- Hecho: push sin nada que subir (main = origin/main). `npm run deploy:dev` (perfil `pedidos-demo`, cuenta [REDACTED_AWS_ACCOUNT_DEMO], us-east-1) → exit 0, «no changes»: T-28 ya estaba desplegada (UPDATE_COMPLETE 23:34 UTC; tópico, cola, DLQ, OrderHistoryFunction y resolver orderHistory CREATE_COMPLETE); `.env.dev` reescrito y seed corrido. T-28 → `verified_auto`.
+- Causa de la interferencia de la entrada de 21:20: esta sesión y otra sesión de Claude (lanzada desde ~/Projects/sdd-base) recibieron el mismo encargo y corrieron `npm run test:acceptance` a la vez contra el mismo dev; cada una borraba los datos C-ACEPT-… de la otra. Esta sesión lo vio en `ps` (otro `npm run test:acceptance` en pedidos-b2b-v2), esperó a que terminara y repitió sola.
+- Verificado y cómo: primera corrida de aceptación (en paralelo con la otra sesión) 40 pasan, 1 falla, 8 omitidas, mismas fallas de fixtures; repetida sin otra corrida en curso: `npm run test:acceptance` 49/49 (8 archivos); `npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente manual: ninguna para T-28.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno. Riesgo operativo: dos sesiones (o una sesión y el autopilot) no deben correr la aceptación al mismo tiempo contra el dev.
+- Próxima acción autorizada: el autopilot revisa T-28 (verified_auto) e implementa T-31.
