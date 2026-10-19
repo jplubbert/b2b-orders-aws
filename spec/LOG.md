@@ -1219,3 +1219,8 @@
 - En curso / roto: nada. T-31 `verified_auto`.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: revisión independiente de T-31; el usuario hace la verificación manual de E8 y E9 y decide accepted de T-24, T-26 a T-29 y T-31.
+
+## 2026-10-18 21:44 · revisor independiente (codex exec codex-cli 0.162.0) vía autopilot
+- Hecho: revisión independiente de T-31 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
+- Verificado y cómo: veredicto completo en TASKS.json (`review` de T-31); salida íntegra en .autopilot/2026-10-18_213343/T-31-review-output.txt.
+- Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
