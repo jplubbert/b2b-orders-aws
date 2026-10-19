@@ -1198,3 +1198,13 @@
 - Hecho: revisión independiente de T-28 con contexto limpio (solo diff + REQ/DEC de la tarea). Veredicto: **approved** → estado `reviewed`. Hallazgos: sin hallazgos bloqueantes.
 - Verificado y cómo: veredicto completo en TASKS.json (`review` de T-28); salida íntegra en .autopilot/2026-10-18_212359/T-28-review-output.txt.
 - Próxima acción autorizada: continúa el orquestador nocturno; el usuario decide accepted por la mañana.
+
+## 2026-10-18 21:33 · Claude (claude-opus-5-5)
+- Hecho: a pedido del usuario, tras cerrar todas las sesiones, revisé el estado: no había ningún autopilot corriendo; la corrida 2026-10-18_212359 se cortó al empezar T-31 (el implementador solo había leído archivos; árbol limpio en main, nada que recuperar). Repetí la aceptación de T-28 sin otra corrida en paralelo.
+- Interpretación: el usuario pidió pasar T-28 a verified_auto si daba 49/49, pero T-28 ya estaba en `reviewed` (verified_auto en 8f310fd y revisión aprobada en b512413). No la retrocedí; anoté la evidencia nueva en sus notas.
+- Verificado y cómo: `npm run test:acceptance` → 8 archivos, 49/49 (limpieza: 28 pedidos y 39 eventos de historial de C-ACEPT-…); `npm run smoke` → 2/2.
+- Pendiente manual: ninguna.
+- Pendiente deploy: ninguno.
+- En curso / roto: nada.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: push a origin y relanzar el autopilot (T-31 y las demás tareas elegibles); el usuario decide accepted de T-24, T-26 a T-29 por la mañana.
