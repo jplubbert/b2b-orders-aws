@@ -1057,15 +1057,20 @@
         "T-28",
         "T-29"
       ],
-      "status": "approved_for_impl",
+      "status": "verified_auto",
       "touches": [
         "app/"
       ],
       "verify": "npm run lint && npm run typecheck && npm test (app/test: E8, E9, E11, E12 en los dos detalles; las expectativas actuales sin cambios) && npx expo export --platform android && npm run check:spec; manual en el teléfono (DEC-011): E8 y E9",
-      "evidence": null,
+      "evidence": {
+        "command": "npm test -w app (antes de las pruebas nuevas); npm run codegen; npm run lint; npm run typecheck; npm test; npm exec -w app -- expo export --platform android --output-dir /tmp/t31-export; npm run test:acceptance; npm run smoke; npm run check:spec (hook de commit)",
+        "result": "lint ok; typecheck ok; app/test sin cambios en sus expectativas: 153/153 con la implementación (las 9 suites existentes; ningún archivo de prueba existente modificado salvo test/support/stores.ts, que también reinicia el store nuevo); npm test: vitest 231/231 (incluye codegen.test: tipos generados al día) y app 173/173 (+20 en app/test/history.test.tsx: E8/E9 con 2 filas en orden y fecha y hora, nombres de S-17 incluido «Enviado → Enviado», E11 vacío y luego «Recibido» al deslizar, E10 en pantalla, E12 error sin ocultar número, líneas, total y estado y recuperación al deslizar, carga; en los dos detalles; sin fila optimista tras cambiar estado; el distribuidor refresca solo el historial; cerrar sesión vacía el historial); expo export android ok (2469 módulos); test:acceptance 49/49 (8 archivos) contra dev; smoke 2/2; check:spec ok",
+        "commit": "3a2c5e5",
+        "manual_pending": "DEC-011, en el teléfono con Expo Go y el dev desplegado: (E8) almacen1@demo.test confirma un pedido; distribuidor@demo.test lo pasa a «Enviado»; almacen1 abre el pedido en Mis pedidos → sección «Historial» debajo del estado y la fecha con 2 filas, «Recibido» y «Recibido → Enviado», cada una con fecha y hora (si aún dice «Sin movimientos registrados todavía», deslizar hacia abajo); (E9) el distribuidor abre ese pedido desde el panel → la misma sección con las mismas 2 filas; al cambiar el estado no aparece fila nueva hasta deslizar hacia abajo."
+      },
       "review": null,
       "blocked_by": null,
-      "notes": "2026-10-18: creada al aprobar el corte 4, por el cambio pedido por el usuario (historial visible en el detalle del pedido, almacenero y distribuidor). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot."
+      "notes": "2026-10-18: creada al aprobar el corte 4, por el cambio pedido por el usuario (historial visible en el detalle del pedido, almacenero y distribuidor). 2026-10-18: aprobada por José Pedro Lübbert (Pepe) con el corte 4 → approved_for_impl, para el autopilot. 2026-10-18 (implementación, detalles internos): el historial vive en un store Zustand solo de datos (`useHistory`, por pedido) y se carga con `useOrderHistory` junto al componente `OrderHistory`, para que el store de sesión lo vacíe al cerrar sesión sin importar la API; `StateMessage` acepta un `testID` opcional para que los estados del historial no choquen con los de la pantalla; si una recarga falla, se muestra el error y se conservan las filas ya cargadas; en el detalle del almacenero el historial se muestra solo si el pedido cargó (si falla el pedido, se ve su error como antes); en el del distribuidor no se pide historial si el pedido no está en el panel; mientras carga, la sección muestra su título y un indicador. Sin deploy: el contrato y `orderHistory` ya están en dev (T-28)."
     }
   ]
 }

@@ -1208,3 +1208,14 @@
 - En curso / roto: nada.
 - Bloqueos nuevos: ninguno.
 - Próxima acción autorizada: push a origin y relanzar el autopilot (T-31 y las demás tareas elegibles); el usuario decide accepted de T-24, T-26 a T-29 por la mañana.
+
+## 2026-10-18 21:42 · Claude (claude-opus-5-5) vía autopilot
+- Encargo: "Lee AGENTS.md y ejecuta T-31. […] Si la tarea necesita deploy, no lo intentes […]".
+- Hecho: T-31 (REQ-012 E8, E9, E11, E12; S-37): sección «Historial» en `order/[id]` (almacenero) y `dist/order/[id]` (distribuidor), debajo del estado y la fecha, con `orderHistory` en una consulta aparte del pedido: «Recibido» para el evento inicial, «<anterior> → <nuevo>» con los nombres de S-17, fecha y hora es-CL; «Sin movimientos registrados todavía» y «No se pudo cargar el historial» sin ocultar el detalle. Se pide al abrir y al deslizar hacia abajo; el detalle del distribuidor gana deslizar para refrescar solo el historial (el pedido sigue saliendo del panel, S-19); sin fila optimista tras cambiar el estado. Store Zustand `useHistory` (DEC-021), vaciado al cerrar sesión; tema y componentes del corte 2 (DEC-012), sin dependencias nuevas. Commit 3a2c5e5.
+- Interpretaciones (detalles internos, en `notes` de T-31): `StateMessage` acepta un `testID` opcional para la sección; una recarga fallida muestra el error y conserva las filas ya cargadas; si falla el pedido del almacenero, se ve su error como antes y no la sección.
+- Verificado y cómo: `npm test -w app` con la implementación y sin pruebas nuevas 153/153 (expectativas existentes sin cambios); `npm run lint` ok; `npm run typecheck` ok; `npm test` vitest 231/231 y app 173/173 (+20 en app/test/history.test.tsx); `npm exec -w app -- expo export --platform android` ok; `npm run test:acceptance` 49/49 (sin otra corrida de aceptación en curso; se revisó con `pgrep`); `npm run smoke` 2/2; `npm run check:spec` ok.
+- Pendiente manual (el usuario la hace al aceptar en lote, DEC-011): T-31: en el teléfono con Expo Go y el dev desplegado, (E8) almacen1@demo.test confirma un pedido, distribuidor@demo.test lo pasa a «Enviado» y almacen1 abre el pedido → «Historial» con «Recibido» y «Recibido → Enviado», cada una con fecha y hora (deslizar hacia abajo si aún está vacío); (E9) el distribuidor abre ese pedido desde el panel → las mismas 2 filas; tras cambiar el estado no aparece fila nueva hasta deslizar.
+- Pendiente deploy: ninguno (solo app; `orderHistory` ya está en dev desde T-28).
+- En curso / roto: nada. T-31 `verified_auto`.
+- Bloqueos nuevos: ninguno.
+- Próxima acción autorizada: revisión independiente de T-31; el usuario hace la verificación manual de E8 y E9 y decide accepted de T-24, T-26 a T-29 y T-31.
