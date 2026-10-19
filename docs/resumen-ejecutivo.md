@@ -72,7 +72,7 @@ comando (AWS CDK) y se puede borrar entera.
 Todos los servicios se cobran por uso y no hay máquinas encendidas: sin uso, el costo es prácticamente cero. Con el
 tráfico de una demo, el gasto esperado queda en centavos de dólar al mes, mayormente dentro de la capa gratuita de AWS.
 **Es una estimación**: la cifra real no está medida porque Cost Explorer no está activado en la organización. Para
-medirla: AWS Billing → Cost Explorer → filtrar por la cuenta [REDACTED_AWS_ACCOUNT_DEMO].
+medirla: AWS Billing → Cost Explorer → filtrar por la cuenta AWS del demo.
 
 ## Cómo se trabajó
 
